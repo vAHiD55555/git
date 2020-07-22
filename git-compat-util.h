@@ -1381,4 +1381,14 @@ static inline void *container_of_or_null_offset(void *ptr, size_t offset)
 
 void sleep_millisec(int millisec);
 
+void *profile_malloc(size_t);
+void *profile_realloc(void *, size_t);
+void *profile_calloc(size_t, size_t);
+void profile_free(void *);
+
+#define malloc profile_malloc
+#define realloc profile_realloc
+#define calloc profile_calloc
+#define free profile_free
+
 #endif
