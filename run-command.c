@@ -154,7 +154,7 @@ int is_executable(const char *name)
 		n = read(fd, buf, 2);
 		if (n == 2)
 			/* look for a she-bang */
-			if (!strcmp(buf, "#!"))
+			if (!memcmp(buf, "#!", 2))
 				st.st_mode |= S_IXUSR;
 		close(fd);
 	}
