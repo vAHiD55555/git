@@ -783,6 +783,15 @@ test_expect_success 'ranges with pathspecs' '
 	! grep "$topic_oid" actual
 '
 
+test_expect_success 'compare range vs mbox' '
+	git format-patch --stdout topic..mode-only-change >mbox &&
+	git range-diff topic...mode-only-change >expect &&
+	git range-diff mode-only-change..topic mbox:./mbox >actual &&
+	test_cmp expect actual &&
+	git range-diff mode-only-change..topic mbox:- <mbox >actual &&
+	test_cmp expect actual
+'
+
 test_expect_success 'submodule changes are shown irrespective of diff.submodule' '
 	git init sub-repo &&
 	test_commit -C sub-repo sub-first &&
