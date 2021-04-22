@@ -254,6 +254,16 @@ static int start_fsmonitor_daemon(void)
 	return 0;
 }
 
+static int stop_fsmonitor_daemon(void)
+{
+	assert(fsmonitor_ipc__is_supported());
+
+	if (fsmonitor_ipc__get_state() == IPC_STATE__LISTENING)
+		return run_git("fsmonitor--daemon", "stop", NULL);
+
+	return 0;
+}
+
 static int register_dir(void)
 {
 	if (add_or_remove_enlistment(1))
@@ -280,6 +290,9 @@ static int unregister_dir(void)
 
 	if (add_or_remove_enlistment(0))
 		res = error(_("could not remove enlistment"));
+
+	if (fsmonitor_ipc__is_supported() && stop_fsmonitor_daemon() < 0)
+		res = error(_("could not stop the FSMonitor daemon"));
 
 	return res;
 }
