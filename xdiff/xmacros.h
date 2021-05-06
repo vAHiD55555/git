@@ -55,4 +55,10 @@ do { \
 		? xdl_malloc((nr) * sizeof(*(p)))	\
 		: NULL)
 
+/* Allocate an array of nr zeroed out elements, returns NULL on failure */
+#define XDL_CALLOC_ARRAY(p, nr)				\
+	(XDL_ALLOC_ARRAY((p), (nr))			\
+		? memset((p), 0, (nr) * sizeof(*(p)))	\
+		: NULL)
+
 #endif /* #if !defined(XMACROS_H) */
