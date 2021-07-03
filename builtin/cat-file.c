@@ -351,6 +351,14 @@ static void print_object_or_die(struct batch_options *opt, struct expand_data *d
 	}
 }
 
+static int print_default_format(char *buf, int len, struct expand_data *data)
+{
+	return xsnprintf(buf, len, "%s %s %"PRIuMAX"\n", oid_to_hex(&data->oid),
+		 data->info.type_name->buf,
+		 (uintmax_t)*data->info.sizep);
+
+}
+
 /*
  * If "pack" is non-NULL, then "offset" is the byte offset within the pack from
  * which the object may be accessed (though note that we may also rely on
@@ -363,6 +371,11 @@ static void batch_object_write(const char *obj_name,
 			       struct packed_git *pack,
 			       off_t offset)
 {
+	struct strbuf type_name = STRBUF_INIT;
+
+	if (!opt->format)
+		data->info.type_name = &type_name;
+
 	if (!data->skip_object_info) {
 		int ret;
 
@@ -377,20 +390,30 @@ static void batch_object_write(const char *obj_name,
 			printf("%s missing\n",
 			       obj_name ? obj_name : oid_to_hex(&data->oid));
 			fflush(stdout);
-			return;
+			goto cleanup;
 		}
 	}
 
-	strbuf_reset(scratch);
-	strbuf_expand(scratch, opt->format, expand_format, data);
-	strbuf_addch(scratch, '\n');
-	batch_write(opt, scratch->buf, scratch->len);
+	if (!opt->format) {
+		char buf[1024];
+		int len = print_default_format(buf, 1024, data);
+		batch_write(opt, buf, len);
+	} else {
+		strbuf_reset(scratch);
+		strbuf_expand(scratch, opt->format, expand_format, data);
+		strbuf_addch(scratch, '\n');
+		batch_write(opt, scratch->buf, scratch->len);
+	}
 
 	if (opt->print_contents) {
 		print_object_or_die(opt, data);
 		batch_write(opt, "\n", 1);
 	}
+
+cleanup:
+	strbuf_release(&type_name);
 }
+
 
 static void batch_one_object(const char *obj_name,
 			     struct strbuf *scratch,
@@ -508,6 +531,9 @@ static int batch_unordered_packed(const struct object_id *oid,
 				      data);
 }
 
+
+#define DEFAULT_FORMAT "%(objectname) %(objecttype) %(objectsize)"
+
 static int batch_objects(struct batch_options *opt)
 {
 	struct strbuf input = STRBUF_INIT;
@@ -516,9 +542,6 @@ static int batch_objects(struct batch_options *opt)
 	int save_warning;
 	int retval = 0;
 
-	if (!opt->format)
-		opt->format = "%(objectname) %(objecttype) %(objectsize)";
-
 	/*
 	 * Expand once with our special mark_query flag, which will prime the
 	 * object_info to be handed to oid_object_info_extended for each
@@ -526,12 +549,17 @@ static int batch_objects(struct batch_options *opt)
 	 */
 	memset(&data, 0, sizeof(data));
 	data.mark_query = 1;
-	strbuf_expand(&output, opt->format, expand_format, &data);
+	strbuf_expand(&output,
+		      opt->format ? opt->format : DEFAULT_FORMAT,
+		      expand_format,
+		      &data);
 	data.mark_query = 0;
 	strbuf_release(&output);
 	if (opt->cmdmode)
 		data.split_on_whitespace = 1;
 
+	if (opt->format && !strcmp(opt->format, DEFAULT_FORMAT))
+		opt->format = NULL;
 	/*
 	 * If we are printing out the object, then always fill in the type,
 	 * since we will want to decide whether or not to stream.
