@@ -178,6 +178,12 @@ const char *fsm_settings__get_reason_msg(struct repository *r)
 	case FSMONITOR_REASON_BARE:
 		return _("bare repos are incompatible with fsmonitor");
 
+	case FSMONITOR_REASON_ERROR:
+		return _("repo incompatible with fsmonitor due to errors");
+
+	case FSMONITOR_REASON_REMOTE:
+		return _("remote repos are incompatible with fsmonitor");
+
 	case FSMONITOR_REASON_VFS4GIT:
 		return _("virtual repos are incompatible with fsmonitor");
 	}
