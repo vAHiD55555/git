@@ -1266,6 +1266,28 @@ static inline int skip_iprefix(const char *str, const char *prefix,
 	return 0;
 }
 
+/*
+ * Like skip_prefix_mem, but compare case-insensitively. Note that the
+ * comparison is done via tolower(), so it is strictly ASCII (no multi-byte
+ * characters or locale-specific conversions).
+ */
+static inline int skip_iprefix_mem(const char *buf, size_t len,
+				   const char *prefix,
+				   const char **out, size_t *outlen)
+{
+	size_t prefix_len = strlen(prefix);
+	if (len < prefix_len)
+		return 0;
+
+	if (!strncasecmp(buf, prefix, prefix_len)){
+		*out = buf + prefix_len;
+		*outlen = len - prefix_len;
+		return 1;
+	}
+
+	return 0;
+}
+
 static inline int strtoul_ui(char const *s, int base, unsigned int *result)
 {
 	unsigned long ul;
