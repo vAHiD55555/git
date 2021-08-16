@@ -27,6 +27,8 @@ PID_FILE="$TRASH_DIRECTORY"/pid-file.pid
 SERVER_LOG="$TRASH_DIRECTORY"/OUT.server.log
 
 PATH="$GIT_BUILD_DIR/t/helper/:$PATH" && export PATH
+CREDENTIAL_HELPER="$GIT_BUILD_DIR/t/helper/test-credential-helper-replay.sh" \
+	&& export CREDENTIAL_HELPER
 
 test_expect_success 'setup repos' '
 	test_create_repo "$REPO_DIR" &&
@@ -92,15 +94,279 @@ start_http_server () {
 
 per_test_cleanup () {
 	stop_http_server &&
-	rm -f OUT.*
+	rm -f OUT.* &&
+	rm -f *.cred &&
+	rm -f auth.config
 }
 
 test_expect_success 'http auth anonymous no challenge' '
 	test_when_finished "per_test_cleanup" &&
-	start_http_server &&
+
+	cat >auth.config <<-EOF &&
+	[auth]
+	    allowAnonymous = true
+	EOF
+
+	start_http_server --auth-config="$TRASH_DIRECTORY/auth.config" &&
 
 	# Attempt to read from a protected repository
 	git ls-remote $ORIGIN_URL
+'
+
+test_expect_success 'http auth www-auth headers to credential helper basic valid' '
+	test_when_finished "per_test_cleanup" &&
+	# base64("alice:secret-passwd")
+	USERPASS64=YWxpY2U6c2VjcmV0LXBhc3N3ZA== &&
+	export USERPASS64 &&
+
+	cat >auth.config <<-EOF &&
+	[auth]
+	    challenge = basic:realm=\"example.com\"
+	    token = basic:$USERPASS64
+	EOF
+
+	start_http_server --auth-config="$TRASH_DIRECTORY/auth.config" &&
+
+	cat >get-expected.cred <<-EOF &&
+	protocol=http
+	host=$HOST_PORT
+	wwwauth[]=basic realm="example.com"
+	EOF
+
+	cat >store-expected.cred <<-EOF &&
+	protocol=http
+	host=$HOST_PORT
+	username=alice
+	password=secret-passwd
+	EOF
+
+	cat >get-response.cred <<-EOF &&
+	protocol=http
+	host=$HOST_PORT
+	username=alice
+	password=secret-passwd
+	EOF
+
+	git -c credential.helper="$CREDENTIAL_HELPER" ls-remote $ORIGIN_URL &&
+
+	test_cmp get-expected.cred get-actual.cred &&
+	test_cmp store-expected.cred store-actual.cred
+'
+
+test_expect_success 'http auth www-auth headers to credential helper ignore case valid' '
+	test_when_finished "per_test_cleanup" &&
+	# base64("alice:secret-passwd")
+	USERPASS64=YWxpY2U6c2VjcmV0LXBhc3N3ZA== &&
+	export USERPASS64 &&
+
+	cat >auth.config <<-EOF &&
+	[auth]
+	    challenge = basic:realm=\"example.com\"
+	    token = basic:$USERPASS64
+	    extraHeader = wWw-aUtHeNtIcAtE: bEaRer auThoRiTy=\"id.example.com\"
+	EOF
+
+	start_http_server --auth-config="$TRASH_DIRECTORY/auth.config" &&
+
+	cat >get-expected.cred <<-EOF &&
+	protocol=http
+	host=$HOST_PORT
+	wwwauth[]=basic realm="example.com"
+	wwwauth[]=bEaRer auThoRiTy="id.example.com"
+	EOF
+
+	cat >store-expected.cred <<-EOF &&
+	protocol=http
+	host=$HOST_PORT
+	username=alice
+	password=secret-passwd
+	EOF
+
+	cat >get-response.cred <<-EOF &&
+	protocol=http
+	host=$HOST_PORT
+	username=alice
+	password=secret-passwd
+	EOF
+
+	git -c credential.helper="$CREDENTIAL_HELPER" ls-remote $ORIGIN_URL &&
+
+	test_cmp get-expected.cred get-actual.cred &&
+	test_cmp store-expected.cred store-actual.cred
+'
+
+test_expect_success 'http auth www-auth headers to credential helper continuation hdr' '
+	test_when_finished "per_test_cleanup" &&
+	# base64("alice:secret-passwd")
+	USERPASS64=YWxpY2U6c2VjcmV0LXBhc3N3ZA== &&
+	export USERPASS64 &&
+
+	cat >auth.config <<-EOF &&
+	[auth]
+	    challenge = "bearer:authority=\"id.example.com\"\\n    q=1\\n \\t p=0"
+	    challenge = basic:realm=\"example.com\"
+	    token = basic:$USERPASS64
+	EOF
+
+	start_http_server --auth-config="$TRASH_DIRECTORY/auth.config" &&
+
+	cat >get-expected.cred <<-EOF &&
+	protocol=http
+	host=$HOST_PORT
+	wwwauth[]=bearer authority="id.example.com" q=1 p=0
+	wwwauth[]=basic realm="example.com"
+	EOF
+
+	cat >store-expected.cred <<-EOF &&
+	protocol=http
+	host=$HOST_PORT
+	username=alice
+	password=secret-passwd
+	EOF
+
+	cat >get-response.cred <<-EOF &&
+	protocol=http
+	host=$HOST_PORT
+	username=alice
+	password=secret-passwd
+	EOF
+
+	git -c credential.helper="$CREDENTIAL_HELPER" ls-remote $ORIGIN_URL &&
+
+	test_cmp get-expected.cred get-actual.cred &&
+	test_cmp store-expected.cred store-actual.cred
+'
+
+test_expect_success 'http auth www-auth headers to credential helper empty continuation hdrs' '
+	test_when_finished "per_test_cleanup" &&
+	# base64("alice:secret-passwd")
+	USERPASS64=YWxpY2U6c2VjcmV0LXBhc3N3ZA== &&
+	export USERPASS64 &&
+
+	cat >auth.config <<-EOF &&
+	[auth]
+	    challenge = basic:realm=\"example.com\"
+	    token = basic:$USERPASS64
+	    extraheader = "WWW-Authenticate:"
+	    extraheader = " "
+	    extraheader = " bearer authority=\"id.example.com\""
+	EOF
+
+	start_http_server --auth-config="$TRASH_DIRECTORY/auth.config" &&
+
+	cat >get-expected.cred <<-EOF &&
+	protocol=http
+	host=$HOST_PORT
+	wwwauth[]=basic realm="example.com"
+	wwwauth[]=bearer authority="id.example.com"
+	EOF
+
+	cat >store-expected.cred <<-EOF &&
+	protocol=http
+	host=$HOST_PORT
+	username=alice
+	password=secret-passwd
+	EOF
+
+	cat >get-response.cred <<-EOF &&
+	protocol=http
+	host=$HOST_PORT
+	username=alice
+	password=secret-passwd
+	EOF
+
+	git -c credential.helper="$CREDENTIAL_HELPER" ls-remote $ORIGIN_URL &&
+
+	test_cmp get-expected.cred get-actual.cred &&
+	test_cmp store-expected.cred store-actual.cred
+'
+
+test_expect_success 'http auth www-auth headers to credential helper custom schemes' '
+	test_when_finished "per_test_cleanup" &&
+	# base64("alice:secret-passwd")
+	USERPASS64=YWxpY2U6c2VjcmV0LXBhc3N3ZA== &&
+	export USERPASS64 &&
+
+	cat >auth.config <<-EOF &&
+	[auth]
+	    challenge = "foobar:alg=test widget=1"
+	    challenge = "bearer:authority=\"id.example.com\" q=1 p=0"
+	    challenge = basic:realm=\"example.com\"
+	    token = basic:$USERPASS64
+	EOF
+
+	start_http_server --auth-config="$TRASH_DIRECTORY/auth.config" &&
+
+	cat >get-expected.cred <<-EOF &&
+	protocol=http
+	host=$HOST_PORT
+	wwwauth[]=foobar alg=test widget=1
+	wwwauth[]=bearer authority="id.example.com" q=1 p=0
+	wwwauth[]=basic realm="example.com"
+	EOF
+
+	cat >store-expected.cred <<-EOF &&
+	protocol=http
+	host=$HOST_PORT
+	username=alice
+	password=secret-passwd
+	EOF
+
+	cat >get-response.cred <<-EOF &&
+	protocol=http
+	host=$HOST_PORT
+	username=alice
+	password=secret-passwd
+	EOF
+
+	git -c credential.helper="$CREDENTIAL_HELPER" ls-remote $ORIGIN_URL &&
+
+	test_cmp get-expected.cred get-actual.cred &&
+	test_cmp store-expected.cred store-actual.cred
+'
+
+test_expect_success 'http auth www-auth headers to credential helper invalid' '
+	test_when_finished "per_test_cleanup" &&
+	# base64("alice:secret-passwd")
+	USERPASS64=YWxpY2U6c2VjcmV0LXBhc3N3ZA== &&
+	export USERPASS64 &&
+
+	cat >auth.config <<-EOF &&
+	[auth]
+	    challenge = "bearer:authority=\"id.example.com\" q=1 p=0"
+	    challenge = basic:realm=\"example.com\"
+	    token = basic:$USERPASS64
+	EOF
+
+	start_http_server --auth-config="$TRASH_DIRECTORY/auth.config" &&
+
+	cat >get-expected.cred <<-EOF &&
+	protocol=http
+	host=$HOST_PORT
+	wwwauth[]=bearer authority="id.example.com" q=1 p=0
+	wwwauth[]=basic realm="example.com"
+	EOF
+
+	cat >erase-expected.cred <<-EOF &&
+	protocol=http
+	host=$HOST_PORT
+	username=alice
+	password=invalid-passwd
+	wwwauth[]=bearer authority="id.example.com" q=1 p=0
+	wwwauth[]=basic realm="example.com"
+	EOF
+
+	cat >get-response.cred <<-EOF &&
+	protocol=http
+	host=$HOST_PORT
+	username=alice
+	password=invalid-passwd
+	EOF
+
+	test_must_fail git -c credential.helper="$CREDENTIAL_HELPER" ls-remote $ORIGIN_URL &&
+
+	test_cmp get-expected.cred get-actual.cred &&
+	test_cmp erase-expected.cred erase-actual.cred
 '
 
 test_done
