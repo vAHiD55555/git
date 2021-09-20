@@ -125,6 +125,7 @@ static int verbose;
 static int show_resolving_progress;
 static int show_stat;
 static int check_self_contained_and_connected;
+static int rev_index;
 
 static struct progress *progress;
 
@@ -1586,12 +1587,8 @@ static int git_index_pack_config(const char *k, const char *v, void *cb)
 		}
 		return 0;
 	}
-	if (!strcmp(k, "pack.writereverseindex")) {
-		if (git_config_bool(k, v))
-			opts->flags |= WRITE_REV;
-		else
-			opts->flags &= ~WRITE_REV;
-	}
+	if (!strcmp(k, "pack.writereverseindex"))
+		rev_index = git_config_bool(k, v);
 	return git_default_config(k, v, cb);
 }
 
@@ -1709,7 +1706,7 @@ static void show_pack_info(int stat_only)
 
 int cmd_index_pack(int argc, const char **argv, const char *prefix)
 {
-	int i, fix_thin_pack = 0, verify = 0, stat_only = 0, rev_index;
+	int i, fix_thin_pack = 0, verify = 0, stat_only = 0;
 	const char *curr_index;
 	const char *curr_rev_index = NULL;
 	const char *index_name = NULL, *pack_name = NULL, *rev_index_name = NULL;
@@ -1745,8 +1742,6 @@ int cmd_index_pack(int argc, const char **argv, const char *prefix)
 
 	if (git_env_bool(GIT_TEST_WRITE_REV_INDEX, 0))
 		rev_index = 1;
-	else
-		rev_index = !!(opts.flags & (WRITE_REV_VERIFY | WRITE_REV));
 
 	for (i = 1; i < argc; i++) {
 		const char *arg = argv[i];
@@ -1851,7 +1846,6 @@ int cmd_index_pack(int argc, const char **argv, const char *prefix)
 	if (!index_name && pack_name)
 		index_name = derive_filename(pack_name, "pack", "idx", &index_name_buf);
 
-	opts.flags &= ~(WRITE_REV | WRITE_REV_VERIFY);
 	if (rev_index) {
 		opts.flags |= verify ? WRITE_REV_VERIFY : WRITE_REV;
 		if (index_name)
