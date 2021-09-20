@@ -5,7 +5,7 @@ test_description='on-disk reverse index'
 
 # The below tests want control over the 'pack.writeReverseIndex' setting
 # themselves to assert various combinations of it with other options.
-sane_unset GIT_TEST_WRITE_REV_INDEX
+sane_unset GIT_TEST_IN_CORE_REV_INDEX
 
 packdir=.git/objects/pack
 
