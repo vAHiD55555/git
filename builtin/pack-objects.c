@@ -3968,6 +3968,7 @@ int cmd_pack_objects(int argc, const char **argv, const char *prefix)
 		sparse = the_repository->settings.pack_use_sparse;
 
 	reset_pack_idx_option(&pack_idx_opts);
+	pack_idx_opts.flags |= WRITE_REV;
 	git_config(git_pack_config, NULL);
 	if (git_env_bool(GIT_TEST_WRITE_REV_INDEX, 0))
 		pack_idx_opts.flags |= WRITE_REV;

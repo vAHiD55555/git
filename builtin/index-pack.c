@@ -125,7 +125,7 @@ static int verbose;
 static int show_resolving_progress;
 static int show_stat;
 static int check_self_contained_and_connected;
-static int rev_index;
+static int rev_index = 1;
 
 static struct progress *progress;
 
