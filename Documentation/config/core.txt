@@ -547,6 +547,42 @@ core.whitespace::
   is relevant for `indent-with-non-tab` and when Git fixes `tab-in-indent`
   errors. The default tab width is 8. Allowed values are 1 to 63.
 
+core.fsync::
+	A comma-separated list of parts of the repository which should be
+	hardened via the core.fsyncMethod when created or modified. You can
+	disable hardening of any component by prefixing it with a '-'. Later
+	items take precedence over earlier ones in the comma-separated list.
+	For example, `core.fsync=all,-pack-metadata` means "harden everything
+	except pack metadata." Items that are not hardened may be lost in the
+	event of an unclean system shutdown. Unless you have special
+	requirements, it is recommended that you leave this option as default
+	or pick one of `committed`, `added`, or `all`.
++
+* `none` disables fsync completely. This value must be specified alone.
+* `loose-object` hardens objects added to the repo in loose-object form.
+* `pack` hardens objects added to the repo in packfile form.
+* `pack-metadata` hardens packfile bitmaps and indexes.
+* `commit-graph` hardens the commit graph file.
+* `index` hardens the index when it is modified.
+* `objects` is an aggregate option that is equivalent to
+  `loose-object,pack`.
+* `derived-metadata` is an aggregate option that is equivalent to
+  `pack-metadata,commit-graph`.
+* `default` is an aggregate option that is equivalent to
+  `objects,derived-metadata,-loose-object`. This mode is enabled by default.
+  It has good performance, but risks losing recent work if the system shuts
+  down uncleanly, since commits, trees, and blobs in loose-object form may be
+  lost.
+* `committed` is an aggregate option that is currently equivalent to
+  `objects`. This mode sacrifices some performance to ensure that all work
+  that is committed to the repository with `git commit` or similar commands
+  is preserved.
+* `added` is an aggregate option that is currently equivalent to
+  `committed,index`. This mode sacrifices additional performance to
+  ensure that the results of commands like `git add` and similar operations
+  are preserved.
+* `all` is an aggregate option that syncs all individual components above.
+
 core.fsyncMethod::
 	A value indicating the strategy Git will use to harden repository data
 	using fsync and related primitives.
