@@ -1447,6 +1447,7 @@ static int cmd_bisect_run(int argc, const char **argv, const char *prefix)
 
 int cmd_bisect__helper(int argc, const char **argv, const char *prefix)
 {
+	struct strvec args = STRVEC_INIT;
 	parse_opt_subcommand_fn *fn = NULL;
 	int res = 0;
 	struct option options[] = {
@@ -1464,10 +1465,29 @@ int cmd_bisect__helper(int argc, const char **argv, const char *prefix)
 	};
 
 	argc = parse_options(argc, argv, prefix, options,
-			     bisect_usage, 0);
+			     bisect_usage, PARSE_OPT_SUBCOMMAND_OPTIONAL);
+
+	if (!fn) {
+		if (!argc)
+			usage_msg_opt(_("need a command"), bisect_usage,
+				      options);
+
+		set_terms("bad", "good");
+		get_terms();
+		if (check_and_set_terms(argv[0]))
+			usage_msg_optf(_("unknown command: '%s'"), bisect_usage,
+				       options, argv[0]);
+
+		strvec_push(&args, "state");
+		strvec_pushv(&args, argv);
+		argc = args.nr;
+		argv = args.v;
+		fn = cmd_bisect_state;
+	}
 
 	res = fn(argc, argv, prefix);
 	free_terms();
+	strvec_clear(&args);
 
 	return is_bisect_success(res) ? 0 : -res;
 }
