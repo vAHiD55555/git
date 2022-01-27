@@ -997,6 +997,8 @@ static enum bisect_error bisect_state(int argc, const char **argv,
 	struct strbuf buf = STRBUF_INIT;
 	struct oid_array revs = OID_ARRAY_INIT;
 
+	if (!argc)
+		BUG("bisect_state() called without argument");
 
 	if (bisect_autostart(prefix))
 		return BISECT_FAILED;
