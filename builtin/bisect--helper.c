@@ -1455,7 +1455,6 @@ int cmd_bisect__helper(int argc, const char **argv, const char *prefix)
 		OPT_SUBCOMMAND("terms", &fn, cmd_bisect_terms),
 		OPT_SUBCOMMAND("start", &fn, cmd_bisect_start),
 		OPT_SUBCOMMAND("next", &fn, cmd_bisect_next),
-		OPT_SUBCOMMAND("state", &fn, cmd_bisect_state),
 		OPT_SUBCOMMAND("log", &fn, cmd_bisect_log),
 		OPT_SUBCOMMAND("replay", &fn, cmd_bisect_replay),
 		OPT_SUBCOMMAND("skip", &fn, cmd_bisect_skip),
