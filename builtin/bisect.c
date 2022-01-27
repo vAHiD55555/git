@@ -1445,7 +1445,7 @@ static int cmd_bisect_run(int argc, const char **argv, const char *prefix)
 	return res;
 }
 
-int cmd_bisect__helper(int argc, const char **argv, const char *prefix)
+int cmd_bisect(int argc, const char **argv, const char *prefix)
 {
 	struct strvec args = STRVEC_INIT;
 	parse_opt_subcommand_fn *fn = NULL;
