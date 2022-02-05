@@ -143,14 +143,8 @@ test_reflog () {
 	) &&
 
 	git log -g --format=%gs -2 >actual &&
-	if test "$mode" = "--apply"
-	then
-		finish_msg="refs/heads/fast-forward onto $(git rev-parse main)"
-	else
-		finish_msg="returning to refs/heads/fast-forward"
-	fi &&
 	write_reflog_expect <<-EOF &&
-	${reflog_action:-rebase} (finish): $finish_msg
+	${reflog_action:-rebase} (finish): returning to refs/heads/fast-forward
 	${reflog_action:-rebase} (start): checkout main
 	EOF
 	test_cmp expect actual &&
