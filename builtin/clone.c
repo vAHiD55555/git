@@ -876,6 +876,7 @@ int cmd_clone(int argc, const char **argv, const char *prefix)
 	struct remote *remote;
 	int err = 0, complete_refs_before_fetch = 1;
 	int submodule_progress;
+	struct string_list *feature_list = NULL;
 
 	struct transport_ls_refs_options transport_ls_refs_options =
 		TRANSPORT_LS_REFS_OPTIONS_INIT;
@@ -1194,11 +1195,23 @@ int cmd_clone(int argc, const char **argv, const char *prefix)
 
 	refs = transport_get_remote_refs(transport, &transport_ls_refs_options);
 
-	/*
-	 * NOTE: The bundle URI download takes place after transport_get_remote_refs()
-	 * because a later change will introduce a check for recommended features,
-	 * which might include a recommended bundle URI.
-	 */
+	feature_list = transport_remote_features(transport);
+
+	if (feature_list) {
+		struct string_list_item *item;
+		for_each_string_list_item(item, feature_list) {
+			char *value;
+			char *equals = strchr(item->string, '=');
+
+			if (!equals)
+				continue;
+			*equals = '\0';
+			value = equals + 1;
+
+			if (!strcmp(item->string, "bundleuri"))
+				bundle_uri = value;
+		}
+	}
 
 	/*
 	 * Before fetching from the remote, download and install bundle
@@ -1218,7 +1231,7 @@ int cmd_clone(int argc, const char **argv, const char *prefix)
 		if (filter)
 			git_config_set("fetch.bundlefilter", filter);
 
-		if (!fetch_bundle_uri(bundle_uri, filter))
+		if (fetch_bundle_uri(bundle_uri, filter))
 			warning(_("failed to fetch objects from bundle URI '%s'"),
 				bundle_uri);
 	}
