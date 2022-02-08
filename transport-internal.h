@@ -5,6 +5,7 @@ struct ref;
 struct transport;
 struct strvec;
 struct transport_ls_refs_options;
+struct string_list;
 
 struct transport_vtable {
 	/**
@@ -51,6 +52,14 @@ struct transport_vtable {
 	 * process involved generating new commits.
 	 **/
 	int (*push_refs)(struct transport *transport, struct ref *refs, int flags);
+
+	/**
+	 * get_features() requests a list of recommended features and
+	 * populates the given string_list with those 'key=value' pairs.
+	 */
+	int (*get_features)(struct transport *transport,
+			    struct string_list *list);
+
 	int (*connect)(struct transport *connection, const char *name,
 		       const char *executable, int fd[2]);
 
