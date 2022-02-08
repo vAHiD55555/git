@@ -434,6 +434,7 @@ void apply_push_cas(struct push_cas_option *, struct remote *, struct ref *);
  * http://a.com/b  ../../../c       http:/c          error out
  * http://a.com/b  ../../../../c    http:c           error out
  * http://a.com/b  ../../../../../c    .:c           error out
+ * http://a.com/b  http://d.org/e   http://d.org/e   as is
  */
 char *relative_url(const char *remote_url,
 		   const char *url,
