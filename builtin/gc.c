@@ -1104,7 +1104,7 @@ static int multi_pack_index_expire(struct maintenance_run_opts *opts)
 		strvec_push(&child.args, "--no-progress");
 
 	if (run_command(&child))
-		return error(_("'git multi-pack-index expire' failed"));
+		return error(_("the command '%s' failed"), "git multi-pack-index expire");
 
 	return 0;
 }
@@ -1163,7 +1163,7 @@ static int multi_pack_index_repack(struct maintenance_run_opts *opts)
 				  (uintmax_t)get_auto_pack_size());
 
 	if (run_command(&child))
-		return error(_("'git multi-pack-index repack' failed"));
+		return error(_("the command '%s' failed"), "git multi-pack-index repack");
 
 	return 0;
 }
