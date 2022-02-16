@@ -273,12 +273,23 @@ manually to ensure Git can behave optimally.
 INTERNALS -- FULL PATTERN SET
 -----------------------------
 
-By default, the sparse-checkout file uses the same syntax as `.gitignore`
-files.
+As noted above, the sparse-checkout file uses the same syntax as
+`.gitignore` files; see linkgit:gitignore[5] for details.  Here,
+though, the patterns are usually being used to select which files to
+include rather than which files to exclude.  (However, it can get a
+bit confusing since gitignore-style patterns have negations defined by
+patterns which begin with a '!', so you can also select files to _not_
+include.)
 
-While `$GIT_DIR/info/sparse-checkout` is usually used to specify what
-files are included, you can also specify what files are _not_ included,
-using negative patterns. For example, to remove the file `unwanted`:
+For example, to select everything, and then to remove the file
+`unwanted` (so that every file will appear in your working tree except
+the file named `unwanted`):
+
+    git sparse-checkout set --no-cone '/*' '!unwanted'
+
+These patterns are just placed into the
+`$GIT_DIR/info/sparse-checkout` as-is, so the contents of that file
+at this point would be
 
 ----------------
 /*
