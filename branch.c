@@ -30,9 +30,9 @@ static int find_tracked_branch(struct remote *remote, void *priv)
 			free(tracking->spec.src);
 			string_list_clear(tracking->srcs, 0);
 		}
+		/* remote_find_tracking() searches by src if present */
 		tracking->spec.src = NULL;
 	}
-
 	return 0;
 }
 
@@ -243,18 +243,41 @@ static void setup_tracking(const char *new_ref, const char *orig_ref,
 
 	if (!tracking.matches)
 		switch (track) {
+		/* If ref is not remote, still use local */
 		case BRANCH_TRACK_ALWAYS:
 		case BRANCH_TRACK_EXPLICIT:
 		case BRANCH_TRACK_OVERRIDE:
+		/* Remote matches not evaluated */
 		case BRANCH_TRACK_INHERIT:
 			break;
+		/* Otherwise, if no remote don't track */
 		default:
 			goto cleanup;
 		}
 
+	/*
+	 * This check does not apply to BRANCH_TRACK_INHERIT;
+	 * that supports multiple entries in tracking_srcs but
+	 * leaves tracking.matches at 0.
+	 */
 	if (tracking.matches > 1)
 		die(_("not tracking: ambiguous information for ref %s"),
 		    orig_ref);
+
+	if (track == BRANCH_TRACK_SIMPLE) {
+		/*
+		 * Only track if remote branch name matches.
+		 * Reaching into items[0].string is safe because
+		 * we know there is at least one and not more than
+		 * one entry (because only BRANCH_TRACK_INHERIT can
+		 * produce more than one entry).
+		 */
+		const char *tracked_branch;
+		if (!skip_prefix(tracking.srcs->items[0].string,
+				 "refs/heads/", &tracked_branch) ||
+		    strcmp(tracked_branch, new_ref))
+			return;
+	}
 
 	if (tracking.srcs->nr < 1)
 		string_list_append(tracking.srcs, orig_ref);
