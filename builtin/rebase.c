@@ -1181,6 +1181,7 @@ int cmd_rebase(int argc, const char **argv, const char *prefix)
 	prepare_repo_settings(the_repository);
 	the_repository->settings.command_requires_full_index = 0;
 
+	options.reapply_cherry_picks = -1;
 	options.allow_empty_message = 1;
 	git_config(rebase_config, &options);
 	/* options.gpg_sign_opt will be either "-S" or NULL */
@@ -1240,6 +1241,12 @@ int cmd_rebase(int argc, const char **argv, const char *prefix)
 		if (options.root)
 			die(_("options '%s' and '%s' cannot be used together"), "--keep-base", "--root");
 	}
+	/*
+	 * --keep-base defaults to --reapply-cherry-picks as it is confusing if
+	 * commits disappear when using this option.
+	 */
+	if (options.reapply_cherry_picks < 0)
+		options.reapply_cherry_picks = keep_base;
 
 	if (options.root && options.fork_point > 0)
 		die(_("options '%s' and '%s' cannot be used together"), "--root", "--fork-point");
@@ -1416,7 +1423,11 @@ int cmd_rebase(int argc, const char **argv, const char *prefix)
 	if (options.empty != EMPTY_UNSPECIFIED)
 		imply_merge(&options, "--empty");
 
-	if (options.reapply_cherry_picks)
+	/*
+	 * --keep-base implements --reapply-cherry-picks by altering upstream so
+	 * it works with both backends.
+	 */
+	if (options.reapply_cherry_picks && !keep_base)
 		imply_merge(&options, "--reapply-cherry-picks");
 
 	if (gpg_sign)
@@ -1680,6 +1691,8 @@ int cmd_rebase(int argc, const char **argv, const char *prefix)
 	}
 	if (keep_base) {
 		oidcpy(&merge_base, &options.onto->object.oid);
+		if (options.reapply_cherry_picks)
+			options.upstream = options.onto;
 	} else {
 		fill_merge_base(&options, &merge_base);
 	}
