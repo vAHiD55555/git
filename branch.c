@@ -256,6 +256,15 @@ static void setup_tracking(const char *new_ref, const char *orig_ref,
 		die(_("not tracking: ambiguous information for ref %s"),
 		    orig_ref);
 
+	if (track == BRANCH_TRACK_SIMPLE) {
+		// only track if remote branch name matches
+		// (tracking.srcs must contain only one entry from find_tracked_branch with this config)
+		if (strncmp(tracking.srcs->items[0].string, "refs/heads/", 11))
+			return;
+		if (strcmp(tracking.srcs->items[0].string + 11, new_ref))
+			return;
+	}
+
 	if (tracking.srcs->nr < 1)
 		string_list_append(tracking.srcs, orig_ref);
 	if (install_branch_config_multiple_remotes(config_flags, new_ref,
