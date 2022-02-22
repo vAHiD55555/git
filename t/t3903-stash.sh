@@ -41,20 +41,29 @@ diff_cmp () {
 	rm -f "$1.compare" "$2.compare"
 }
 
+setup_stash() {
+	repo_dir=$1
+	if test -z $repo_dir; then
+		repo_dir="."
+	fi
+
+	echo 1 >$repo_dir/file &&
+	git -C $repo_dir add file &&
+	echo unrelated >$repo_dir/other-file &&
+	git -C $repo_dir add other-file &&
+	test_tick &&
+	git -C $repo_dir commit -m initial &&
+	echo 2 >$repo_dir/file &&
+	git add file &&
+	echo 3 >$repo_dir/file &&
+	test_tick &&
+	git -C $repo_dir stash &&
+	git -C $repo_dir diff-files --quiet &&
+	git -C $repo_dir diff-index --cached --quiet HEAD
+}
+
 test_expect_success 'stash some dirty working directory' '
-	echo 1 >file &&
-	git add file &&
-	echo unrelated >other-file &&
-	git add other-file &&
-	test_tick &&
-	git commit -m initial &&
-	echo 2 >file &&
-	git add file &&
-	echo 3 >file &&
-	test_tick &&
-	git stash &&
-	git diff-files --quiet &&
-	git diff-index --cached --quiet HEAD
+	setup_stash
 '
 
 cat >expect <<EOF
@@ -183,6 +192,40 @@ test_expect_success 'drop middle stash by index' '
 	test 3 = $(cat file) &&
 	test 1 = $(git show :file) &&
 	test 1 = $(git show HEAD:file)
+'
+
+test_expect_success 'drop stash reflog updates refs/stash' '
+	git reset --hard &&
+	git rev-parse refs/stash >expect &&
+	echo 9 >file &&
+	git stash &&
+	git stash drop stash@{0} &&
+	git rev-parse refs/stash >actual &&
+	test_cmp expect actual
+'
+
+test_expect_success REFFILES 'drop stash reflog updates refs/stash with rewrite' '
+	git init repo &&
+	setup_stash repo &&
+	echo 9 >repo/file &&
+
+	old_oid="$(git -C repo rev-parse stash@{0})" &&
+	git -C repo stash &&
+	new_oid="$(git -C repo rev-parse stash@{0})" &&
+
+	cat >expect <<-EOF &&
+	$(test_oid zero) $old_oid
+	$old_oid $new_oid
+	EOF
+	cut -d" " -f1-2 repo/.git/logs/refs/stash >actual &&
+	test_cmp expect actual &&
+
+	git -C repo stash drop stash@{1} &&
+	cut -d" " -f1-2 repo/.git/logs/refs/stash >actual &&
+	cat >expect <<-EOF &&
+	$(test_oid zero) $new_oid
+	EOF
+	test_cmp expect actual
 '
 
 test_expect_success 'stash pop' '
