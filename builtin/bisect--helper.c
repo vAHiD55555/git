@@ -1390,7 +1390,7 @@ static int cmd_bisect_run(int argc, const char **argv, const char *prefix)
 
 		if (res < 0 || 128 <= res) {
 			error(_("bisect run failed: exit code %d from"
-				" '%s' is < 0 or >= 128"), res, command.buf);
+				" %s is < 0 or >= 128"), res, command.buf);
 			break;
 		}
 
