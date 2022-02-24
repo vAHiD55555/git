@@ -227,7 +227,9 @@ want `git switch`, `git checkout` and `git branch` to always behave as if `--no-
 were given. Set it to `always` if you want this behavior when the
 start-point is either a local or remote-tracking branch. Set it to
 `inherit` if you want to copy the tracking configuration from the
-branch point.
+branch point. Set it to `simple` if you want this behavior only when
+the start-point is a remote branch and the new branch has the same name
+as the remote branch.
 +
 See linkgit:git-pull[1] and linkgit:git-config[1] for additional discussion on
 how the `branch.<name>.remote` and `branch.<name>.merge` options are used.
