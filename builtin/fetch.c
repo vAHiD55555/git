@@ -2020,6 +2020,8 @@ int cmd_fetch(int argc, const char **argv, const char *prefix)
 	struct remote *remote = NULL;
 	int result = 0;
 	int prune_tags_ok = 1;
+	struct strvec auto_maint_opts = STRVEC_INIT;
+	int opt_val;
 
 	packet_trace_identity("fetch");
 
@@ -2226,10 +2228,27 @@ int cmd_fetch(int argc, const char **argv, const char *prefix)
 					     NULL);
 	}
 
-	if (enable_auto_gc)
-		run_auto_maintenance(verbosity < 0, NULL);
+	if (enable_auto_gc) {
+		if (repair) {
+			/*
+			 * Hint auto-maintenance strongly to encourage repacking,
+			 * but respect config settings disabling it.
+			 */
+			if (git_config_get_int("gc.autopacklimit", &opt_val))
+				opt_val = -1;
+			if (opt_val != 0)
+				strvec_push(&auto_maint_opts, "gc.autoPackLimit=1");
+
+			if (git_config_get_int("maintenance.incremental-repack.auto", &opt_val))
+				opt_val = -1;
+			if (opt_val != 0)
+				strvec_push(&auto_maint_opts, "maintenance.incremental-repack.auto=-1");
+		}
+		run_auto_maintenance(verbosity < 0, &auto_maint_opts);
+	}
 
  cleanup:
 	string_list_clear(&list, 0);
+	strvec_clear(&auto_maint_opts);
 	return result;
 }
