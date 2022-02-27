@@ -964,6 +964,8 @@ int mingw_utime (const char *file_name, const struct utimbuf *times)
 	int fh, rc;
 	DWORD attrs;
 	wchar_t wfilename[MAX_PATH];
+	HANDLE osfilehandle;
+
 	if (xutftowcs_path(wfilename, file_name) < 0)
 		return -1;
 
@@ -975,9 +977,26 @@ int mingw_utime (const char *file_name, const struct utimbuf *times)
 		SetFileAttributesW(wfilename, attrs & ~FILE_ATTRIBUTE_READONLY);
 	}
 
-	if ((fh = _wopen(wfilename, O_RDWR | O_BINARY)) < 0) {
-		rc = -1;
-		goto revert_attrs;
+	if (attrs & FILE_ATTRIBUTE_DIRECTORY) {
+		fh = 0;
+		osfilehandle = CreateFileW(wfilename,
+					   0x100 /*FILE_WRITE_ATTRIBUTES*/,
+					   0 /*FileShare.None*/,
+					   NULL,
+					   OPEN_EXISTING,
+					   FILE_FLAG_BACKUP_SEMANTICS,
+					   NULL);
+		if (osfilehandle == INVALID_HANDLE_VALUE) {
+			errno = err_win_to_posix(GetLastError());
+			rc = -1;
+			goto revert_attrs;
+		}
+	} else {
+		if ((fh = _wopen(wfilename, O_RDWR | O_BINARY)) < 0) {
+			rc = -1;
+			goto revert_attrs;
+		}
+		osfilehandle = (HANDLE)_get_osfhandle(fh);
 	}
 
 	if (times) {
@@ -987,12 +1006,16 @@ int mingw_utime (const char *file_name, const struct utimbuf *times)
 		GetSystemTimeAsFileTime(&mft);
 		aft = mft;
 	}
-	if (!SetFileTime((HANDLE)_get_osfhandle(fh), NULL, &aft, &mft)) {
+	if (!SetFileTime(osfilehandle, NULL, &aft, &mft)) {
 		errno = EINVAL;
 		rc = -1;
 	} else
 		rc = 0;
-	close(fh);
+
+	if (fh)
+		close(fh);
+	else if (osfilehandle)
+		CloseHandle(osfilehandle);
 
 revert_attrs:
 	if (attrs != INVALID_FILE_ATTRIBUTES &&
