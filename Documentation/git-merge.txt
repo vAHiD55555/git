@@ -122,9 +122,9 @@ list.
 	stash entry will be saved to the stash list.
 
 --continue::
-	After a 'git merge' stops due to conflicts you can conclude the
-	merge by running 'git merge --continue' (see "HOW TO RESOLVE
-	CONFLICTS" section below).
+	After a 'git merge' stops due to conflicts, you can conclude
+	the merge with "git commit" (see "HOW TO RESOLVE CONFLICTS"
+	section below).  'git merge --continue' is a synonym for it.
 
 <commit>...::
 	Commits, usually other branch heads, to merge into our branch.
@@ -326,10 +326,9 @@ After seeing a conflict, you can do two things:
 
  * Resolve the conflicts.  Git will mark the conflicts in
    the working tree.  Edit the files into shape and
-   'git add' them to the index.  Use 'git commit' or
-   'git merge --continue' to seal the deal. The latter command
-   checks whether there is a (interrupted) merge in progress
-   before calling 'git commit'.
+   'git add' them to the index.  Use 'git commit' (or
+   'git merge --continue', which stops if there is no
+   interrupted merge in progress) to seal the deal.
 
 You can work through the conflict with a number of tools:
 
