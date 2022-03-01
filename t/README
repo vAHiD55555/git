@@ -472,6 +472,11 @@ a test and then fails then the whole test run will abort. This can help to make
 sure the expected tests are executed and not silently skipped when their
 dependency breaks or is simply not present in a new environment.
 
+GIT_TEST_PARSE_OPTIONS_CHECK=<boolean>, when true, makes all options
+array passed to the parse-options API to be sanity checked.  This
+environment variable is set to true by test-lib.sh unless it is set.
+
+
 Naming Tests
 ------------
 

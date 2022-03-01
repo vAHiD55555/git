@@ -472,6 +472,9 @@ export GIT_DEFAULT_HASH
 GIT_TEST_MERGE_ALGORITHM="${GIT_TEST_MERGE_ALGORITHM:-ort}"
 export GIT_TEST_MERGE_ALGORITHM
 
+: ${GIT_TEST_PARSE_OPTIONS_CHECK:=1}
+export GIT_TEST_PARSE_OPTIONS_CHECK
+
 # Tests using GIT_TRACE typically don't want <timestamp> <file>:<line> output
 GIT_TRACE_BARE=1
 export GIT_TRACE_BARE

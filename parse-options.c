@@ -439,6 +439,14 @@ static void check_typos(const char *arg, const struct option *options)
 	}
 }
 
+/*
+ * Check the sanity of contents of opts[] array to find programmer
+ * mistakes (like duplicated short options).
+ *
+ * This function is supposed to be no-op when it returns without
+ * dying, making a call from parse_options_start_1() to it optional
+ * in end-user builds.
+ */
 static void parse_options_check(const struct option *opts)
 {
 	int err = 0;
@@ -523,7 +531,9 @@ static void parse_options_start_1(struct parse_opt_ctx_t *ctx,
 	if ((flags & PARSE_OPT_ONE_SHOT) &&
 	    (flags & PARSE_OPT_KEEP_ARGV0))
 		BUG("Can't keep argv0 if you don't have it");
-	parse_options_check(options);
+
+	if (git_env_bool("GIT_TEST_PARSE_OPTIONS_CHECK", 0))
+		parse_options_check(options);
 }
 
 void parse_options_start(struct parse_opt_ctx_t *ctx,
