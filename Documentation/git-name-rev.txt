@@ -10,7 +10,7 @@ SYNOPSIS
 --------
 [verse]
 'git name-rev' [--tags] [--refs=<pattern>]
-	       ( --all | --stdin | <commit-ish>... )
+	       ( --all | --annotate-stdin | <commit-ish>... )
 
 DESCRIPTION
 -----------
@@ -70,10 +70,6 @@ The full name after substitution is master,
 while its tree object is 70d105cc79e63b81cfdcb08a15297c23e60b07ad
 -----------
 
---stdin::
-	This option is deprecated in favor of 'git name-rev --annotate-stdin'.
-	They are functionally equivalent.
-
 --name-only::
 	Instead of printing both the SHA-1 and the name, print only
 	the name.  If given with --tags the usual tag prefix of
@@ -107,7 +103,7 @@ Now you are wiser, because you know that it happened 940 revisions before v0.99.
 Another nice thing you can do is:
 
 ------------
-% git log | git name-rev --stdin
+% git log | git name-rev --annotate-stdin
 ------------
 
 GIT
