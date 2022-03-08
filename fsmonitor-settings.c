@@ -186,6 +186,9 @@ const char *fsm_settings__get_reason_msg(struct repository *r)
 
 	case FSMONITOR_REASON_VFS4GIT:
 		return _("virtual repos are incompatible with fsmonitor");
+
+	case FSMONITOR_REASON_NOSOCKETS:
+		return _("repo filesystem does not support Unix sockets");
 	}
 
 	BUG("Unhandled case in fsm_settings__get_reason_msg '%d'",
