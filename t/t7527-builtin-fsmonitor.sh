@@ -303,16 +303,6 @@ directory_to_file () {
 	echo 1 >dir1
 }
 
-verify_status () {
-	git status >actual &&
-	GIT_INDEX_FILE=.git/fresh-index git read-tree master &&
-	GIT_INDEX_FILE=.git/fresh-index git -c core.fsmonitor=false status >expect &&
-	test_cmp expect actual &&
-	echo HELLO AFTER &&
-	cat .git/trace &&
-	echo HELLO AFTER
-}
-
 # The next few test cases confirm that our fsmonitor daemon sees each type
 # of OS filesystem notification that we care about.  At this layer we just
 # ensure we are getting the OS notifications and do not try to confirm what
