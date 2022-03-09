@@ -49,7 +49,7 @@ static int do_send_query(const char *token)
 
 	ret = fsmonitor_ipc__send_query(token, &answer);
 	if (ret < 0)
-		die(_("could not query fsmonitor--daemon"));
+		die("could not query fsmonitor--daemon");
 
 	write_in_full(1, answer.buf, answer.len);
 	strbuf_release(&answer);
@@ -85,8 +85,8 @@ int cmd__fsmonitor_client(int argc, const char **argv)
 	const char *token = NULL;
 
 	const char * const fsmonitor_client_usage[] = {
-		N_("test-helper fsmonitor-client query [<token>]"),
-		N_("test-helper fsmonitor-client flush"),
+		N_("test-tool fsmonitor-client query [<token>]"),
+		N_("test-tool fsmonitor-client flush"),
 		NULL,
 	};
 
@@ -96,17 +96,12 @@ int cmd__fsmonitor_client(int argc, const char **argv)
 		OPT_END()
 	};
 
-	if (argc < 2)
-		usage_with_options(fsmonitor_client_usage, options);
-
-	if (argc == 2 && !strcmp(argv[1], "-h"))
-		usage_with_options(fsmonitor_client_usage, options);
-
-	subcmd = argv[1];
-	argv--;
-	argc++;
-
 	argc = parse_options(argc, argv, NULL, options, fsmonitor_client_usage, 0);
+
+	if (argc != 1)
+		usage_with_options(fsmonitor_client_usage, options);
+
+	subcmd = argv[0];
 
 	setup_git_directory();
 
