@@ -218,7 +218,7 @@ test_fsmonitor_suite () {
 		git ls-files | \
 			head -100000 | \
 			grep -v \" | \
-			egrep -v " ." | \
+			grep -v " ." | \
 			xargs test-tool chmtime -300 &&
 		git status
 	'
