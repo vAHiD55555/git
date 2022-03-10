@@ -2219,6 +2219,7 @@ int get_superproject_working_tree(struct strbuf *buf)
 	struct strbuf sb = STRBUF_INIT;
 	struct strbuf one_up = STRBUF_INIT;
 	const char *cwd = xgetcwd();
+	int has_superproject_cfg = 0;
 	int ret = 0;
 	const char *subpath;
 	int code;
@@ -2231,6 +2232,23 @@ int get_superproject_working_tree(struct strbuf *buf)
 		 * to determine.
 		 */
 		return 0;
+
+	/*
+	 * Because get_superproject_working_tree() is older than
+	 * submodule.hasSuperproject, don't rely on the default "unset = false"
+	 * - instead, only rely on if submodule.hasSuperproject was explicitly
+	 * set to false.
+	 */
+	if (! git_config_get_bool("submodule.hassuperproject", &has_superproject_cfg)
+	    && !has_superproject_cfg) {
+		/*
+		 * If we don't have a superproject, then we're probably not a
+		 * submodule. If this is failing and shouldn't be, investigate
+		 * why the config was set to false.
+		 */
+		error(_("Asked to find a superproject, but submodule.hasSuperproject == false"));
+		return 0;
+	}
 
 	if (!strbuf_realpath(&one_up, "../", 0))
 		return 0;
