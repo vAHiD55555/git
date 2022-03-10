@@ -1838,6 +1838,11 @@ static int clone_submodule(struct module_clone_data *clone_data)
 		git_config_set_in_file(p, "submodule.alternateErrorStrategy",
 				       error_strategy);
 
+	/*
+	 * Teach the submodule that it's a submodule.
+	 */
+	git_config_set_in_file(p, "submodule.hasSuperproject", "true");
+
 	free(sm_alternate);
 	free(error_strategy);
 
@@ -2615,6 +2620,12 @@ static int run_update_procedure(int argc, const char **argv, const char *prefix)
 					    &update_data.update_strategy);
 
 	free(prefixed_path);
+
+	/*
+	 * This entry point is always called from a submodule, so this is a
+	 * good place to set a hint that this repo is a submodule.
+	 */
+	git_config_set("submodule.hasSuperproject", "true");
 
 	if (!oideq(&update_data.oid, &update_data.suboid) || update_data.force)
 		return do_run_update_procedure(&update_data);
