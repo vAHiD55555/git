@@ -536,9 +536,9 @@ matrix_clean_up_repo () {
 }
 
 matrix_try () {
-	uc=$1
-	fsm=$2
-	fn=$3
+	uc=$1 &&
+	fsm=$2 &&
+	fn=$3 &&
 
 	test_expect_success "Matrix[uc:$uc][fsm:$fsm] $fn" '
 		matrix_clean_up_repo &&
