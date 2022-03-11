@@ -1381,7 +1381,7 @@ static int try_to_start_background_daemon(void)
 	 * immediately exited).
 	 */
 	if (fsmonitor_ipc__get_state() == IPC_STATE__LISTENING)
-		die("fsmonitor--daemon is already running '%s'",
+		die(_("fsmonitor--daemon is already running '%s'"),
 		    the_repository->worktree);
 
 	if (fsmonitor__announce_startup) {
@@ -1411,13 +1411,13 @@ static int try_to_start_background_daemon(void)
 	default:
 	case SBGR_ERROR:
 	case SBGR_CB_ERROR:
-		return error("daemon failed to start");
+		return error(_("daemon failed to start"));
 
 	case SBGR_TIMEOUT:
-		return error("daemon not online yet");
+		return error(_("daemon not online yet"));
 
 	case SBGR_DIED:
-		return error("daemon terminated");
+		return error(_("daemon terminated"));
 	}
 }
 
