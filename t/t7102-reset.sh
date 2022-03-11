@@ -482,7 +482,7 @@ test_index_refreshed () {
 	git rm --cached file2 &&
 
 	# Step 2
-	git reset $1 --mixed HEAD &&
+	git reset $@ --mixed HEAD &&
 
 	# Step 3
 	git read-tree -m HEAD~1
@@ -491,48 +491,66 @@ test_index_refreshed () {
 test_expect_success '--mixed refreshes the index' '
 	# Verify default behavior (with no config settings or command line
 	# options)
-	test_index_refreshed &&
+	test_index_refreshed
 '
 test_expect_success '--mixed --[no-]quiet sets default refresh behavior' '
 	# Verify that --[no-]quiet and `reset.quiet` (without --[no-]refresh)
 	# determine refresh behavior
 
-	# Config setting
-	test_must_fail test_index_refreshed -c reset.quiet=true &&
-	test_index_refreshed -c reset.quiet=true &&
-
 	# Command line option
-	test_must_fail test_index_refreshed --quiet &&
+	! test_index_refreshed --quiet &&
 	test_index_refreshed --no-quiet &&
 
-	# Command line option overrides config setting
-	test_must_fail test_index_refreshed -c reset.quiet=false --quiet &&
-	test_index_refreshed -c reset.refresh=true --no-quiet
+	# Config: reset.quiet=false
+	test_config reset.quiet false &&
+	(
+		test_index_refreshed &&
+		! test_index_refreshed --quiet
+	) &&
+
+	# Config: reset.quiet=true
+	test_config reset.quiet true &&
+	(
+		! test_index_refreshed &&
+		test_index_refreshed --no-quiet
+	)
 '
 
 test_expect_success '--mixed --[no-]refresh sets refresh behavior' '
 	# Verify that --[no-]refresh and `reset.refresh` control index refresh
 
-	# Config setting
-	test_index_refreshed -c reset.refresh=true &&
-	test_must_fail test_index_refreshed -c reset.refresh=false &&
-
 	# Command line option
 	test_index_refreshed --refresh &&
-	test_must_fail test_index_refreshed --no-refresh &&
+	! test_index_refreshed --no-refresh &&
 
-	# Command line option overrides config setting
-	test_index_refreshed -c reset.refresh=false --refresh &&
-	test_must_fail test_index_refreshed -c reset.refresh=true --no-refresh
+	# Config: reset.refresh=false
+	test_config reset.refresh false &&
+	(
+		! test_index_refreshed &&
+		test_index_refreshed --refresh
+	) &&
+
+	# Config: reset.refresh=true
+	test_config reset.refresh true &&
+	(
+		test_index_refreshed &&
+		! test_index_refreshed --no-refresh
+	)
 '
 
 test_expect_success '--mixed --refresh overrides --quiet refresh behavior' '
 	# Verify that *both* --refresh and `reset.refresh` override the
 	# default non-refresh behavior of --quiet
+
 	test_index_refreshed --refresh --quiet &&
-	test_index_refreshed --refresh -c reset.quiet=true &&
-	test_index_refreshed -c reset.refresh=true --quiet &&
-	test_index_refreshed -c reset.refresh=true -c reset.quiet=true
+
+	# Config: reset.quiet=true
+	test_config reset.quiet true &&
+	test_index_refreshed --refresh &&
+
+	# Config: reset.quiet=true, reset.refresh=true
+	test_config reset.refresh true &&
+	test_index_refreshed
 '
 
 test_expect_success '--mixed preserves skip-worktree' '
