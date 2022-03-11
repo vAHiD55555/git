@@ -101,6 +101,9 @@ int reset_head(struct repository *r, const struct reset_head_opts *opts)
 	if (opts->branch_msg && !opts->branch)
 		BUG("branch reflog message given without a branch");
 
+	if (switch_to_branch && opts->flags & RESET_HEAD_DETACH)
+		BUG("attempting to detach HEAD when branch is given");
+
 	if (!refs_only && repo_hold_locked_index(r, &lock, LOCK_REPORT_ON_ERROR) < 0) {
 		ret = -1;
 		goto leave_reset_head;
