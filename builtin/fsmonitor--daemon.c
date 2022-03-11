@@ -1326,7 +1326,7 @@ static int try_to_run_foreground_daemon(int detach_console)
 	 * common error case.
 	 */
 	if (fsmonitor_ipc__get_state() == IPC_STATE__LISTENING)
-		die("fsmonitor--daemon is already running '%s'",
+		die(_("fsmonitor--daemon is already running '%s'"),
 		    the_repository->worktree);
 
 	if (fsmonitor__announce_startup) {
