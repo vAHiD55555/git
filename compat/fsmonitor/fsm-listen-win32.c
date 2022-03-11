@@ -82,7 +82,7 @@ static int normalize_path_in_utf8(FILE_NOTIFY_INFORMATION *info,
 		if (len > 0)
 			goto normalize;
 		if (GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
-			error("[GLE %ld] could not convert path to UTF-8: '%.*ls'",
+			error(_("[GLE %ld] could not convert path to UTF-8: '%.*ls'"),
 			      GetLastError(),
 			      (int)(info->FileNameLength / sizeof(WCHAR)),
 			      info->FileName);
@@ -185,7 +185,7 @@ static int start_rdcw_watch(struct fsmonitor_daemon_backend_data *data,
 	if (watch->is_active)
 		return 0;
 
-	error("ReadDirectoryChangedW failed on '%s' [GLE %ld]",
+	error(_("ReadDirectoryChangedW failed on '%s' [GLE %ld]"),
 	      watch->path.buf, GetLastError());
 	return -1;
 }
@@ -228,7 +228,7 @@ static int recv_rdcw_watch(struct one_watch *watch)
 	 * sure it is worth it.
 	 */
 
-	error("GetOverlappedResult failed on '%s' [GLE %ld]",
+	error(_("GetOverlappedResult failed on '%s' [GLE %ld]"),
 	      watch->path.buf, gle);
 	return -1;
 }
