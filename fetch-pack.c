@@ -1106,16 +1106,16 @@ static struct ref *do_fetch_pack(struct fetch_pack_args *args,
 		print_verbose(args, _("Server supports %s"), "deepen-since");
 		deepen_since_ok = 1;
 	} else if (args->deepen_since)
-		die(_("Server does not support --shallow-since"));
+		die(_("Server does not support %s"), "--shallow-since");
 	if (server_supports("deepen-not")) {
 		print_verbose(args, _("Server supports %s"), "deepen-not");
 		deepen_not_ok = 1;
 	} else if (args->deepen_not)
-		die(_("Server does not support --shallow-exclude"));
+		die(_("Server does not support %s"), "--shallow-exclude");
 	if (server_supports("deepen-relative"))
 		print_verbose(args, _("Server supports %s"), "deepen-relative");
 	else if (args->deepen_relative)
-		die(_("Server does not support --deepen"));
+		die(_("Server does not support %s"), "--deepen");
 	if (!server_supports_hash(the_hash_algo->name, NULL))
 		die(_("Server does not support this repository's object format"));
 
