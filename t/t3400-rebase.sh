@@ -437,4 +437,25 @@ test_expect_success 'rebase when inside worktree subdirectory' '
 	)
 '
 
+test_expect_success 'rebase with oids' '
+	git init main-wt &&
+	(
+		cd main-wt &&
+		>file &&
+		git add file &&
+		git commit -m initial &&
+		git checkout -b side &&
+		echo >>file &&
+		git commit -a -m side &&
+		git checkout main &&
+		git tag hold &&
+		git checkout -B main hold &&
+		git rev-parse main >pre &&
+		git rebase $(git rev-parse main) $(git rev-parse side) &&
+		git rev-parse main >post &&
+		test "$(git rev-parse side)" = "$(cat .git/HEAD)" &&
+		test_cmp pre post
+	)
+'
+
 test_done
