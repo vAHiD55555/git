@@ -18,10 +18,7 @@ GIT_AUTHOR_EMAIL=bogus@email@address
 export GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL
 
 test_expect_success 'prepare repository with topic branches' '
-	git config core.logAllRefUpdates true &&
-	echo First >A &&
-	git update-index --add A &&
-	git commit -m "Add A." &&
+	test_commit "Add A." A First First &&
 	git checkout -b force-3way &&
 	echo Dummy >Y &&
 	git update-index --add Y &&
@@ -32,17 +29,13 @@ test_expect_success 'prepare repository with topic branches' '
 	git mv A D/A &&
 	git commit -m "Move A." &&
 	git checkout -b my-topic-branch main &&
-	echo Second >B &&
-	git update-index --add B &&
-	git commit -m "Add B." &&
+	test_commit "Add B." B Second Second &&
 	git checkout -f main &&
 	echo Third >>A &&
 	git update-index A &&
 	git commit -m "Modify A." &&
 	git checkout -b side my-topic-branch &&
-	echo Side >>C &&
-	git add C &&
-	git commit -m "Add C" &&
+	test_commit --no-tag "Add C" C Side &&
 	git checkout -f my-topic-branch &&
 	git tag topic
 '
@@ -119,10 +112,7 @@ test_expect_success 'rebase off of the previous branch using "-"' '
 test_expect_success 'rebase a single mode change' '
 	git checkout main &&
 	git branch -D topic &&
-	echo 1 >X &&
-	git add X &&
-	test_tick &&
-	git commit -m prepare &&
+	test_commit prepare X 1 &&
 	git checkout -b modechange HEAD^ &&
 	echo 1 >X &&
 	git add X &&
