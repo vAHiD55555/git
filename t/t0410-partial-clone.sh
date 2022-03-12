@@ -618,6 +618,22 @@ test_expect_success 'do not fetch when checking existence of tree we construct o
 	git -C repo cherry-pick side1
 '
 
+test_expect_success 'git log --follow does not download blobs if an exact OID rename found (blobless clone)' '
+	rm -rf repo partial.git &&
+	test_create_repo repo &&
+	content="some dummy content" &&
+	test_commit -C repo create-a-file file.txt "$content" &&
+	git -C repo mv file.txt new-file.txt &&
+	git -C repo commit -m rename-the-file &&
+	test_config -C repo uploadpack.allowfilter 1 &&
+	test_config -C repo uploadpack.allowanysha1inwant 1 &&
+
+	git clone --filter=blob:none "file://$(pwd)/repo" partial.git &&
+	GIT_TRACE2_EVENT="$(pwd)/trace.txt" \
+		git -C partial.git log --follow -- new-file.txt > "$(pwd)/trace.txt" &&
+	! test_subcommand_inexact fetch <trace.txt
+'
+
 test_expect_success 'lazy-fetch when accessing object not in the_repository' '
 	rm -rf full partial.git &&
 	test_create_repo full &&

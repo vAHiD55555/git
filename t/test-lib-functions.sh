@@ -1811,7 +1811,7 @@ test_subcommand_inexact () {
 		shift
 	fi
 
-	local expr=$(printf '"%s".*' "$@")
+	local expr=$(printf '.*"%s".*' "$@")
 	expr="${expr%,}"
 
 	if test -n "$negate"
