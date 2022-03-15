@@ -141,7 +141,7 @@ test_expect_success "one time repo setup" '
 	fi
 '
 
-setup_for_fsmonitor () {
+setup_for_fsmonitor_hook () {
 	# set INTEGRATION_SCRIPT depending on the environment
 	if test -n "$INTEGRATION_PATH"
 	then
@@ -182,8 +182,7 @@ test_perf_w_drop_caches () {
 }
 
 test_fsmonitor_suite () {
-	if test -n "$USE_FSMONITOR_DAEMON"
-	then
+	if test -n "$USE_FSMONITOR_DAEMON"; then
 		DESC="builtin fsmonitor--daemon"
 	elif test -n "$INTEGRATION_SCRIPT"; then
 		DESC="fsmonitor=$(basename $INTEGRATION_SCRIPT)"
@@ -218,7 +217,7 @@ test_fsmonitor_suite () {
 		git ls-files | \
 			head -100000 | \
 			grep -v \" | \
-			egrep -v " ." | \
+			grep -v " ." | \
 			xargs test-tool chmtime -300 &&
 		git status
 	'
@@ -264,11 +263,11 @@ test_fsmonitor_suite () {
 trace_start fsmonitor-watchman
 if test -n "$GIT_PERF_7519_FSMONITOR"; then
 	for INTEGRATION_PATH in $GIT_PERF_7519_FSMONITOR; do
-		test_expect_success "setup for fsmonitor $INTEGRATION_PATH" 'setup_for_fsmonitor'
+		test_expect_success "setup for fsmonitor $INTEGRATION_PATH" 'setup_for_fsmonitor_hook'
 		test_fsmonitor_suite
 	done
 else
-	test_expect_success "setup for fsmonitor" 'setup_for_fsmonitor'
+	test_expect_success "setup for fsmonitor hook" 'setup_for_fsmonitor_hook'
 	test_fsmonitor_suite
 fi
 
@@ -306,13 +305,15 @@ if test_have_prereq FSMONITOR_DAEMON
 then
 	USE_FSMONITOR_DAEMON=t
 
-	trace_start fsmonitor--daemon--server
-	git fsmonitor--daemon start
+	test_expect_success "setup for builtin fsmonitor" '
+		trace_start fsmonitor--daemon--server &&
+		git fsmonitor--daemon start &&
 
-	trace_start fsmonitor--daemon--client
+		trace_start fsmonitor--daemon--client &&
 
-	git config core.fsmonitor true
-	git update-index --fsmonitor
+		git config core.fsmonitor true &&
+		git update-index --fsmonitor
+	'
 
 	test_fsmonitor_suite
 

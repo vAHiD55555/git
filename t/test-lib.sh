@@ -1763,5 +1763,6 @@ GIT_TEST_MAINT_SCHEDULER="none:exit 1"
 # Does this platform support `git fsmonitor--daemon`
 #
 test_lazy_prereq FSMONITOR_DAEMON '
-	git version --build-options | grep "feature:" | grep "fsmonitor--daemon"
+	git version --build-options >output &&
+	grep "feature: fsmonitor--daemon" output
 '
