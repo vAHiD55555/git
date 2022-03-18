@@ -109,14 +109,14 @@ static int do_as_client__status(void)
 
 enum fsmonitor_cookie_item_result {
 	FCIR_ERROR = -1, /* could not create cookie file ? */
-	FCIR_INIT = 0,
+	FCIR_INIT,
 	FCIR_SEEN,
 	FCIR_ABORT,
 };
 
 struct fsmonitor_cookie_item {
 	struct hashmap_entry entry;
-	const char *name;
+	char *name;
 	enum fsmonitor_cookie_item_result result;
 };
 
@@ -166,37 +166,44 @@ static enum fsmonitor_cookie_item_result with_lock__wait_for_cookie(
 	 * that the listener thread has seen it.
 	 */
 	fd = open(cookie_pathname.buf, O_WRONLY | O_CREAT | O_EXCL, 0600);
-	if (fd >= 0) {
-		close(fd);
-		unlink(cookie_pathname.buf);
-
-		/*
-		 * Technically, this is an infinite wait (well, unless another
-		 * thread sends us an abort).  I'd like to change this to
-		 * use `pthread_cond_timedwait()` and return an error/timeout
-		 * and let the caller do the trivial response thing, but we
-		 * don't have that routine in our thread-utils.
-		 *
-		 * After extensive beta testing I'm not really worried about
-		 * this.  Also note that the above open() and unlink() calls
-		 * will cause at least two FS events on that path, so the odds
-		 * of getting stuck are pretty slim.
-		 */
-		while (cookie->result == FCIR_INIT)
-			pthread_cond_wait(&state->cookies_cond,
-					  &state->main_lock);
-	} else {
+	if (fd < 0) {
 		error_errno(_("could not create fsmonitor cookie '%s'"),
 			    cookie->name);
 
 		cookie->result = FCIR_ERROR;
+		goto done;
 	}
 
+	/*
+	 * Technically, close() and unlink() can fail, but we don't
+	 * care here.  We only created the file to trigger a watch
+	 * event from the FS to know that when we're up to date.
+	 */
+	close(fd);
+	unlink(cookie_pathname.buf);
+
+	/*
+	 * Technically, this is an infinite wait (well, unless another
+	 * thread sends us an abort).  I'd like to change this to
+	 * use `pthread_cond_timedwait()` and return an error/timeout
+	 * and let the caller do the trivial response thing, but we
+	 * don't have that routine in our thread-utils.
+	 *
+	 * After extensive beta testing I'm not really worried about
+	 * this.  Also note that the above open() and unlink() calls
+	 * will cause at least two FS events on that path, so the odds
+	 * of getting stuck are pretty slim.
+	 */
+	while (cookie->result == FCIR_INIT)
+		pthread_cond_wait(&state->cookies_cond,
+				  &state->main_lock);
+
+done:
 	hashmap_remove(&state->cookies, &cookie->entry, NULL);
 
 	result = cookie->result;
 
-	free((char*)cookie->name);
+	free(cookie->name);
 	free(cookie);
 	strbuf_release(&cookie_pathname);
 
@@ -1319,7 +1326,7 @@ static int try_to_run_foreground_daemon(int detach_console)
 	 * common error case.
 	 */
 	if (fsmonitor_ipc__get_state() == IPC_STATE__LISTENING)
-		die("fsmonitor--daemon is already running '%s'",
+		die(_("fsmonitor--daemon is already running '%s'"),
 		    the_repository->worktree);
 
 	if (fsmonitor__announce_startup) {
@@ -1374,7 +1381,7 @@ static int try_to_start_background_daemon(void)
 	 * immediately exited).
 	 */
 	if (fsmonitor_ipc__get_state() == IPC_STATE__LISTENING)
-		die("fsmonitor--daemon is already running '%s'",
+		die(_("fsmonitor--daemon is already running '%s'"),
 		    the_repository->worktree);
 
 	if (fsmonitor__announce_startup) {
@@ -1404,13 +1411,13 @@ static int try_to_start_background_daemon(void)
 	default:
 	case SBGR_ERROR:
 	case SBGR_CB_ERROR:
-		return error("daemon failed to start");
+		return error(_("daemon failed to start"));
 
 	case SBGR_TIMEOUT:
-		return error("daemon not online yet");
+		return error(_("daemon not online yet"));
 
 	case SBGR_DIED:
-		return error("daemon terminated");
+		return error(_("daemon terminated"));
 	}
 }
 

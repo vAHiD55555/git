@@ -152,7 +152,7 @@ int fsmonitor_ipc__send_command(const char *command,
 	state = ipc_client_try_connect(fsmonitor_ipc__get_path(), &options,
 				       &connection);
 	if (state != IPC_STATE__LISTENING) {
-		die("fsmonitor--daemon is not running");
+		die(_("fsmonitor--daemon is not running"));
 		return -1;
 	}
 
@@ -161,7 +161,7 @@ int fsmonitor_ipc__send_command(const char *command,
 	ipc_client_close_connection(connection);
 
 	if (ret == -1) {
-		die("could not send '%s' command to fsmonitor--daemon", c);
+		die(_("could not send '%s' command to fsmonitor--daemon"), c);
 		return -1;
 	}
 

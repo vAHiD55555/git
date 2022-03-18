@@ -22,10 +22,9 @@ static void lookup_fsmonitor_settings(struct repository *r)
 		return;
 
 	CALLOC_ARRAY(s, 1);
+	s->mode = FSMONITOR_MODE_DISABLED;
 
 	r->settings.fsmonitor = s;
-
-	fsm_settings__set_disabled(r);
 
 	/*
 	 * Overload the existing "core.fsmonitor" config setting (which
