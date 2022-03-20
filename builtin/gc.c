@@ -750,7 +750,7 @@ static int maintenance_opt_schedule(const struct option *opt, const char *arg,
 	*priority = parse_schedule(arg);
 
 	if (!*priority)
-		die(_("unrecognized --schedule argument '%s'"), arg);
+		die(_("unrecognized %s argument '%s'"), "--schedule", arg);
 
 	return 0;
 }
@@ -2393,7 +2393,7 @@ static int maintenance_opt_scheduler(const struct option *opt, const char *arg,
 
 	*scheduler = parse_scheduler(arg);
 	if (*scheduler == SCHEDULER_INVALID)
-		return error(_("unrecognized --scheduler argument '%s'"), arg);
+		return error(_("unrecognized %s argument '%s'"), "--scheduler", arg);
 	return 0;
 }
 
