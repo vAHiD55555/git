@@ -126,4 +126,8 @@ advice.*::
 		Advice shown when either linkgit:git-add[1] or linkgit:git-rm[1]
 		is asked to update index entries outside the current sparse
 		checkout.
+	ambiguousFetchRefspec::
+		Advice shown when branch tracking relationship setup fails due
+		to multiple remotes' refspecs mapping to the same remote
+		tracking namespace in the repo.
 --
