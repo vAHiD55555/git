@@ -18,9 +18,15 @@ struct tracking {
 	int matches;
 };
 
+struct find_tracked_branch_cb {
+	struct tracking *tracking;
+	struct strbuf remotes_advice;
+};
+
 static int find_tracked_branch(struct remote *remote, void *priv)
 {
-	struct tracking *tracking = priv;
+	struct find_tracked_branch_cb *ftb = priv;
+	struct tracking *tracking = ftb->tracking;
 
 	if (!remote_find_tracking(remote, &tracking->spec)) {
 		if (++tracking->matches == 1) {
@@ -30,6 +36,13 @@ static int find_tracked_branch(struct remote *remote, void *priv)
 			free(tracking->spec.src);
 			string_list_clear(tracking->srcs, 0);
 		}
+		/*
+		 * TRANSLATORS: This is a line listing a remote with duplicate
+		 * refspecs, to be later included in advice message
+		 * ambiguousFetchRefspec. For RTL languages you'll probably want
+		 * to swap the "%s" and leading "  " space around.
+		 */
+		strbuf_addf(&ftb->remotes_advice, _("  %s\n"), remote->name);
 		tracking->spec.src = NULL;
 	}
 
@@ -219,6 +232,7 @@ static int inherit_tracking(struct tracking *tracking, const char *orig_ref)
 	return 0;
 }
 
+
 /*
  * Used internally to set the branch.<new_ref>.{remote,merge} config
  * settings so that branch 'new_ref' tracks 'orig_ref'. Unlike
@@ -232,12 +246,16 @@ static void setup_tracking(const char *new_ref, const char *orig_ref,
 	struct tracking tracking;
 	struct string_list tracking_srcs = STRING_LIST_INIT_DUP;
 	int config_flags = quiet ? 0 : BRANCH_CONFIG_VERBOSE;
+	struct find_tracked_branch_cb ftb_cb = {
+		.tracking = &tracking,
+		.remotes_advice = STRBUF_INIT,
+	};
 
 	memset(&tracking, 0, sizeof(tracking));
 	tracking.spec.dst = (char *)orig_ref;
 	tracking.srcs = &tracking_srcs;
 	if (track != BRANCH_TRACK_INHERIT)
-		for_each_remote(find_tracked_branch, &tracking);
+		for_each_remote(find_tracked_branch, &ftb_cb);
 	else if (inherit_tracking(&tracking, orig_ref))
 		goto cleanup;
 
@@ -252,9 +270,24 @@ static void setup_tracking(const char *new_ref, const char *orig_ref,
 			goto cleanup;
 		}
 
-	if (tracking.matches > 1)
-		die(_("not tracking: ambiguous information for ref %s"),
-		    orig_ref);
+	if (tracking.matches > 1) {
+		int status = die_message(_("not tracking: ambiguous information for ref %s"),
+					    orig_ref);
+		if (advice_enabled(ADVICE_AMBIGUOUS_FETCH_REFSPEC))
+			advise(_("There are multiple remotes whose fetch refspecs map to the remote\n"
+				 "tracking ref %s:\n"
+				 "%s"
+				 "\n"
+				 "This is typically a configuration error.\n"
+				 "\n"
+				 "To support setting up tracking branches, ensure that\n"
+				 "different remotes' fetch refspecs map into different\n"
+				 "tracking namespaces."),
+			       orig_ref,
+			       ftb_cb.remotes_advice.buf
+			       );
+		exit(status);
+	}
 
 	if (tracking.srcs->nr < 1)
 		string_list_append(tracking.srcs, orig_ref);
@@ -263,6 +296,7 @@ static void setup_tracking(const char *new_ref, const char *orig_ref,
 		exit(-1);
 
 cleanup:
+	strbuf_release(&ftb_cb.remotes_advice);
 	string_list_clear(&tracking_srcs, 0);
 }
 
