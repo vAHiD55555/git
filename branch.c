@@ -12,6 +12,7 @@
 struct tracking {
 	struct refspec_item spec;
 	struct string_list *srcs;
+	struct string_list *remotes;
 	const char *remote;
 	int matches;
 };
@@ -28,6 +29,7 @@ static int find_tracked_branch(struct remote *remote, void *priv)
 			free(tracking->spec.src);
 			string_list_clear(tracking->srcs, 0);
 		}
+		string_list_append(tracking->remotes, remote->name);
 		tracking->spec.src = NULL;
 	}
 
@@ -217,6 +219,18 @@ static int inherit_tracking(struct tracking *tracking, const char *orig_ref)
 	return 0;
 }
 
+
+static const char ambiguous_refspec_advice_pre[] =
+N_("\n"
+"There are multiple remotes with fetch refspecs mapping to\n"
+"the tracking ref %s:\n";)
+static const char ambiguous_refspec_advice_post[] =
+N_("This is typically a configuration error.\n"
+"\n"
+"To support setting up tracking branches, ensure that\n"
+"different remotes' fetch refspecs map into different\n"
+"tracking namespaces.\n");
+
 /*
  * This is called when new_ref is branched off of orig_ref, and tries
  * to infer the settings for branch.<new_ref>.{remote,merge} from the
@@ -227,11 +241,14 @@ static void setup_tracking(const char *new_ref, const char *orig_ref,
 {
 	struct tracking tracking;
 	struct string_list tracking_srcs = STRING_LIST_INIT_DUP;
+	struct string_list tracking_remotes = STRING_LIST_INIT_DUP;
 	int config_flags = quiet ? 0 : BRANCH_CONFIG_VERBOSE;
+	struct string_list_item *item;
 
 	memset(&tracking, 0, sizeof(tracking));
 	tracking.spec.dst = (char *)orig_ref;
 	tracking.srcs = &tracking_srcs;
+	tracking.remotes = &tracking_remotes;
 	if (track != BRANCH_TRACK_INHERIT)
 		for_each_remote(find_tracked_branch, &tracking);
 	else if (inherit_tracking(&tracking, orig_ref))
@@ -248,9 +265,17 @@ static void setup_tracking(const char *new_ref, const char *orig_ref,
 			return;
 		}
 
-	if (tracking.matches > 1)
+	if (tracking.matches > 1) {
+		if (advice_enabled(ADVICE_AMBIGUOUS_FETCH_REFSPEC)) {
+			advise(_(ambiguous_refspec_advice_pre), orig_ref);
+			for_each_string_list_item(item, &tracking_remotes) {
+				advise("  %s", item->string);
+			}
+			advise(_(ambiguous_refspec_advice_post));
+		}
 		die(_("not tracking: ambiguous information for ref %s"),
 		    orig_ref);
+	}
 
 	if (tracking.srcs->nr < 1)
 		string_list_append(tracking.srcs, orig_ref);
