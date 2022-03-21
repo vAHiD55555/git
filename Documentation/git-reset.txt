@@ -107,9 +107,8 @@ OPTIONS
 --quiet::
 	Be quiet, only report errors.
 
---refresh::
 --no-refresh::
-	Proactively refresh the index after a mixed reset. Enabled by default.
+	Disable refreshing the index after a mixed reset.
 
 --pathspec-from-file=<file>::
 	Pathspec is passed in `<file>` instead of commandline args. If

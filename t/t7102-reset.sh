@@ -492,9 +492,8 @@ test_expect_success '--mixed refreshes the index' '
 	test_reset_refreshes_index "" --quiet
 '
 
-test_expect_success '--mixed --[no-]refresh sets refresh behavior' '
-	# Verify that --[no-]refresh controls index refresh
-	test_reset_refreshes_index "" --refresh &&
+test_expect_success '--mixed --no-refresh sets refresh behavior' '
+	# Verify that --no-refresh controls index refresh
 	! test_reset_refreshes_index "" --no-refresh
 '
 
