@@ -430,13 +430,6 @@ int cmd_reset(int argc, const char **argv, const char *prefix)
 						PARSE_OPT_KEEP_DASHDASH);
 	parse_args(&pathspec, argv, prefix, patch_mode, &rev);
 
-	/*
-	 * If refresh is completely unspecified (either by config or by command
-	 * line option), decide based on 'quiet'.
-	 */
-	if (refresh < 0)
-		refresh = !quiet;
-
 	if (pathspec_from_file) {
 		if (patch_mode)
 			die(_("options '%s' and '%s' cannot be used together"), "--pathspec-from-file", "--patch");
