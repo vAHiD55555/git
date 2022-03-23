@@ -285,12 +285,12 @@ int index_bulk_checkin(struct object_id *oid,
 	return status;
 }
 
-void plug_bulk_checkin(void)
+void begin_odb_transaction(void)
 {
 	state.plugged = 1;
 }
 
-void unplug_bulk_checkin(void)
+void end_odb_transaction(void)
 {
 	state.plugged = 0;
 	if (state.f)
