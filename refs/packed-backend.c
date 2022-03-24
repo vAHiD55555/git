@@ -480,7 +480,7 @@ static int load_contents(struct snapshot *snapshot)
 
 	fd = open(snapshot->refs->path, O_RDONLY);
 	if (fd < 0) {
-		if (errno == ENOENT) {
+		if (errno == ENOENT || errno == ENOTDIR) {
 			/*
 			 * This is OK; it just means that no
 			 * "packed-refs" file has been written yet,

@@ -381,7 +381,7 @@ stat_ref:
 	if (lstat(path, &st) < 0) {
 		int ignore_errno;
 		myerr = errno;
-		if (myerr != ENOENT || skip_packed_refs)
+		if ((myerr != ENOENT && myerr != ENOTDIR) || skip_packed_refs)
 			goto out;
 		if (refs_read_raw_ref(refs->packed_ref_store, refname, oid,
 				      referent, type, &ignore_errno)) {
