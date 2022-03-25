@@ -148,6 +148,7 @@ void rename_index_entry_at(struct index_state *istate, int nr, const char *new_n
 	untracked_cache_remove_from_index(istate, old_entry->name);
 	remove_index_entry_at(istate, nr);
 	add_index_entry(istate, new_entry, ADD_CACHE_OK_TO_ADD|ADD_CACHE_OK_TO_REPLACE);
+	refresh_cache_entry(istate, new_entry, CE_MATCH_REFRESH);
 }
 
 void fill_stat_data(struct stat_data *sd, struct stat *st)
