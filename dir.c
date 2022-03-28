@@ -2747,13 +2747,33 @@ static void set_untracked_ident(struct untracked_cache *uc)
 	strbuf_addch(&uc->ident, 0);
 }
 
-static void new_untracked_cache(struct index_state *istate)
+static unsigned new_untracked_cache_flags(struct index_state *istate)
+{
+	struct repository *repo = istate->repo;
+	char *val;
+
+	/*
+	 * This logic is coordinated with the setting of these flags in
+	 * wt-status.c#wt_status_collect_untracked(), and the evaluation
+	 * of the config setting in commit.c#git_status_config()
+	 */
+	if (!repo_config_get_string(repo, "status.showuntrackedfiles", &val) &&
+	    !strcmp(val, "all"))
+		return 0;
+
+	/*
+	 * The default, if "all" is not set, is "normal" - leading us here.
+	 * If the value is "none" then it really doesn't matter.
+	 */
+	return DIR_SHOW_OTHER_DIRECTORIES | DIR_HIDE_EMPTY_DIRECTORIES;
+}
+
+static void new_untracked_cache(struct index_state *istate, int flags)
 {
 	struct untracked_cache *uc = xcalloc(1, sizeof(*uc));
 	strbuf_init(&uc->ident, 100);
 	uc->exclude_per_dir = ".gitignore";
-	/* should be the same flags used by git-status */
-	uc->dir_flags = DIR_SHOW_OTHER_DIRECTORIES | DIR_HIDE_EMPTY_DIRECTORIES;
+	uc->dir_flags = flags >= 0 ? flags : new_untracked_cache_flags(istate);
 	set_untracked_ident(uc);
 	istate->untracked = uc;
 	istate->cache_changed |= UNTRACKED_CHANGED;
@@ -2762,11 +2782,11 @@ static void new_untracked_cache(struct index_state *istate)
 void add_untracked_cache(struct index_state *istate)
 {
 	if (!istate->untracked) {
-		new_untracked_cache(istate);
+		new_untracked_cache(istate, -1);
 	} else {
 		if (!ident_in_untracked(istate->untracked)) {
 			free_untracked_cache(istate->untracked);
-			new_untracked_cache(istate);
+			new_untracked_cache(istate, -1);
 		}
 	}
 }
@@ -2781,9 +2801,9 @@ void remove_untracked_cache(struct index_state *istate)
 }
 
 static struct untracked_cache_dir *validate_untracked_cache(struct dir_struct *dir,
-						      int base_len,
-						      const struct pathspec *pathspec,
-						      struct index_state *istate)
+							    int base_len,
+							    const struct pathspec *pathspec,
+							    struct index_state *istate)
 {
 	struct untracked_cache_dir *root;
 	static int untracked_cache_disabled = -1;
@@ -2814,17 +2834,9 @@ static struct untracked_cache_dir *validate_untracked_cache(struct dir_struct *d
 	if (base_len || (pathspec && pathspec->nr))
 		return NULL;
 
-	/* Different set of flags may produce different results */
-	if (dir->flags != dir->untracked->dir_flags ||
-	    /*
-	     * See treat_directory(), case index_nonexistent. Without
-	     * this flag, we may need to also cache .git file content
-	     * for the resolve_gitlink_ref() call, which we don't.
-	     */
-	    !(dir->flags & DIR_SHOW_OTHER_DIRECTORIES) ||
-	    /* We don't support collecting ignore files */
-	    (dir->flags & (DIR_SHOW_IGNORED | DIR_SHOW_IGNORED_TOO |
-			   DIR_COLLECT_IGNORED)))
+	/* We don't support collecting ignore files */
+	if (dir->flags & (DIR_SHOW_IGNORED | DIR_SHOW_IGNORED_TOO |
+			DIR_COLLECT_IGNORED))
 		return NULL;
 
 	/*
@@ -2845,6 +2857,41 @@ static struct untracked_cache_dir *validate_untracked_cache(struct dir_struct *d
 	if (!ident_in_untracked(dir->untracked)) {
 		warning(_("untracked cache is disabled on this system or location"));
 		return NULL;
+	}
+
+	/*
+	 * We don't support using or preparing the untracked cache if
+	 * the current effective flags don't match the configured
+	 * flags.
+	 */
+	if (dir->flags != new_untracked_cache_flags(istate))
+		return NULL;
+
+	/*
+	 * If the untracked structure we received does not have the same flags
+	 * as configured, but the configured flags do match the effective flags,
+	 * then we need to reset / create a new "untracked" structure to match
+	 * the new config.
+	 * Keeping the saved and used untracked cache in-line with the
+	 * configuration provides an opportunity for frequent users of
+	 * "git status -uall" to leverage the untracked cache by aligning their
+	 * configuration (setting "status.showuntrackedfiles" to "all" or
+	 * "normal" as appropriate), where previously this option was
+	 * incompatible with untracked cache and *consistently* caused
+	 * surprisingly bad performance (with fscache and fsmonitor enabled) on
+	 * Windows.
+	 *
+	 * IMPROVEMENT OPPORTUNITY: If we reworked the untracked cache storage
+	 * to not be as bound up with the desired output in a given run,
+	 * and instead iterated through and stored enough information to
+	 * correctly serve both "modes", then users could get peak performance
+	 * with or without '-uall' regardless of their
+	 * "status.showuntrackedfiles" config.
+	 */
+	if (dir->flags != dir->untracked->dir_flags) {
+		free_untracked_cache(istate->untracked);
+		new_untracked_cache(istate, dir->flags);
+		dir->untracked = istate->untracked;
 	}
 
 	if (!dir->untracked->root) {
