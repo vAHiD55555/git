@@ -190,6 +190,36 @@ test_expect_success 'untracked cache after second status' '
 	test_cmp ../dump.expect ../actual
 '
 
+cat >../status_uall.expect <<EOF &&
+A  done/one
+A  one
+A  two
+?? dthree/three
+?? dtwo/two
+?? three
+EOF
+
+# Bypassing the untracked cache here is not desirable, but it expected
+# in the current implementation
+test_expect_success 'untracked cache is bypassed with -uall' '
+	: >../trace.output &&
+	GIT_TRACE2_PERF="$TRASH_DIRECTORY/trace.output" \
+	git status -uall --porcelain >../actual &&
+	iuc status -uall --porcelain >../status.iuc &&
+	test_cmp ../status_uall.expect ../status.iuc &&
+	test_cmp ../status_uall.expect ../actual &&
+	get_relevant_traces ../trace.output ../trace.relevant &&
+	cat >../trace.expect <<EOF &&
+ ....path:
+EOF
+	test_cmp ../trace.expect ../trace.relevant
+'
+
+test_expect_success 'untracked cache remains after bypass' '
+	test-tool dump-untracked-cache >../actual &&
+	test_cmp ../dump.expect ../actual
+'
+
 test_expect_success 'modify in root directory, one dir invalidation' '
 	: >four &&
 	test-tool chmtime =-240 four &&
