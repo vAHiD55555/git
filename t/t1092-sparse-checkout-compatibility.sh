@@ -1164,8 +1164,17 @@ test_expect_success 'show (cached blobs/trees)' '
 	test_must_fail git -C full-checkout show :folder1/ &&
 	test_must_fail git -C sparse-checkout show :folder1/ &&
 
-	test_must_fail git -C sparse-index show :folder1/ 2>err &&
-	grep "is in the index, but not at stage 0" err
+	test_sparse_match test_must_fail git show :folder1/ &&
+
+	# Change the sparse cone for an extra case:
+	run_on_sparse git sparse-checkout set deep/deeper1 &&
+
+	# deep/deeper2 is a sparse directory in the sparse index.
+	test_sparse_match test_must_fail git show :deep/deeper2/ &&
+
+	# deep/deeper2/deepest is not in the sparse index, but
+	# will trigger an index expansion.
+	test_sparse_match test_must_fail git show :deep/deeper2/deepest/
 '
 
 test_expect_success 'submodule handling' '
