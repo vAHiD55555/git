@@ -7,6 +7,7 @@
 #include "run-command.h"
 #include "hashmap.h"
 #include "pkt-line.h"
+#include "remote.h"
 
 static int compare_bundles(const void *hashmap_cmp_fn_data,
 			   const struct hashmap_entry *he1,
@@ -49,6 +50,7 @@ void clear_bundle_list(struct bundle_list *list)
 
 	for_all_bundles_in_list(list, clear_remote_bundle_info, NULL);
 	hashmap_clear_and_free(&list->bundles, struct remote_bundle_info, ent);
+	free(list->baseURI);
 }
 
 int for_all_bundles_in_list(struct bundle_list *list,
@@ -169,7 +171,7 @@ static int bundle_list_update(const char *key, const char *value,
 
 	if (!strcmp(dot, "uri")) {
 		free(bundle->uri);
-		bundle->uri = xstrdup(value);
+		bundle->uri = relative_url(list->baseURI, value, NULL);
 		return 0;
 	}
 
@@ -197,6 +199,8 @@ int parse_bundle_list_in_config_format(const char *uri,
 	};
 
 	list->mode = BUNDLE_MODE_NONE;
+	if (!list->baseURI)
+		list->baseURI = xstrdup(uri);
 	result = git_config_from_file_with_options(config_to_bundle_list,
 						   filename, list,
 						   &opts);
