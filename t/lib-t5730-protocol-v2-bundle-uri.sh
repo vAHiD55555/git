@@ -34,7 +34,9 @@ esac
 test_expect_success "setup protocol v2 $T5730_PROTOCOL:// tests" '
 	git init "$T5730_PARENT" &&
 	test_commit -C "$T5730_PARENT" one &&
-	git -C "$T5730_PARENT" config uploadpack.advertiseBundleURIs true
+	git -C "$T5730_PARENT" config uploadpack.advertiseBundleURIs true &&
+	git -C "$T5730_PARENT" config bundle.list.version 1 &&
+	git -C "$T5730_PARENT" config bundle.list.mode all
 '
 
 # Poor man's URI escaping. Good enough for the test suite whose trash
@@ -94,7 +96,7 @@ test_expect_success "connect with $T5730_PROTOCOL:// using protocol v2: have bun
 test_expect_success !T5730_HTTP "bad client with $T5730_PROTOCOL:// using protocol v2" '
 	test_when_finished "rm -f log" &&
 
-	test_config -C "$T5730_PARENT" uploadpack.bundleURI \
+	test_config -C "$T5730_PARENT" bundle.only.uri \
 		"$T5730_BUNDLE_URI_ESCAPED" &&
 
 	cat >err.expect <<-\EOF &&
@@ -145,4 +147,145 @@ test_expect_success !T5730_HTTP "bad client with $T5730_PROTOCOL:// using protoc
 
 	grep "clone> test-bad-client$" log >sent-bad-request &&
 	test_file_not_empty sent-bad-request
+'
+
+test_expect_success "ls-remote-bundle-uri with $T5730_PROTOCOL:// using protocol v2" '
+	test_when_finished "rm -f log" &&
+
+	test_config -C "$T5730_PARENT" bundle.only.uri \
+		"$T5730_BUNDLE_URI_ESCAPED" &&
+
+	# All data about bundle URIs
+	cat >expect <<-EOF &&
+	[bundle "list"]
+		version = 1
+		mode = all
+	[bundle "only"]
+		uri = $T5730_BUNDLE_URI_ESCAPED
+	EOF
+	GIT_TRACE_PACKET="$PWD/log" \
+	git \
+		-c protocol.version=2 \
+		ls-remote-bundle-uri \
+		"$T5730_URI" \
+		>actual &&
+	test_cmp_config_output expect actual &&
+
+	# Only the URIs
+	git \
+		-c protocol.version=2 \
+		ls-remote-bundle-uri --uri \
+		"$T5730_URI" \
+		>actual2 &&
+	test_cmp actual actual2
+'
+
+test_expect_success "ls-remote-bundle-uri with $T5730_PROTOCOL:// using protocol v2" '
+	test_when_finished "rm -f log" &&
+
+	test_config -C "$T5730_PARENT" bundle.only.uri \
+		"$T5730_BUNDLE_URI_ESCAPED" &&
+
+	# Extra data should be ignored
+	test_config -C "$T5730_PARENT" bundle.only.extra bogus &&
+
+	# All data about bundle URIs
+	cat >expect <<-EOF &&
+	[bundle "list"]
+		version = 1
+		mode = all
+	[bundle "only"]
+		uri = $T5730_BUNDLE_URI_ESCAPED
+	EOF
+	GIT_TRACE_PACKET="$PWD/log" \
+	git \
+		-c protocol.version=2 \
+		ls-remote-bundle-uri \
+		"$T5730_URI" \
+		>actual &&
+	test_cmp_config_output expect actual
+'
+
+test_expect_success "ls-remote-bundle-uri with $T5730_PROTOCOL:// using protocol v2: --uri" '
+	test_when_finished "rm -f log" &&
+
+	test_config -C "$T5730_PARENT" bundle.only.uri \
+		"$T5730_BUNDLE_URI_ESCAPED" &&
+
+	# All data about bundle URIs
+	cat >expect <<-EOF &&
+	[bundle "list"]
+		version = 1
+		mode = all
+	[bundle "only"]
+		uri = $T5730_BUNDLE_URI_ESCAPED
+	EOF
+	GIT_TRACE_PACKET="$PWD/log" \
+	git \
+		-c protocol.version=2 \
+		ls-remote-bundle-uri \
+		--uri \
+		"$T5730_URI" \
+		>actual &&
+	test_cmp_config_output expect actual
+'
+
+test_expect_success "ls-remote-bundle-uri --[no-]quiet with $T5730_PROTOCOL:// using protocol v2" '
+	test_when_finished "rm -f log" &&
+	test_when_finished "rm -rf child" &&
+	env GIT_TRACE_PACKET="$PWD/log" \
+	git \
+		-c protocol.version=2 \
+		 clone "$T5730_URI" child &&
+
+	test_config -C "$T5730_PARENT" bundle.only.uri \
+		"$T5730_BUNDLE_URI_ESCAPED" &&
+
+	# Without --[no-]quiet
+	cat >out.expect <<-EOF &&
+	[bundle "list"]
+		version = 1
+		mode = all
+	[bundle "only"]
+		uri = $T5730_BUNDLE_URI_ESCAPED
+	EOF
+	cat >err.expect <<-EOF &&
+	From $T5730_URI
+	EOF
+	git \
+		-C child \
+		 -c protocol.version=2 \
+		ls-remote-bundle-uri \
+		>out.actual 2>err.actual &&
+	test_cmp err.expect err.actual &&
+	test_cmp_config_output out.expect out.actual &&
+
+	# --no-quiet is the default
+	git \
+		-C child \
+		-c protocol.version=2 \
+		ls-remote-bundle-uri \
+		--no-quiet \
+		>out.actual 2>err.actual &&
+	test_cmp err.expect err.actual &&
+	test_cmp_config_output out.expect out.actual &&
+
+	# --quiet quiets the "From" line
+	git \
+		-C child \
+		-c protocol.version=2 \
+		ls-remote-bundle-uri \
+		--quiet \
+		>out.actual 2>err &&
+	test_must_be_empty err &&
+	test_cmp_config_output out.expect out.actual &&
+
+	# --quiet is implicit if the remote is not implicit
+	git \
+		-c protocol.version=2 \
+		ls-remote-bundle-uri \
+		"$T5730_URI" \
+		>out.actual 2>err &&
+	test_must_be_empty err &&
+	test_cmp_config_output out.expect out.actual
 '
