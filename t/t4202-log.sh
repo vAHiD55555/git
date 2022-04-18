@@ -15,7 +15,6 @@ test_cmp_graph () {
 }
 
 test_expect_success setup '
-
 	echo one >one &&
 	git add one &&
 	test_tick &&
@@ -44,31 +43,26 @@ test_expect_success setup '
 	git rm a/two &&
 	test_tick &&
 	git commit -m sixth
-
 '
 
 printf "sixth\nfifth\nfourth\nthird\nsecond\ninitial" > expect
 test_expect_success 'pretty' '
-
 	git log --pretty="format:%s" > actual &&
 	test_cmp expect actual
 '
 
 printf "sixth\nfifth\nfourth\nthird\nsecond\ninitial\n" > expect
 test_expect_success 'pretty (tformat)' '
-
 	git log --pretty="tformat:%s" > actual &&
 	test_cmp expect actual
 '
 
 test_expect_success 'pretty (shortcut)' '
-
 	git log --pretty="%s" > actual &&
 	test_cmp expect actual
 '
 
 test_expect_success 'format' '
-
 	git log --format="%s" > actual &&
 	test_cmp expect actual
 '
@@ -83,13 +77,11 @@ cat > expect << EOF
 EOF
 
 test_expect_success 'format %w(11,1,2)' '
-
 	git log -2 --format="%w(11,1,2)This is the %s commit." > actual &&
 	test_cmp expect actual
 '
 
 test_expect_success 'format %w(,1,2)' '
-
 	git log -2 --format="%w(,1,2)This is%nthe %s%ncommit." > actual &&
 	test_cmp expect actual
 '
@@ -103,47 +95,37 @@ $(git rev-parse --short :/second ) second
 $(git rev-parse --short :/initial) initial
 EOF
 test_expect_success 'oneline' '
-
 	git log --oneline > actual &&
 	test_cmp expect actual
 '
 
 test_expect_success 'diff-filter=A' '
-
 	git log --no-renames --pretty="format:%s" --diff-filter=A HEAD > actual &&
 	git log --no-renames --pretty="format:%s" --diff-filter A HEAD > actual-separate &&
 	printf "fifth\nfourth\nthird\ninitial" > expect &&
 	test_cmp expect actual &&
 	test_cmp expect actual-separate
-
 '
 
 test_expect_success 'diff-filter=M' '
-
 	git log --pretty="format:%s" --diff-filter=M HEAD >actual &&
 	printf "second" >expect &&
 	test_cmp expect actual
-
 '
 
 test_expect_success 'diff-filter=D' '
-
 	git log --no-renames --pretty="format:%s" --diff-filter=D HEAD >actual &&
 	printf "sixth\nthird" >expect &&
 	test_cmp expect actual
-
 '
 
 test_expect_success 'diff-filter=R' '
-
 	git log -M --pretty="format:%s" --diff-filter=R HEAD >actual &&
 	printf "third" >expect &&
 	test_cmp expect actual
-
 '
 
 test_expect_success 'multiple --diff-filter bits' '
-
 	git log -M --pretty="format:%s" --diff-filter=R HEAD >expect &&
 	git log -M --pretty="format:%s" --diff-filter=Ra HEAD >actual &&
 	test_cmp expect actual &&
@@ -152,19 +134,15 @@ test_expect_success 'multiple --diff-filter bits' '
 	git log -M --pretty="format:%s" \
 		--diff-filter=a --diff-filter=R HEAD >actual &&
 	test_cmp expect actual
-
 '
 
 test_expect_success 'diff-filter=C' '
-
 	git log -C -C --pretty="format:%s" --diff-filter=C HEAD >actual &&
 	printf "fourth" >expect &&
 	test_cmp expect actual
-
 '
 
 test_expect_success 'git log --follow' '
-
 	git log --follow --pretty="format:%s" ichi >actual &&
 	printf "third\nsecond\ninitial" >expect &&
 	test_cmp expect actual
@@ -879,7 +857,7 @@ test_expect_success 'multiple decorate-refs' '
 	git log -n6 --decorate=short --pretty="tformat:%f%d" \
 		--decorate-refs="heads/octopus*" \
 		--decorate-refs="tags/reach" >actual &&
-    test_cmp expect.decorate actual
+	test_cmp expect.decorate actual
 '
 
 test_expect_success 'decorate-refs-exclude with glob' '
@@ -2190,10 +2168,10 @@ test_expect_success 'log --decorate includes all levels of tag annotated tags' '
 '
 
 test_expect_success 'log --end-of-options' '
-       git update-ref refs/heads/--source HEAD &&
-       git log --end-of-options --source >actual &&
-       git log >expect &&
-       test_cmp expect actual
+	git update-ref refs/heads/--source HEAD &&
+	git log --end-of-options --source >actual &&
+	git log >expect &&
+	test_cmp expect actual
 '
 
 test_expect_success 'set up commits with different authors' '
