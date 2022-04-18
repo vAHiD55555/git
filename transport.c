@@ -1529,6 +1529,7 @@ int transport_fetch_refs(struct transport *transport, struct ref *refs)
 
 int transport_get_remote_bundle_uri(struct transport *transport, int quiet)
 {
+	int value = 0;
 	const struct transport_vtable *vtable = transport->vtable;
 
 	/* Check config only once. */
@@ -1536,10 +1537,13 @@ int transport_get_remote_bundle_uri(struct transport *transport, int quiet)
 		return 0;
 
 	/*
-	 * This is intentionally below the transport.injectBundleURI,
-	 * we want to be able to inject into protocol v0, or into the
-	 * dialog of a server who doesn't support this.
+	 * Don't use bundle-uri at all, if configured not to.
+	 * This logic defaults "transfer.bundleURI" to false.
 	 */
+	if (!git_env_bool("GIT_TEST_BUNDLE_URI", 0) &&
+	    (git_config_get_bool("transfer.bundleuri", &value) || !value))
+		return 0;
+
 	if (!vtable->get_bundle_uri) {
 		if (quiet)
 			return -1;
