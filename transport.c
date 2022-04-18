@@ -1516,12 +1516,21 @@ int transport_fetch_refs(struct transport *transport, struct ref *refs)
 
 int transport_get_remote_bundle_uri(struct transport *transport)
 {
+	int value = 0;
 	const struct transport_vtable *vtable = transport->vtable;
 
 	/* Check config only once. */
 	if (transport->got_remote_bundle_uri)
 		return 0;
 	transport->got_remote_bundle_uri = 1;
+
+	/*
+	 * Don't request bundle-uri from the server unless configured to
+	 * do so by GIT_TEST_BUNDLE_URI=1 or transfer.bundleURI=true.
+	 */
+	if (!git_env_bool("GIT_TEST_BUNDLE_URI", 0) &&
+	    (git_config_get_bool("transfer.bundleuri", &value) || !value))
+		return 0;
 
 	if (!vtable->get_bundle_uri)
 		return error(_("bundle-uri operation not supported by protocol"));
