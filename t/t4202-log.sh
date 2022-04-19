@@ -1756,13 +1756,20 @@ test_expect_success '--walk-reflogs --graph --no-graph works' '
 
 test_expect_success 'dotdot is a parent directory' '
 	mkdir -p a/b &&
-	( echo sixth && echo fifth ) >expect &&
-	( cd a/b && git log --format=%s .. ) >actual &&
+	(
+		echo sixth &&
+		echo fifth
+	) >expect &&
+	(
+		cd a/b &&
+		git log --format=%s ..
+	) >actual &&
 	test_cmp expect actual
 '
 
 test_expect_success GPG 'setup signed branch' '
-	test_when_finished "git reset --hard && git checkout main" &&
+	test_when_finished "git reset --hard &&
+	git checkout main" &&
 	git checkout -b signed main &&
 	echo foo >foo &&
 	git add foo &&
@@ -1770,7 +1777,8 @@ test_expect_success GPG 'setup signed branch' '
 '
 
 test_expect_success GPG 'setup signed branch with subkey' '
-	test_when_finished "git reset --hard && git checkout main" &&
+	test_when_finished "git reset --hard &&
+	git checkout main" &&
 	git checkout -b signed-subkey main &&
 	echo foo >foo &&
 	git add foo &&
@@ -1778,7 +1786,8 @@ test_expect_success GPG 'setup signed branch with subkey' '
 '
 
 test_expect_success GPGSM 'setup signed branch x509' '
-	test_when_finished "git reset --hard && git checkout main" &&
+	test_when_finished "git reset --hard &&
+	git checkout main" &&
 	git checkout -b signed-x509 main &&
 	echo foo >foo &&
 	git add foo &&
@@ -1790,7 +1799,8 @@ test_expect_success GPGSM 'setup signed branch x509' '
 test_expect_success GPGSSH 'setup sshkey signed branch' '
 	test_config gpg.format ssh &&
 	test_config user.signingkey "${GPGSSH_KEY_PRIMARY}" &&
-	test_when_finished "git reset --hard && git checkout main" &&
+	test_when_finished "git reset --hard &&
+	git checkout main" &&
 	git checkout -b signed-ssh main &&
 	echo foo >foo &&
 	git add foo &&
@@ -1802,16 +1812,24 @@ test_expect_success GPGSSH,GPGSSH_VERIFYTIME 'create signed commits with keys ha
 	touch file &&
 	git add file &&
 
-	echo expired >file && test_tick && git commit -a -m expired -S"${GPGSSH_KEY_EXPIRED}" &&
+	echo expired >file &&
+	test_tick &&
+	git commit -a -m expired -S"${GPGSSH_KEY_EXPIRED}" &&
 	git tag expired-signed &&
 
-	echo notyetvalid >file && test_tick && git commit -a -m notyetvalid -S"${GPGSSH_KEY_NOTYETVALID}" &&
+	echo notyetvalid >file &&
+	test_tick &&
+	git commit -a -m notyetvalid -S"${GPGSSH_KEY_NOTYETVALID}" &&
 	git tag notyetvalid-signed &&
 
-	echo timeboxedvalid >file && test_tick && git commit -a -m timeboxedvalid -S"${GPGSSH_KEY_TIMEBOXEDVALID}" &&
+	echo timeboxedvalid >file &&
+	test_tick &&
+	git commit -a -m timeboxedvalid -S"${GPGSSH_KEY_TIMEBOXEDVALID}" &&
 	git tag timeboxedvalid-signed &&
 
-	echo timeboxedinvalid >file && test_tick && git commit -a -m timeboxedinvalid -S"${GPGSSH_KEY_TIMEBOXEDINVALID}" &&
+	echo timeboxedinvalid >file &&
+	test_tick &&
+	git commit -a -m timeboxedinvalid -S"${GPGSSH_KEY_TIMEBOXEDINVALID}" &&
 	git tag timeboxedinvalid-signed
 '
 
@@ -1878,7 +1896,8 @@ test_expect_success GPGSSH,GPGSSH_VERIFYTIME 'log shows failure with commit date
 '
 
 test_expect_success GPG 'log --graph --show-signature for merged tag' '
-	test_when_finished "git reset --hard && git checkout main" &&
+	test_when_finished "git reset --hard &&
+	git checkout main" &&
 	git checkout -b plain main &&
 	echo aaa >bar &&
 	git add bar &&
@@ -1897,7 +1916,8 @@ test_expect_success GPG 'log --graph --show-signature for merged tag' '
 '
 
 test_expect_success GPG 'log --graph --show-signature for merged tag in shallow clone' '
-	test_when_finished "git reset --hard && git checkout main" &&
+	test_when_finished "git reset --hard &&
+	git checkout main" &&
 	git checkout -b plain-shallow main &&
 	echo aaa >bar &&
 	git add bar &&
@@ -1917,7 +1937,8 @@ test_expect_success GPG 'log --graph --show-signature for merged tag in shallow 
 '
 
 test_expect_success GPG 'log --graph --show-signature for merged tag with missing key' '
-	test_when_finished "git reset --hard && git checkout main" &&
+	test_when_finished "git reset --hard &&
+	git checkout main" &&
 	git checkout -b plain-nokey main &&
 	echo aaa >bar &&
 	git add bar &&
@@ -1936,7 +1957,8 @@ test_expect_success GPG 'log --graph --show-signature for merged tag with missin
 '
 
 test_expect_success GPG 'log --graph --show-signature for merged tag with bad signature' '
-	test_when_finished "git reset --hard && git checkout main" &&
+	test_when_finished "git reset --hard &&
+	git checkout main" &&
 	git checkout -b plain-bad main &&
 	echo aaa >bar &&
 	git add bar &&
@@ -1958,7 +1980,8 @@ test_expect_success GPG 'log --graph --show-signature for merged tag with bad si
 '
 
 test_expect_success GPG 'log --show-signature for merged tag with GPG failure' '
-	test_when_finished "git reset --hard && git checkout main" &&
+	test_when_finished "git reset --hard &&
+	git checkout main" &&
 	git checkout -b plain-fail main &&
 	echo aaa >bar &&
 	git add bar &&
@@ -1977,7 +2000,8 @@ test_expect_success GPG 'log --show-signature for merged tag with GPG failure' '
 '
 
 test_expect_success GPGSM 'log --graph --show-signature for merged tag x509' '
-	test_when_finished "git reset --hard && git checkout main" &&
+	test_when_finished "git reset --hard &&
+	git checkout main" &&
 	test_config gpg.format x509 &&
 	test_config user.signingkey $GIT_COMMITTER_EMAIL &&
 	git checkout -b plain-x509 main &&
@@ -1998,7 +2022,8 @@ test_expect_success GPGSM 'log --graph --show-signature for merged tag x509' '
 '
 
 test_expect_success GPGSM 'log --graph --show-signature for merged tag x509 missing key' '
-	test_when_finished "git reset --hard && git checkout main" &&
+	test_when_finished "git reset --hard &&
+	git checkout main" &&
 	test_config gpg.format x509 &&
 	test_config user.signingkey $GIT_COMMITTER_EMAIL &&
 	git checkout -b plain-x509-nokey main &&
@@ -2019,7 +2044,8 @@ test_expect_success GPGSM 'log --graph --show-signature for merged tag x509 miss
 '
 
 test_expect_success GPGSM 'log --graph --show-signature for merged tag x509 bad signature' '
-	test_when_finished "git reset --hard && git checkout main" &&
+	test_when_finished "git reset --hard &&
+	git checkout main" &&
 	test_config gpg.format x509 &&
 	test_config user.signingkey $GIT_COMMITTER_EMAIL &&
 	git checkout -b plain-x509-bad main &&
