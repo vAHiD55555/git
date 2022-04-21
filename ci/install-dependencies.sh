@@ -41,7 +41,12 @@ macos-latest)
 		echo Installing perforce failed, assuming and working around SHA256 mismatch >&2 &&
 
 		path=$(brew edit --print-path perforce) &&
-		sed -i -e 's/\(sha256.\).*/\1:no_check/' "$path" &&
+
+		# we do not do this unconditionally because we want
+		# to know that we are falling back.  Do not copy this
+		# use of 'sed -i .bak' elsewhere---it does not work with
+		# other implementations of "sed".
+		sed -i .bak -e 's/\(sha256.\).*/\1:no_check/' "$path" &&
 		brew install perforce
 	}
 
