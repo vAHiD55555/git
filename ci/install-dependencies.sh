@@ -37,7 +37,13 @@ macos-latest)
 	test -z "$BREW_INSTALL_PACKAGES" ||
 	brew install $BREW_INSTALL_PACKAGES
 	brew link --force gettext
-	brew install perforce
+	brew install perforce || {
+		echo Installing perforce failed, assuming and working around SHA256 mismatch >&2 &&
+
+		path=$(brew edit --print-path perforce) &&
+		sed -i -e 's/\(sha256.\).*/\1:no_check/' "$path" &&
+		brew install perforce
+	}
 
 	if test -n "$CC_PACKAGE"
 	then
