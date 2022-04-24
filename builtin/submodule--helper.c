@@ -2026,7 +2026,7 @@ struct update_data {
 	.references = STRING_LIST_INIT_DUP, \
 	.single_branch = -1, \
 	.max_jobs = 1, \
-	.warn_if_uninitialized = 1, \
+	.warn_if_uninitialized = 0, \
 }
 
 static void next_submodule_warn_missing(struct submodule_update_clone *suc,
