@@ -75,6 +75,7 @@ static const char *http_proxy_ssl_key;
 static const char *http_proxy_ssl_ca_info;
 static struct credential proxy_cert_auth = CREDENTIAL_INIT;
 static int proxy_ssl_cert_password_required;
+static const char *http_custom_request;
 
 static struct {
 	const char *name;
@@ -402,6 +403,9 @@ static int http_options(const char *var, const char *value, void *cb)
 			http_follow_config = HTTP_FOLLOW_NONE;
 		return 0;
 	}
+
+	if(!strcmp("http.customrequest", var))
+		return git_config_string(&http_custom_request, var, value);
 
 	/* Fall back on the default ones */
 	return git_default_config(var, value, cb);
@@ -1099,6 +1103,7 @@ void http_init(struct remote *remote, const char *url, int proactive_auth)
 		    starts_with(url, "https://"))
 			ssl_cert_password_required = 1;
 	}
+	set_from_env(&http_custom_request, "CURLOPT_CUSTOMREQUEST");
 
 	curl_default = get_curl_handle();
 }
@@ -1212,7 +1217,7 @@ struct active_request_slot *get_active_slot(void)
 		curl_easy_setopt(slot->curl, CURLOPT_COOKIEJAR, curl_cookie_file);
 	curl_easy_setopt(slot->curl, CURLOPT_HTTPHEADER, pragma_header);
 	curl_easy_setopt(slot->curl, CURLOPT_ERRORBUFFER, curl_errorstr);
-	curl_easy_setopt(slot->curl, CURLOPT_CUSTOMREQUEST, NULL);
+	curl_easy_setopt(slot->curl, CURLOPT_CUSTOMREQUEST, http_custom_request);
 	curl_easy_setopt(slot->curl, CURLOPT_READFUNCTION, NULL);
 	curl_easy_setopt(slot->curl, CURLOPT_WRITEFUNCTION, NULL);
 	curl_easy_setopt(slot->curl, CURLOPT_POSTFIELDS, NULL);
