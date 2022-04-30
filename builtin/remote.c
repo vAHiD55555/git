@@ -1190,7 +1190,15 @@ static int get_one_entry(struct remote *remote, void *priv)
 	int i, url_nr;
 
 	if (remote->url_nr > 0) {
+		struct strbuf promisor_config = STRBUF_INIT;
+		const char *partial_clone_filter = NULL;
+
+		strbuf_addf(&promisor_config, "remote.%s.partialclonefilter", remote->name);
 		strbuf_addf(&url_buf, "%s (fetch)", remote->url[0]);
+		if (!git_config_get_string_tmp(promisor_config.buf, &partial_clone_filter))
+			strbuf_addf(&url_buf, " [%s]", partial_clone_filter);
+
+		strbuf_release(&promisor_config);
 		string_list_append(list, remote->name)->util =
 				strbuf_detach(&url_buf, NULL);
 	} else
