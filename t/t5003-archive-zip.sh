@@ -207,13 +207,21 @@ check_zip with_untracked
 check_added with_untracked untracked untracked
 
 test_expect_success UNZIP 'git archive --format=zip --add-virtual-file' '
+	if test_have_prereq FUNNYNAMES
+	then
+		QUOTED=quoted:colon
+	else
+		QUOTED=quoted
+	fi &&
 	git archive --format=zip >with_file_with_content.zip \
+		--add-virtual-file=\"$QUOTED\": \
 		--add-virtual-file=hello:world $EMPTY_TREE &&
 	test_when_finished "rm -rf tmp-unpack" &&
 	mkdir tmp-unpack && (
 		cd tmp-unpack &&
 		"$GIT_UNZIP" ../with_file_with_content.zip &&
 		test_path_is_file hello &&
+		test_path_is_file $QUOTED &&
 		test world = $(cat hello)
 	)
 '
