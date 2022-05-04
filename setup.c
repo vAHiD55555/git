@@ -1133,6 +1133,40 @@ static int ensure_valid_ownership(const char *path)
 	return data.is_safe;
 }
 
+/*
+ * This is similar to safe_directory_data, but only supports true/false.
+ */
+struct safe_bare_repository_data {
+	int is_safe;
+};
+
+static int safe_bare_repository_cb(const char *key, const char *value, void *d)
+{
+	struct safe_bare_repository_data *data = d;
+
+	if (strcmp(key, "safe.barerepository"))
+		return 0;
+
+	if (!value || !strcmp(value, "*")) {
+		data->is_safe = 1;
+		return 0;
+	}
+	if (!*value) {
+		data->is_safe = 0;
+		return 0;
+	}
+	return -1;
+}
+
+static int should_detect_bare(void)
+{
+	struct safe_bare_repository_data data;
+
+	read_very_early_config(safe_bare_repository_cb, &data);
+
+	return data.is_safe;
+}
+
 enum discovery_result {
 	GIT_DIR_NONE = 0,
 	GIT_DIR_EXPLICIT,
@@ -1238,7 +1272,7 @@ static enum discovery_result setup_git_directory_gently_1(struct strbuf *dir,
 			return GIT_DIR_DISCOVERED;
 		}
 
-		if (is_git_directory(dir->buf)) {
+		if (should_detect_bare() && is_git_directory(dir->buf)) {
 			if (!ensure_valid_ownership(dir->buf))
 				return GIT_DIR_INVALID_OWNERSHIP;
 			strbuf_addstr(gitdir, ".");

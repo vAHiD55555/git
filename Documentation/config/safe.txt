@@ -1,3 +1,27 @@
+safe.barerepository::
+	This config entry specifies directories that Git can recognize as
+	a bare repository when looking for the repository (aka repository
+	discovery). This has no effect if repository discovery is not
+	performed e.g. the path to the repository is set via `--git-dir`
+	(see linkgit:git[1]).
++
+It is recommended that you set this value so that Git will only use the bare
+repositories you intend it to. This prevents certain types of security and
+non-security problems, such as:
+
+* `git clone`-ing a repository containing a maliciously bare repository
+  inside it.
+* Git recognizing a directory that isn't mean to be a bare repository,
+  but happens to look like one.
++
+The currently supported values are `*` (Git recognizes all bare
+repositories) and the empty value (Git never recognizes bare repositories).
+Defaults to `*`.
++
+This config setting is only respected when specified in a system or global
+config, not when it is specified in a repository config or via the command
+line option `-c safe.barerepository=<path>`.
+
 safe.directory::
 	These config entries specify Git-tracked directories that are
 	considered safe even if they are owned by someone other than the

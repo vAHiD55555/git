@@ -541,6 +541,61 @@ test_expect_success '#16e: bareness preserved by --bare' '
 	)
 '
 
+# Test the tri-state of [(unset)|""|"*"].
+test_expect_success '#16f: bare repo in worktree' '
+	test_when_finished "git config --global --unset safe.barerepository" &&
+	setup_repo 16f unset "" unset &&
+
+	git init --bare 16f/default/bare &&
+	git init --bare 16f/default/bare/bare &&
+	try_case 16f/default/bare unset unset \
+		. "(null)" "$here/16f/default/bare" "(null)" &&
+	try_case 16f/default/bare/bare unset unset \
+		. "(null)" "$here/16f/default/bare/bare" "(null)" &&
+
+	git config --global safe.barerepository "*" &&
+	git init --bare 16f/all/bare &&
+	git init --bare 16f/all/bare/bare &&
+	try_case 16f/all/bare unset unset \
+		. "(null)" "$here/16f/all/bare" "(null)" &&
+	try_case 16f/all/bare/bare unset unset \
+		. "(null)" "$here/16f/all/bare/bare" "(null)" &&
+
+	git config --global safe.barerepository "" &&
+	git init --bare 16f/never/bare &&
+	git init --bare 16f/never/bare/bare &&
+	try_case 16f/never/bare unset unset \
+		".git" "$here/16f" "$here/16f" "never/bare/" &&
+	try_case 16f/never/bare/bare unset unset \
+		".git" "$here/16f" "$here/16f" "never/bare/bare/"
+'
+
+test_expect_success '#16g: inside .git with safe.barerepository' '
+	test_when_finished "git config --global --unset safe.barerepository" &&
+
+	# Omit the "default" case; it is covered by 16a.
+
+	git config --global safe.barerepository "*" &&
+	setup_repo 16g/all unset "" unset &&
+	mkdir -p 16g/all/.git/wt/sub &&
+	try_case 16g/all/.git unset unset \
+		. "(null)" "$here/16g/all/.git" "(null)" &&
+	try_case 16g/all/.git/wt unset unset \
+		"$here/16g/all/.git" "(null)" "$here/16g/all/.git/wt" "(null)" &&
+	try_case 16g/all/.git/wt/sub unset unset \
+		"$here/16g/all/.git" "(null)" "$here/16g/all/.git/wt/sub" "(null)" &&
+
+	git config --global safe.barerepository "" &&
+	setup_repo 16g/never unset "" unset &&
+	mkdir -p 16g/never/.git/wt/sub &&
+	try_case 16g/never/.git unset unset \
+		".git" "$here/16g/never" "$here/16g/never" ".git/" &&
+	try_case 16g/never/.git/wt unset unset \
+		".git" "$here/16g/never" "$here/16g/never" ".git/wt/" &&
+	try_case 16g/never/.git/wt/sub unset unset \
+		".git" "$here/16g/never" "$here/16g/never" ".git/wt/sub/"
+'
+
 test_expect_success '#17: GIT_WORK_TREE without explicit GIT_DIR is accepted (bare case)' '
 	# Just like #16.
 	setup_repo 17a unset "" true &&
