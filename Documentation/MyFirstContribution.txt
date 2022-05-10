@@ -764,6 +764,43 @@ We can note a few things:
   v3]", etc. and sent with a new cover letter, itself a reply to the cover
   letter of the previous iteration (more on that below).
 
+[[cover-letter]]
+=== The cover letter
+
+In addition to an email per patch, the Git community also expects your patches
+to come with a cover letter. This is an important component of change
+submission as it explains to the community from a high level what you're trying
+to do, and why, in a way that's more apparent than just looking at your
+patches.
+
+The title of your cover letter should be something which succinctly covers the
+purpose of your entire topic branch. It's often in the imperative mood, just
+like our commit message titles. Here is how we'll title our series:
+
+---
+Add the 'psuh' command
+---
+
+The body of the cover letter is used to give additional context to reviewers.
+Be sure to explain anything your patches don't make clear on their own, but
+remember that since the cover letter is not recorded in the commit history,
+anything that might be useful to future readers of the repository's history
+should be in your commit messages, not in your cover letter.
+
+Here's an example body for `psuh`:
+
+----
+Our internal metrics indicate widespread interest in the command
+git-psuh - that is, many users are trying to use it, but finding it is
+unavailable, using some unknown workaround instead.
+
+The following handful of patches add the psuh command and implement some
+handy features on top of it.
+
+This patchset is part of the MyFirstContribution tutorial and should not
+be merged.
+----
+
 At this point the tutorial diverges, in order to demonstrate two
 different methods of formatting your patchset and getting it reviewed.
 
@@ -1000,7 +1037,7 @@ but want reviewers to look at what they have so far. You can add this flag with
 Check and make sure that your patches and cover letter template exist in the
 directory you specified - you're nearly ready to send out your review!
 
-[[cover-letter]]
+[[preparing-cover-letter]]
 === Preparing Email
 
 In addition to an email per patch, the Git community also expects your patches
