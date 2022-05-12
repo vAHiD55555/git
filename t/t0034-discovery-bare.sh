@@ -56,4 +56,14 @@ test_expect_success 'discovery.bare=never' '
 	)
 '
 
+test_expect_success 'discovery.bare=cwd' '
+	git config --global discovery.bare cwd &&
+	(
+		cd outer-repo/bare-repo &&
+		expect_allowed &&
+		cd refs/ &&
+		expect_rejected
+	)
+'
+
 test_done

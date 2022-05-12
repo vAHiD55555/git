@@ -14,6 +14,7 @@ enum discovery_bare_config {
 	DISCOVERY_BARE_UNKNOWN = -1,
 	DISCOVERY_BARE_NEVER = 0,
 	DISCOVERY_BARE_ALWAYS,
+	DISCOVERY_BARE_CWD,
 };
 static enum discovery_bare_config discovery_bare_config =
 	DISCOVERY_BARE_UNKNOWN;
@@ -1153,10 +1154,14 @@ static int discovery_bare_cb(const char *key, const char *value, void *d)
 		discovery_bare_config = DISCOVERY_BARE_ALWAYS;
 		return 0;
 	}
+	if (!strcmp(value, "cwd")) {
+		discovery_bare_config = DISCOVERY_BARE_CWD;
+		return 0;
+	}
 	return -1;
 }
 
-static int check_bare_repo_allowed(void)
+static int check_bare_repo_allowed(const char *cwd, const char *path)
 {
 	if (discovery_bare_config == DISCOVERY_BARE_UNKNOWN) {
 		read_very_early_config(discovery_bare_cb, NULL);
@@ -1169,6 +1174,8 @@ static int check_bare_repo_allowed(void)
 		return 0;
 	case DISCOVERY_BARE_ALWAYS:
 		return 1;
+	case DISCOVERY_BARE_CWD:
+		return !strcmp(cwd, path);
 	default:
 		BUG("invalid discovery_bare_config %d", discovery_bare_config);
 	}
@@ -1181,6 +1188,8 @@ static const char *discovery_bare_config_to_string(void)
 		return "never";
 	case DISCOVERY_BARE_ALWAYS:
 		return "always";
+	case DISCOVERY_BARE_CWD:
+		return "cwd";
 	default:
 		BUG("invalid discovery_bare_config %d", discovery_bare_config);
 	}
@@ -1212,7 +1221,8 @@ enum discovery_result {
  * the discovered .git/ directory, if any. If `gitdir` is not absolute, it
  * is relative to `dir` (i.e. *not* necessarily the cwd).
  */
-static enum discovery_result setup_git_directory_gently_1(struct strbuf *dir,
+static enum discovery_result setup_git_directory_gently_1(struct strbuf *cwd,
+							  struct strbuf *dir,
 							  struct strbuf *gitdir,
 							  int die_on_error)
 {
@@ -1293,7 +1303,7 @@ static enum discovery_result setup_git_directory_gently_1(struct strbuf *dir,
 		}
 
 		if (is_git_directory(dir->buf)) {
-			if (!check_bare_repo_allowed())
+			if (!check_bare_repo_allowed(cwd->buf, dir->buf))
 				return GIT_DIR_DISALLOWED_BARE;
 			if (!ensure_valid_ownership(dir->buf))
 				return GIT_DIR_INVALID_OWNERSHIP;
@@ -1319,16 +1329,18 @@ static enum discovery_result setup_git_directory_gently_1(struct strbuf *dir,
 int discover_git_directory(struct strbuf *commondir,
 			   struct strbuf *gitdir)
 {
-	struct strbuf dir = STRBUF_INIT, err = STRBUF_INIT;
+	struct strbuf cwd = STRBUF_INIT, dir = STRBUF_INIT, err = STRBUF_INIT;
 	size_t gitdir_offset = gitdir->len, cwd_len;
 	size_t commondir_offset = commondir->len;
 	struct repository_format candidate = REPOSITORY_FORMAT_INIT;
 
-	if (strbuf_getcwd(&dir))
+	if (strbuf_getcwd(&cwd))
 		return -1;
+	strbuf_addbuf(&dir, &cwd);
 
 	cwd_len = dir.len;
-	if (setup_git_directory_gently_1(&dir, gitdir, 0) <= 0) {
+	if (setup_git_directory_gently_1(&cwd, &dir, gitdir, 0) <= 0) {
+		strbuf_release(&cwd);
 		strbuf_release(&dir);
 		return -1;
 	}
@@ -1351,6 +1363,7 @@ int discover_git_directory(struct strbuf *commondir,
 	strbuf_reset(&dir);
 	strbuf_addf(&dir, "%s/config", commondir->buf + commondir_offset);
 	read_repository_format(&candidate, dir.buf);
+	strbuf_release(&cwd);
 	strbuf_release(&dir);
 
 	if (verify_repository_format(&candidate, &err) < 0) {
@@ -1400,7 +1413,7 @@ const char *setup_git_directory_gently(int *nongit_ok)
 		die_errno(_("Unable to read current working directory"));
 	strbuf_addbuf(&dir, &cwd);
 
-	switch (setup_git_directory_gently_1(&dir, &gitdir, 1)) {
+	switch (setup_git_directory_gently_1(&cwd, &dir, &gitdir, 1)) {
 	case GIT_DIR_EXPLICIT:
 		prefix = setup_explicit_git_dir(gitdir.buf, &cwd, &repo_fmt, nongit_ok);
 		break;

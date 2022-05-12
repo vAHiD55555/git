@@ -10,8 +10,10 @@ config, not when it is specified in a repository config or via the command
 line option `-c discovery.bare=<value>`.
 +
 The currently supported values are `always` (Git always recognizes bare
-repositories) and `never` (Git never recognizes bare repositories).
-This defaults to `always`, but this default is likely to change.
+repositories), `cwd` (Git only recognizes bare repositories if they are the
+current working directory) and `never` (Git never recognizes bare
+repositories). This defaults to `always`, but this default is likely to
+change.
 +
 If your workflow does not rely on bare repositories, it is recommended that
 you set this value to `never`. This makes repository discovery easier to
