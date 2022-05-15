@@ -26,7 +26,7 @@ static const char * const git_stash_usage[] = {
 	N_("git stash drop [-q|--quiet] [<stash>]"),
 	N_("git stash ( pop | apply ) [--index] [-q|--quiet] [<stash>]"),
 	N_("git stash branch <branchname> [<stash>]"),
-	"git stash clear",
+	"git stash clear [-i|--interactive]",
 	N_("git stash [push [-p|--patch] [-S|--staged] [-k|--[no-]keep-index] [-q|--quiet]\n"
 	   "          [-u|--include-untracked] [-a|--all] [-m|--message <message>]\n"
 	   "          [--pathspec-from-file=<file> [--pathspec-file-nul]]\n"
@@ -67,7 +67,7 @@ static const char * const git_stash_branch_usage[] = {
 };
 
 static const char * const git_stash_clear_usage[] = {
-	"git stash clear",
+	"git stash clear [-i|--interactive]",
 	NULL
 };
 
@@ -215,7 +215,10 @@ static int do_clear_stash(void)
 
 static int clear_stash(int argc, const char **argv, const char *prefix)
 {
+	int is_prompt;
 	struct option options[] = {
+		OPT_BOOL('i', "interactive", &is_prompt,
+			 N_("confirm clearing stash")),
 		OPT_END()
 	};
 
@@ -226,7 +229,21 @@ static int clear_stash(int argc, const char **argv, const char *prefix)
 	if (argc)
 		return error(_("git stash clear with arguments is "
 			       "unimplemented"));
+	if (is_prompt == 1) {
+		char code[2];
+		printf("Are you sure you want to clear your stash? [y/N]: ");
+		if (fgets(code, 2, stdin) != NULL) {
+			if (code[0] == 'y' || code[0] == 'Y') {
+				printf_ln(_("Clearing stash"));
+				return do_clear_stash();
+			}
+			else {
+				printf_ln(_("Aborting clear"));
+			}
+		}
 
+		return 0;
+	}
 	return do_clear_stash();
 }
 

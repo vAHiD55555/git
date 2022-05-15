@@ -17,7 +17,7 @@ SYNOPSIS
 	     [-u|--include-untracked] [-a|--all] [-m|--message <message>]
 	     [--pathspec-from-file=<file> [--pathspec-file-nul]]
 	     [--] [<pathspec>...]]
-'git stash' clear
+'git stash' clear [-i|--interactive]
 'git stash' create [<message>]
 'git stash' store [-m|--message <message>] [-q|--quiet] <commit>
 
@@ -127,7 +127,7 @@ the stash entry is applied on top of the commit that was HEAD at the
 time `git stash` was run, it restores the originally stashed state
 with no conflicts.
 
-clear::
+clear [-i|--interactive]::
 	Remove all the stash entries. Note that those entries will then
 	be subject to pruning, and may be impossible to recover (see
 	'Examples' below for a possible strategy).
@@ -159,6 +159,11 @@ OPTIONS
 +
 All ignored and untracked files are also stashed and then cleaned
 up with `git clean`.
+
+-i::
+--interactive::
+	This option is only valid for clear command, when applied, will request
+	a confirmation from the user before proceeding to clear the stash.
 
 -u::
 --include-untracked::
