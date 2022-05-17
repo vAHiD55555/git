@@ -54,7 +54,7 @@ set(CMAKE_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/../..)
 
 option(USE_VCPKG "Whether or not to use vcpkg for obtaining dependencies.  Only applicable to Windows platforms" ON)
 if(NOT WIN32)
-	set(USE_VCPKG OFF CACHE BOOL FORCE)
+	set(USE_VCPKG OFF CACHE BOOL "" FORCE)
 endif()
 
 if(NOT DEFINED CMAKE_EXPORT_COMPILE_COMMANDS)
@@ -108,7 +108,6 @@ project(git
 
 #TODO gitk git-gui gitweb
 #TODO Enable NLS on windows natively
-#TODO Add pcre support
 
 #macros for parsing the Makefile for sources and scripts
 macro(parse_makefile_for_sources list_var regex)
@@ -160,6 +159,14 @@ if(NOT (WIN32 AND (CMAKE_C_COMPILER_ID STREQUAL "MSVC" OR CMAKE_C_COMPILER_ID ST
 	find_package(Intl)
 endif()
 
+find_package(PkgConfig)
+if(PkgConfig_FOUND)
+	pkg_check_modules(PCRE2 libpcre2-8)
+	if(PCRE2_FOUND)
+		add_compile_definitions(USE_LIBPCRE2)
+	endif()
+endif()
+
 if(NOT Intl_FOUND)
 	add_compile_definitions(NO_GETTEXT)
 	if(NOT Iconv_FOUND)
@@ -179,6 +186,9 @@ if(Iconv_FOUND)
 endif()
 if(Intl_FOUND)
 	include_directories(SYSTEM ${Intl_INCLUDE_DIRS})
+endif()
+if(PCRE2_FOUND)
+	include_directories(SYSTEM ${PCRE2_INCLUDE_DIRS})
 endif()
 
 
@@ -277,7 +287,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	add_compile_definitions(PROCFS_EXECUTABLE_PATH="/proc/self/exe" HAVE_DEV_TTY )
-	list(APPEND compat_SOURCES unix-socket.c unix-stream-server.c)
+	list(APPEND compat_SOURCES unix-socket.c unix-stream-server.c compat/linux/procinfo.c)
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
@@ -699,6 +709,9 @@ if(Intl_FOUND)
 endif()
 if(Iconv_FOUND)
 	target_link_libraries(common-main ${Iconv_LIBRARIES})
+endif()
+if(PCRE2_FOUND)
+	target_link_libraries(common-main ${PCRE2_LIBRARIES})
 endif()
 if(WIN32)
 	target_link_libraries(common-main ws2_32 ntdll ${CMAKE_BINARY_DIR}/git.res)
