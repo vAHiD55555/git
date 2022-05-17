@@ -35,6 +35,12 @@ struct remote_bundle_info {
 	 * an empty string.
 	 */
 	struct strbuf file;
+
+	/**
+	 * If the bundle has been unbundled successfully, then
+	 * this boolean is true.
+	 */
+	unsigned unbundled:1;
 };
 
 #define REMOTE_BUNDLE_INFO_INIT { \
