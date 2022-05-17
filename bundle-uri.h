@@ -72,6 +72,16 @@ struct FILE;
 void print_bundle_list(FILE *fp, struct bundle_list *list);
 
 /**
+ * A bundle URI may point to a bundle list where the key=value
+ * pairs are provided in config file format. This method is
+ * exposed publicly for testing purposes.
+ */
+
+int parse_bundle_list_in_config_format(const char *uri,
+				       const char *filename,
+				       struct bundle_list *list);
+
+/**
  * Fetch data from the given 'uri' and unbundle the bundle data found
  * based on that information.
  *
