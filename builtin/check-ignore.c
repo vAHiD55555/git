@@ -113,8 +113,17 @@ static int check_ignore(struct dir_struct *dir,
 			    pattern->flags & PATTERN_FLAG_NEGATIVE)
 				pattern = NULL;
 		}
-		if (!quiet && (pattern || show_non_matching))
-			output_pattern(pathspec.items[i].original, pattern);
+		if (!quiet) {
+			if (verbose) {
+				if (show_non_matching || pattern)
+					output_pattern(pathspec.items[i].original, pattern);
+			} else {
+				if (show_non_matching && !pattern)
+					output_pattern(pathspec.items[i].original, pattern);
+				if (!show_non_matching && pattern)
+					output_pattern(pathspec.items[i].original, pattern);
+			}
+		}
 		if (pattern)
 			num_ignored++;
 	}
@@ -175,8 +184,6 @@ int cmd_check_ignore(int argc, const char **argv, const char *prefix)
 		if (verbose)
 			die(_("cannot have both --quiet and --verbose"));
 	}
-	if (show_non_matching && !verbose)
-		die(_("--non-matching is only valid with --verbose"));
 
 	/* read_cache() is only necessary so we can watch out for submodules. */
 	if (!no_index && read_cache() < 0)
