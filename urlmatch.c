@@ -1,5 +1,6 @@
 #include "cache.h"
 #include "urlmatch.h"
+#include "config.h"
 
 #define URL_ALPHA "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 #define URL_DIGIT "0123456789"
@@ -106,6 +107,59 @@ static int match_host(const struct url_info *url_info,
 	return (!url_len && !pat_len);
 }
 
+/*
+ * Call this method when we have detected credentials within the 'url' in
+ * the form
+ *
+ *     scheme://username:password@domain[:port][/path]
+ *
+ * The 'scheme_len' value should be equal to the string length of the
+ * "scheme://" portion of the URL.
+ *
+ * The fetch.credentialsInUrl config indicates what to do on such a URL,
+ * either ignoring, warning, or die()ing. The latter two modes write a
+ * redacted URL to stderr.
+ */
+static void detected_credentials_in_url(const char *url, size_t scheme_len)
+{
+	const char *value;
+	const char *at_ptr;
+	const char *colon_ptr;
+	struct strbuf redacted = STRBUF_INIT;
+
+	/* "allow" is the default behavior. */
+	if (git_config_get_string_tmp("fetch.credentialsinurl", &value) ||
+	    !strcmp("allow", value))
+		return;
+
+	at_ptr = strchr(url, '@');
+	colon_ptr = strchr(url + scheme_len + 3, ':');
+
+	/*
+	 * Let's do some defensive programming to ensure the given
+	 * URL is of the proper format.
+	 */
+	if (!colon_ptr)
+		BUG("failed to find colon in url '%s' with scheme_len %"PRIuMAX,
+		    url, (uintmax_t) scheme_len);
+	if (colon_ptr > at_ptr)
+		BUG("input url '%s' does not include credentials",
+		    url);
+
+	/* Include the colon when creating the redacted URL. */
+	colon_ptr++;
+	strbuf_addstr(&redacted, url);
+	strbuf_splice(&redacted, colon_ptr - url, at_ptr - colon_ptr,
+		      "<redacted>", 10);
+
+	if (!strcmp("warn", value))
+		warning(_("URL '%s' uses plaintext credentials"), redacted.buf);
+	if (!strcmp("die", value))
+		die(_("URL '%s' uses plaintext credentials"), redacted.buf);
+
+	strbuf_release(&redacted);
+}
+
 static char *url_normalize_1(const char *url, struct url_info *out_info, char allow_globs)
 {
 	/*
@@ -144,6 +198,7 @@ static char *url_normalize_1(const char *url, struct url_info *out_info, char al
 	 */
 
 	size_t url_len = strlen(url);
+	const char *orig_url = url;
 	struct strbuf norm;
 	size_t spanned;
 	size_t scheme_len, user_off=0, user_len=0, passwd_off=0, passwd_len=0;
@@ -191,6 +246,7 @@ static char *url_normalize_1(const char *url, struct url_info *out_info, char al
 			}
 			colon_ptr = strchr(norm.buf + scheme_len + 3, ':');
 			if (colon_ptr) {
+				detected_credentials_in_url(orig_url, scheme_len);
 				passwd_off = (colon_ptr + 1) - norm.buf;
 				passwd_len = norm.len - passwd_off;
 				user_len = (passwd_off - 1) - (scheme_len + 3);

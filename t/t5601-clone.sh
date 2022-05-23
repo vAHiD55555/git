@@ -71,6 +71,18 @@ test_expect_success 'clone respects GIT_WORK_TREE' '
 
 '
 
+test_expect_success 'clone warns or fails when using username:password' '
+	test_must_fail git -c fetch.credentialsInUrl=warn clone https://username:password@localhost attempt1 2>err &&
+	grep "warning: URL '\''https://username:<redacted>@localhost/'\'' uses plaintext credentials" err &&
+	test_must_fail git -c fetch.credentialsInUrl=die clone https://username:password@localhost attempt2 2>err &&
+	grep "fatal: URL '\''https://username:<redacted>@localhost/'\'' uses plaintext credentials" err
+'
+
+test_expect_success 'clone does not detect username:password when it is https://username@domain:port/' '
+	test_must_fail git -c fetch.credentialsInUrl=warn clone https://username@localhost:8080 attempt3 2>err &&
+	! grep "uses plaintext credentials" err
+'
+
 test_expect_success 'clone from hooks' '
 
 	test_create_repo r0 &&
