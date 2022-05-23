@@ -1,5 +1,6 @@
 #include "cache.h"
 #include "urlmatch.h"
+#include "config.h"
 
 #define URL_ALPHA "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 #define URL_DIGIT "0123456789"
@@ -106,6 +107,46 @@ static int match_host(const struct url_info *url_info,
 	return (!url_len && !pat_len);
 }
 
+static void detected_credentials_in_url(const char *url, size_t scheme_len)
+{
+	char *value = NULL;
+	const char *at_ptr;
+	const char *colon_ptr;
+	struct strbuf anonymized = STRBUF_INIT;
+
+	/* "ignore" is the default behavior. */
+	if (git_config_get_string("fetch.credentialsinurl", &value) ||
+	    !strcasecmp("ignore", value))
+		goto cleanup;
+
+	at_ptr = strchr(url, '@');
+	colon_ptr = strchr(url + scheme_len + 3, ':');
+
+	if (!colon_ptr)
+		BUG("failed to find colon in url '%s' with scheme_len %"PRIuMAX,
+		    url, (uintmax_t) scheme_len);
+
+	/* Include everything including the colon. */
+	colon_ptr++;
+	strbuf_add(&anonymized, url, colon_ptr - url);
+
+	while (colon_ptr < at_ptr) {
+		strbuf_addch(&anonymized, '*');
+		colon_ptr++;
+	}
+
+	strbuf_addstr(&anonymized, at_ptr);
+
+	if (!strcasecmp("warn", value))
+		warning(_("URL '%s' uses plaintext credentials"), anonymized.buf);
+	if (!strcasecmp("die", value))
+		die(_("URL '%s' uses plaintext credentials"), anonymized.buf);
+
+cleanup:
+	free(value);
+	strbuf_release(&anonymized);
+}
+
 static char *url_normalize_1(const char *url, struct url_info *out_info, char allow_globs)
 {
 	/*
@@ -144,6 +185,7 @@ static char *url_normalize_1(const char *url, struct url_info *out_info, char al
 	 */
 
 	size_t url_len = strlen(url);
+	const char *orig_url = url;
 	struct strbuf norm;
 	size_t spanned;
 	size_t scheme_len, user_off=0, user_len=0, passwd_off=0, passwd_len=0;
@@ -191,6 +233,7 @@ static char *url_normalize_1(const char *url, struct url_info *out_info, char al
 			}
 			colon_ptr = strchr(norm.buf + scheme_len + 3, ':');
 			if (colon_ptr) {
+				detected_credentials_in_url(orig_url, scheme_len);
 				passwd_off = (colon_ptr + 1) - norm.buf;
 				passwd_len = norm.len - passwd_off;
 				user_len = (passwd_off - 1) - (scheme_len + 3);
