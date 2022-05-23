@@ -22,8 +22,56 @@ struct counted_string {
 	const char *s;
 };
 
+/*
+ * Check if the given URL is of the following form:
+ *
+ *     scheme://username:password@domain[:port][/path]
+ *
+ * Specifically, see if the ":password@" section of the URL appears.
+ *
+ * The fetch.credentialsInUrl config indicates what to do on such a URL,
+ * either ignoring, warning, or erroring. The latter two modes write a
+ * redacted URL to stderr.
+ */
+static void check_if_creds_in_url(const char *url)
+{
+	const char *value, *scheme_ptr, *colon_ptr, *at_ptr;
+	struct strbuf redacted = STRBUF_INIT;
+
+	/* "allow" is the default behavior. */
+	if (git_config_get_string_tmp("fetch.credentialsinurl", &value) ||
+	    !strcmp("allow", value))
+		return;
+
+	if (!(at_ptr = strchr(url, '@')))
+		return;
+
+	if (!(scheme_ptr = strchr(url, '/')) ||
+	    scheme_ptr > at_ptr)
+		scheme_ptr = url;
+
+	if (!(colon_ptr = strchr(scheme_ptr, ':')))
+		return;
+
+	/* Include the colon when creating the redacted URL. */
+	colon_ptr++;
+	strbuf_addstr(&redacted, url);
+	strbuf_splice(&redacted, colon_ptr - url, at_ptr - colon_ptr,
+		      "<redacted>", 10);
+
+	if (!strcmp("warn", value))
+		warning(_("URL '%s' uses plaintext credentials"), redacted.buf);
+	if (!strcmp("die", value))
+		die(_("URL '%s' uses plaintext credentials"), redacted.buf);
+
+	strbuf_release(&redacted);
+}
+
 static int valid_remote(const struct remote *remote)
 {
+	for (int i = 0; i < remote->url_nr; i++)
+		check_if_creds_in_url(remote->url[i]);
+
 	return (!!remote->url) || (!!remote->foreign_vcs);
 }
 
