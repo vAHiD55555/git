@@ -22,9 +22,9 @@ struct slot_results {
 struct active_request_slot {
 	CURL *curl;
 	int in_use;
+	int reserved_for_use;
 	CURLcode curl_result;
 	long http_code;
-	int *finished;
 	struct slot_results *results;
 	void *callback_data;
 	void (*callback_func)(void *data);
