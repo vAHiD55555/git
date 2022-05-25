@@ -1321,16 +1321,19 @@ static int upload_pack_config(const char *var, const char *value, void *cb_data)
 		data->advertise_sid = git_config_bool(var, value);
 	}
 
-	if (current_config_scope() != CONFIG_SCOPE_LOCAL &&
-	    current_config_scope() != CONFIG_SCOPE_WORKTREE) {
-		if (!strcmp("uploadpack.packobjectshook", var))
-			return git_config_string(&data->pack_objects_hook, var, value);
-	}
-
 	if (parse_object_filter_config(var, value, data) < 0)
 		return -1;
 
 	return parse_hide_refs_config(var, value, "uploadpack");
+}
+
+static int upload_pack_protected_config(const char *var, const char *value, void *cb_data)
+{
+	struct upload_pack_data *data = cb_data;
+
+	if (!strcmp("uploadpack.packobjectshook", var))
+		return git_config_string(&data->pack_objects_hook, var, value);
+	return 0;
 }
 
 void upload_pack(const int advertise_refs, const int stateless_rpc,
@@ -1342,6 +1345,7 @@ void upload_pack(const int advertise_refs, const int stateless_rpc,
 	upload_pack_data_init(&data);
 
 	git_config(upload_pack_config, &data);
+	git_protected_config(upload_pack_protected_config, &data);
 
 	data.stateless_rpc = stateless_rpc;
 	data.timeout = timeout;
@@ -1697,6 +1701,7 @@ int upload_pack_v2(struct repository *r, struct packet_reader *request)
 	data.use_sideband = LARGE_PACKET_MAX;
 
 	git_config(upload_pack_config, &data);
+	git_protected_config(upload_pack_protected_config, &data);
 
 	while (state != FETCH_DONE) {
 		switch (state) {
