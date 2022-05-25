@@ -26,7 +26,7 @@ jobs:
       - id: print-test-failures-output-type
         name: check what output type ci/print-test-failures.sh uses
         run: |
-          type_default=raw
+          type_default=github
           type=$type_default
 
           if test -x config-repo/ci/config/print-test-failures-output-type
