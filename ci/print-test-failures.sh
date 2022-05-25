@@ -65,6 +65,7 @@ do
 		if test -n "$do_markup"
 		then
 			printf "\\e[33m\\e[1m=== Failed test: ${TEST_NAME} ===\\e[m\\n"
+			echo "The full logs are in the artifacts attached to this run."
 			cat "t/test-results/$TEST_MARKUP"
 		else
 			echo "------------------------------------------------------------------------"
