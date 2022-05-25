@@ -32,7 +32,6 @@
 #include "connected.h"
 #include "packfile.h"
 #include "list-objects-filter-options.h"
-#include "hook.h"
 #include "bundle.h"
 
 /*
@@ -713,7 +712,7 @@ static int checkout(int submodule_progress, int filter_submodules)
 	if (write_locked_index(&the_index, &lock_file, COMMIT_LOCK))
 		die(_("unable to write new index file"));
 
-	err |= run_hooks_l("post-checkout", oid_to_hex(null_oid()),
+	err |= run_hook_le(NULL, "post-checkout", oid_to_hex(null_oid()),
 			   oid_to_hex(&oid), "1", NULL);
 
 	if (!err && (option_recurse_submodules.nr > 0)) {

@@ -28,7 +28,6 @@
 #include "sequencer.h"
 #include "rebase-interactive.h"
 #include "reset.h"
-#include "hook.h"
 
 #define DEFAULT_REFLOG_ACTION "rebase"
 
@@ -1729,7 +1728,7 @@ int cmd_rebase(int argc, const char **argv, const char *prefix)
 
 	/* If a hook exists, give it a chance to interrupt*/
 	if (!ok_to_skip_pre_rebase &&
-	    run_hooks_l("pre-rebase", options.upstream_arg,
+	    run_hook_le(NULL, "pre-rebase", options.upstream_arg,
 			argc ? argv[0] : NULL, NULL))
 		die(_("The pre-rebase hook refused to rebase."));
 
