@@ -1409,12 +1409,10 @@ static const char *push_to_deploy(unsigned char *sha1,
 static const char *push_to_checkout_hook = "push-to-checkout";
 
 static const char *push_to_checkout(unsigned char *hash,
-				    int *invoked_hook,
 				    struct strvec *env,
 				    const char *work_tree)
 {
 	struct run_hooks_opt opt = RUN_HOOKS_OPT_INIT;
-	opt.invoked_hook = invoked_hook;
 
 	strvec_pushf(env, "GIT_WORK_TREE=%s", absolute_path(work_tree));
 	strvec_pushv(&opt.env, env->v);
@@ -1429,7 +1427,6 @@ static const char *update_worktree(unsigned char *sha1, const struct worktree *w
 {
 	const char *retval, *git_dir;
 	struct strvec env = STRVEC_INIT;
-	int invoked_hook;
 
 	if (!worktree || !worktree->path)
 		BUG("worktree->path must be non-NULL");
@@ -1440,9 +1437,10 @@ static const char *update_worktree(unsigned char *sha1, const struct worktree *w
 
 	strvec_pushf(&env, "GIT_DIR=%s", absolute_path(git_dir));
 
-	retval = push_to_checkout(sha1, &invoked_hook, &env, worktree->path);
-	if (!invoked_hook)
+	if (!hook_exists(push_to_checkout_hook))
 		retval = push_to_deploy(sha1, &env, worktree->path);
+	else
+		retval = push_to_checkout(sha1, &env, worktree->path);
 
 	strvec_clear(&env);
 	return retval;
