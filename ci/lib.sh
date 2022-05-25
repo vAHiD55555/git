@@ -95,6 +95,7 @@ if test -n "$GITHUB_ENV"
 then
 	echo "CONFIG: GITHUB_ENV=$GITHUB_ENV" >&2
 fi
+echo "CONFIG: GIT_CI_PTF_OUTPUT_TYPE=$GIT_CI_PTF_OUTPUT_TYPE" >&2
 echo >&2
 
 # Helper functions
@@ -189,7 +190,18 @@ MAKEFLAGS="$MAKEFLAGS SKIP_DASHED_BUILT_INS=$SKIP_DASHED_BUILT_INS"
 case "$CI_TYPE" in
 github-actions)
 	setenv --test GIT_PROVE_OPTS "--timer --jobs $NPROC"
-	GIT_TEST_OPTS="--verbose-log -x --github-workflow-markup"
+	GIT_TEST_OPTS="--verbose-log -x"
+	if test -n "$GIT_CI_PTF_OUTPUT_TYPE"
+	then
+		# For later use in ci/print-test-failures.sh
+		setenv --test GIT_CI_PTF_OUTPUT_TYPE "$GIT_CI_PTF_OUTPUT_TYPE"
+
+		case "$GIT_CI_PTF_OUTPUT_TYPE" in
+		github)
+			GIT_TEST_OPTS="$GIT_TEST_OPTS --github-workflow-markup"
+			;;
+		esac
+	fi
 	test Windows != "$RUNNER_OS" ||
 	GIT_TEST_OPTS="--no-chain-lint --no-bin-wrappers $GIT_TEST_OPTS"
 	setenv --test GIT_TEST_OPTS "$GIT_TEST_OPTS"

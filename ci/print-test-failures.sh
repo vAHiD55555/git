@@ -9,9 +9,12 @@ set -e
 . ${0%/*}/lib-tput.sh
 
 github_workflow_markup=auto
-case "$CI_TYPE" in
-github-actions)
+case "$GIT_CI_PTF_OUTPUT_TYPE" in
+github)
 	github_workflow_markup=t
+	;;
+raw)
+	github_workflow_markup=
 	;;
 esac
 

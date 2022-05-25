@@ -8,6 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       enabled: ${{ steps.check-ref.outputs.enabled }}${{ steps.skip-if-redundant.outputs.enabled }}
+      print-test-failures-output-type: ${{ steps.print-test-failures-output-type.outputs.type }}
     steps:
       - name: try to clone ci-config branch
         run: |
@@ -22,6 +23,21 @@ jobs:
             config-repo &&
           cd config-repo &&
           git checkout HEAD -- ci/config || : ignore
+      - id: print-test-failures-output-type
+        name: check what output type ci/print-test-failures.sh uses
+        run: |
+          type_default=raw
+          type=$type_default
+
+          if test -x config-repo/ci/config/print-test-failures-output-type
+          then
+            type=$(config-repo/ci/config/print-test-failures-output-type '${{ github.ref }}')
+            if test -z "$type"
+            then
+              type=$type_default
+            fi
+          fi
+          echo "::set-output name=type::$type"
       - id: check-ref
         name: check whether CI is enabled for ref
         run: |
@@ -124,6 +140,8 @@ jobs:
     - uses: git-for-windows/setup-git-for-windows-sdk@v1
     - run: ci/lib.sh --test
       shell: bash
+      env:
+        GIT_CI_PTF_OUTPUT_TYPE: ${{needs.ci-config.outputs.print-test-failures-output-type}}
     - name: select tests
       run: . /etc/profile && ci/select-test-slice.sh ${{matrix.nr}} 10
       shell: bash
@@ -213,6 +231,8 @@ jobs:
       run: tar xf artifacts.tar.gz && tar xf tracked.tar.gz
     - run: ci/lib.sh --test
       shell: bash
+      env:
+        GIT_CI_PTF_OUTPUT_TYPE: ${{needs.ci-config.outputs.print-test-failures-output-type}}
     - name: select tests
       run: . /etc/profile && ci/select-test-slice.sh ${{matrix.nr}} 10
       shell: bash
@@ -265,6 +285,8 @@ jobs:
     - run: ci/lib.sh --build
     - run: make
     - run: ci/lib.sh --test
+      env:
+        GIT_CI_PTF_OUTPUT_TYPE: ${{needs.ci-config.outputs.print-test-failures-output-type}}
     - run: make test
       if: success()
     - run: ci/print-test-failures.sh
@@ -302,6 +324,8 @@ jobs:
     - run: make
     - run: ci/lib.sh --test
       if: success() && matrix.vector.skip-tests != 'yes'
+      env:
+        GIT_CI_PTF_OUTPUT_TYPE: ${{needs.ci-config.outputs.print-test-failures-output-type}}
     - run: make test
       if: success() && matrix.vector.skip-tests != 'yes'
     - run: ci/print-test-failures.sh
