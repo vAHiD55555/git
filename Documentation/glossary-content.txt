@@ -483,6 +483,24 @@ exclude;;
 	head ref. If the remote <<def_head,head>> is not an
 	ancestor to the local head, the push fails.
 
+[[def_protected_config]]protected configuration::
+	Protected configuration is configuration that Git considers more
+	trustworthy because it is unlikely to be tampered with by an
+	attacker. For security reasons, some configuration variables are
+	only respected when they are defined in protected configuration.
++
+Protected configuration includes:
++
+- system-level config, e.g. `/etc/git/config`
+- global config, e.g. `$XDG_CONFIG_HOME/git/config` and
+  `$HOME/.gitconfig`
++
+Protected configuration excludes:
++
+- repository config, e.g. `$GIT_DIR/config` and
+  `$GIT_DIR/config.worktree`
+- the command line option `-c` and its equivalent environment variables
+
 [[def_reachable]]reachable::
 	All of the ancestors of a given <<def_commit,commit>> are said to be
 	"reachable" from that commit. More
