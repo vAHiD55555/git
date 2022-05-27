@@ -1022,6 +1022,7 @@ static int sign_buffer_ssh(struct strbuf *buffer, struct strbuf *signature,
 	strvec_pushl(&signer.args, use_format->program,
 		     "-Y", "sign",
 		     "-n", "git",
+		     "-U",
 		     "-f", ssh_signing_key_file,
 		     buffer_file->filename.buf,
 		     NULL);
