@@ -126,6 +126,14 @@ struct repository {
 
 	struct repo_settings settings;
 
+	/*
+	 * Config that comes from trusted sources, namely
+	 * - system config files (e.g. /etc/gitconfig)
+	 * - global config files (e.g. $HOME/.gitconfig,
+	 *   $XDG_CONFIG_HOME/git)
+	 */
+	struct config_set *protected_config;
+
 	/* Subsystems */
 	/*
 	 * Repository's config which contains key-value pairs from the usual

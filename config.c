@@ -2614,6 +2614,41 @@ int repo_config_get_pathname(struct repository *repo,
 	return ret;
 }
 
+/* Read protected config into the_repository->protected_config. */
+static void read_protected_config(void)
+{
+	char *xdg_config = NULL, *user_config = NULL, *system_config = NULL;
+
+	CALLOC_ARRAY(the_repository->protected_config, 1);
+	git_configset_init(the_repository->protected_config);
+
+	system_config = git_system_config();
+	git_global_config(&user_config, &xdg_config);
+
+	git_configset_add_file(the_repository->protected_config, system_config);
+	git_configset_add_file(the_repository->protected_config, xdg_config);
+	git_configset_add_file(the_repository->protected_config, user_config);
+
+	free(system_config);
+	free(xdg_config);
+	free(user_config);
+}
+
+/* Ensure that the_repository->protected_config has been initialized. */
+static void git_protected_config_check_init(void)
+{
+	if (the_repository->protected_config &&
+	    the_repository->protected_config->hash_initialized)
+		return;
+	read_protected_config();
+}
+
+void git_protected_config(config_fn_t fn, void *data)
+{
+	git_protected_config_check_init();
+	configset_iter(the_repository->protected_config, fn, data);
+}
+
 /* Functions used historically to read configuration from 'the_repository' */
 void git_config(config_fn_t fn, void *data)
 {

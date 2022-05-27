@@ -295,6 +295,11 @@ void repo_clear(struct repository *repo)
 		FREE_AND_NULL(repo->remote_state);
 	}
 
+	if (repo->protected_config) {
+		git_configset_clear(repo->protected_config);
+		FREE_AND_NULL(repo->protected_config);
+	}
+
 	repo_clear_path_cache(&repo->cached_paths);
 }
 
