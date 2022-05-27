@@ -31,6 +31,10 @@ Hooks can get their arguments via the environment, command-line
 arguments, and stdin. See the documentation for each hook below for
 details.
 
+The `$GIT_HOOK` environment variable is passed to all hooks and holds the
+triggering hook event, eg: `pre-commit`, `update`, etc. This allows one
+executable to be used for multiple hooks.
+
 `git init` may copy hooks to the new repository, depending on its
 configuration. See the "TEMPLATE DIRECTORY" section in
 linkgit:git-init[1] for details. When the rest of this document refers
