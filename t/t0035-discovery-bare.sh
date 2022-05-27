@@ -56,8 +56,7 @@ test_expect_success 'discovery.bare on the command line' '
 	git config --global discovery.bare never &&
 	(
 		cd outer-repo/bare-repo &&
-		test_must_fail git -c discovery.bare=always rev-parse --git-dir 2>err &&
-		grep "discovery.bare" err
+		git -c discovery.bare=always rev-parse --git-dir
 	)
 '
 

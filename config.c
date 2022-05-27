@@ -2373,6 +2373,11 @@ int git_configset_add_file(struct config_set *cs, const char *filename)
 	return git_config_from_file(config_set_callback, filename, cs);
 }
 
+int git_configset_add_parameters(struct config_set *cs)
+{
+	return git_config_from_parameters(config_set_callback, cs);
+}
+
 int git_configset_get_value(struct config_set *cs, const char *key, const char **value)
 {
 	const struct string_list *values = NULL;
@@ -2628,6 +2633,7 @@ static void read_protected_config(void)
 	git_configset_add_file(the_repository->protected_config, system_config);
 	git_configset_add_file(the_repository->protected_config, xdg_config);
 	git_configset_add_file(the_repository->protected_config, user_config);
+	git_configset_add_parameters(the_repository->protected_config);
 
 	free(system_config);
 	free(xdg_config);

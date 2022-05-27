@@ -494,12 +494,12 @@ Protected configuration includes:
 - system-level config, e.g. `/etc/git/config`
 - global config, e.g. `$XDG_CONFIG_HOME/git/config` and
   `$HOME/.gitconfig`
+- the command line option `-c` and its equivalent environment variables
 +
 Protected configuration excludes:
 +
 - repository config, e.g. `$GIT_DIR/config` and
   `$GIT_DIR/config.worktree`
-- the command line option `-c` and its equivalent environment variables
 
 [[def_reachable]]reachable::
 	All of the ancestors of a given <<def_commit,commit>> are said to be

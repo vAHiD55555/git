@@ -370,9 +370,9 @@ names do not conflict with those that are used by Git itself and
 other popular tools, and describe them in your documentation.
 
 Variables marked with '(Protected config only)' are only respected when
-they are specified in protected configuration. This includes global and
-system-level config, and excludes repository config, the command line
-option `-c`, and environment variables. For more details, see the
+they are specified in protected configuration. This includes global,
+system-level config, the command line option `-c`, and environment
+variables, and excludes repository config. For more details, see the
 'protected configuration' entry in linkgit:gitglossary[7].
 
 include::config/advice.txt[]
