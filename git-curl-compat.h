@@ -126,4 +126,14 @@
 #define GIT_CURL_HAVE_CURLSSLSET_NO_BACKENDS
 #endif
 
+/**
+ * CURLAUTH_BEARER was added in 7.61.0, released in July 2018.
+ * However, only 7.69.0 fixes a bug where Bearer headers were not
+ * actually sent with reused connections on subsequent transfers
+ * (curl/curl@dea17b519dc1).
+ */
+#if LIBCURL_VERSION_NUM >= 0x074500
+#define GIT_CURL_HAVE_CURLAUTH_BEARER
+#endif
+
 #endif
