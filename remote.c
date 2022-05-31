@@ -60,7 +60,7 @@ static void check_if_creds_in_url(const char *url)
 		      "<redacted>", 10);
 
 	if (!strcmp("warn", value))
-		warning(_("URL '%s' uses plaintext credentials"), redacted.buf);
+		warn_once(_("URL '%s' uses plaintext credentials"), redacted.buf);
 	if (!strcmp("die", value))
 		die(_("URL '%s' uses plaintext credentials"), redacted.buf);
 

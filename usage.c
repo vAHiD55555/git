@@ -5,6 +5,7 @@
  */
 #include "git-compat-util.h"
 #include "cache.h"
+#include "strmap.h"
 
 static void vreportf(const char *prefix, const char *err, va_list params)
 {
@@ -281,6 +282,27 @@ void warning_errno(const char *warn, ...)
 void warning(const char *warn, ...)
 {
 	va_list params;
+
+	va_start(params, warn);
+	warn_routine(warn, params);
+	va_end(params);
+}
+
+static struct strset prev_warnings = STRSET_INIT;
+
+void warn_once(const char *warn, ...)
+{
+	char buf[1024];
+	va_list params;
+	va_start(params, warn);
+
+	if (vsnprintf(buf, sizeof(buf), warn, params) >= 0) {
+		if (!strset_add(&prev_warnings, buf)) {
+			va_end(params);
+			return;
+		}
+	}
+	va_end(params);
 
 	va_start(params, warn);
 	warn_routine(warn, params);
