@@ -4061,9 +4061,69 @@ leave_merge:
 	return ret;
 }
 
+struct update_refs_context {
+	struct ref_store *refs;
+	char **ref_names;
+	struct object_id *old;
+	struct object_id *new;
+	size_t nr;
+	size_t alloc;
+};
+
+static int add_ref_to_context(const char *refname,
+			      const struct object_id *oid,
+			      int flags,
+			      void *data)
+{
+	int f = 0;
+	const char *name;
+	struct update_refs_context *ctx = data;
+
+	ALLOC_GROW(ctx->ref_names, ctx->nr + 1, ctx->alloc);
+	ALLOC_GROW(ctx->old, ctx->nr + 1, ctx->alloc);
+	ALLOC_GROW(ctx->new, ctx->nr + 1, ctx->alloc);
+
+	if (!skip_prefix(refname, "refs/rewritten/for-update-refs/", &name))
+		return 1;
+
+	ctx->ref_names[ctx->nr] = xstrdup(name);
+	oidcpy(&ctx->new[ctx->nr], oid);
+	if (!refs_resolve_ref_unsafe(ctx->refs, name, 0,
+				     &ctx->old[ctx->nr], &f))
+		return 1;
+
+	ctx->nr++;
+	return 0;
+}
+
 static int do_update_refs(struct repository *r)
 {
-	return 0;
+	int i, res;
+	struct update_refs_context ctx = {
+		.refs = get_main_ref_store(r),
+		.alloc = 16,
+	};
+	ALLOC_ARRAY(ctx.ref_names, ctx.alloc);
+	ALLOC_ARRAY(ctx.old, ctx.alloc);
+	ALLOC_ARRAY(ctx.new, ctx.alloc);
+
+	res = refs_for_each_fullref_in(ctx.refs,
+				       "refs/rewritten/for-update-refs/",
+				       add_ref_to_context,
+				       &ctx);
+
+	for (i = 0; !res && i < ctx.nr; i++)
+		res = refs_update_ref(ctx.refs, "rewritten during rebase",
+				ctx.ref_names[i],
+				&ctx.new[i], &ctx.old[i],
+				0, UPDATE_REFS_MSG_ON_ERR);
+
+	for (i = 0; i < ctx.nr; i++)
+		free(ctx.ref_names[i]);
+	free(ctx.ref_names);
+	free(ctx.old);
+	free(ctx.new);
+	return res;
 }
 
 static int is_final_fixup(struct todo_list *todo_list)
