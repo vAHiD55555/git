@@ -1696,6 +1696,7 @@ static struct {
 	[TODO_LABEL] = { 'l', "label" },
 	[TODO_RESET] = { 't', "reset" },
 	[TODO_MERGE] = { 'm', "merge" },
+	[TODO_UPDATE_REFS] = { 'u', "update-refs" },
 	[TODO_NOOP] = { 0,   "noop" },
 	[TODO_DROP] = { 'd', "drop" },
 	[TODO_COMMENT] = { 0,   NULL },
@@ -2442,7 +2443,9 @@ static int parse_insn_line(struct repository *r, struct todo_item *item,
 	padding = strspn(bol, " \t");
 	bol += padding;
 
-	if (item->command == TODO_NOOP || item->command == TODO_BREAK) {
+	if (item->command == TODO_NOOP ||
+	    item->command == TODO_BREAK ||
+	    item->command == TODO_UPDATE_REFS) {
 		if (bol != eol)
 			return error(_("%s does not accept arguments: '%s'"),
 				     command_to_string(item->command), bol);
@@ -4056,6 +4059,11 @@ leave_merge:
 	return ret;
 }
 
+static int do_update_refs(struct repository *r)
+{
+	return 0;
+}
+
 static int is_final_fixup(struct todo_list *todo_list)
 {
 	int i = todo_list->current;
@@ -4431,6 +4439,9 @@ static int pick_commits(struct repository *r,
 				return error_with_patch(r, item->commit,
 							arg, item->arg_len,
 							opts, res, 0);
+		} else if (item->command == TODO_UPDATE_REFS) {
+			if ((res = do_update_refs(r)))
+				reschedule = 1;
 		} else if (!is_noop(item->command))
 			return error(_("unknown command %d"), item->command);
 
