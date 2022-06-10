@@ -3942,6 +3942,8 @@ static int check_patch(struct apply_state *state, struct patch *patch)
 	if ((tpatch = in_fn_table(state, new_name)) &&
 	    (was_deleted(tpatch) || to_be_deleted(tpatch)))
 		ok_if_exists = 1;
+	else if (ignore_case && !strcasecmp(old_name, new_name))
+		ok_if_exists = 1;
 	else
 		ok_if_exists = 0;
 
