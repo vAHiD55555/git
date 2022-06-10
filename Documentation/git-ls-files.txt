@@ -20,7 +20,7 @@ SYNOPSIS
 		[--exclude-standard]
 		[--error-unmatch] [--with-tree=<tree-ish>]
 		[--full-name] [--recurse-submodules]
-		[--abbrev[=<n>]] [--] [<file>...]
+		[--abbrev[=<n>]] [--format=<format>] [--] [<file>...]
 
 DESCRIPTION
 -----------
@@ -192,6 +192,13 @@ followed by the  ("attr/<eolattr>").
 	to the contained files. Sparse directories will be shown with a
 	trailing slash, such as "x/" for a sparse directory "x".
 
+--format=<format>::
+	A string that interpolates `%(fieldname)` from the result being shown.
+	It also interpolates `%%` to `%`, and `%xx` where `xx` are hex digits
+	interpolates to character with hex code `xx`; for example `%00`
+	interpolates to `\0` (NUL), `%09` to `\t` (TAB) and %0a to `\n` (LF).
+	--format cannot be combined with `-s`, `-o`, `-k`, `--resolve-undo` and
+	`--debug`.
 \--::
 	Do not interpret any more arguments as options.
 
@@ -223,6 +230,48 @@ quoted as explained for the configuration variable `core.quotePath`
 (see linkgit:git-config[1]).  Using `-z` the filename is output
 verbatim and the line is terminated by a NUL byte.
 
+It is possible to print in a custom format by using the `--format`
+option, which is able to interpolate different fields using
+a `%(fieldname)` notation. For example, if you only care about the
+"objectname" and "path" fields, you can execute with a specific
+"--format" like
+
+	git ls-files --format='%(objectname) %(path)'
+
+FIELD NAMES
+-----------
+Various values from structured fields can be used to interpolate
+into the resulting output. For each outputting line, the following
+names can be used:
+
+objectmode::
+	The mode of the file which is in the index.
+objectname::
+	The name of the file which is in the index.
+stage::
+	The stage of the file which is in the index.
+eol::
+	The <eolinfo> and <eolattr> of files both in the
+	index and the work-tree.
+path::
+	The pathname of the file which is in the index.
+ctime::
+	The create time of file which is in the index.
+mtime::
+	The modified time of file which is in the index.
+dev::
+	The ID of device containing file which is in the index.
+ino::
+	The inode number of file which is in the index.
+uid::
+	The user id of file owner which is in the index.
+gid::
+	The group id of file owner which is in the index.
+size::
+	The size of the file which is in the index.
+flags::
+	The flags of the file in the index which include
+	in-memory only flags and some extended on-disk flags.
 
 EXCLUDE PATTERNS
 ----------------
