@@ -11,6 +11,7 @@
 #include "quote.h"
 #include "dir.h"
 #include "builtin.h"
+#include "strbuf.h"
 #include "tree.h"
 #include "cache-tree.h"
 #include "parse-options.h"
@@ -48,6 +49,7 @@ static char *ps_matched;
 static const char *with_tree;
 static int exc_given;
 static int exclude_args;
+static const char *format;
 
 static const char *tag_cached = "";
 static const char *tag_unmerged = "";
@@ -58,8 +60,8 @@ static const char *tag_modified = "";
 static const char *tag_skip_worktree = "";
 static const char *tag_resolve_undo = "";
 
-static void write_eolinfo(struct index_state *istate,
-			  const struct cache_entry *ce, const char *path)
+static void write_eolinfo_internal(struct strbuf *sb, struct index_state *istate,
+				   const struct cache_entry *ce, const char *path)
 {
 	if (show_eol) {
 		struct stat st;
@@ -71,8 +73,23 @@ static void write_eolinfo(struct index_state *istate,
 							       ce->name);
 		if (!lstat(path, &st) && S_ISREG(st.st_mode))
 			w_txt = get_wt_convert_stats_ascii(path);
-		printf("i/%-5s w/%-5s attr/%-17s\t", i_txt, w_txt, a_txt);
+		if (sb)
+			strbuf_addf(sb, "i/%-5s w/%-5s attr/%-17s\t", i_txt, w_txt, a_txt);
+		else
+			printf("i/%-5s w/%-5s attr/%-17s\t", i_txt, w_txt, a_txt);
 	}
+}
+
+static void write_eolinfo(struct index_state *istate,
+			  const struct cache_entry *ce, const char *path)
+{
+	write_eolinfo_internal(NULL, istate, ce, path);
+}
+
+static void write_eolinfo_to_buf(struct strbuf *sb, struct index_state *istate,
+				 const struct cache_entry *ce, const char *path)
+{
+	write_eolinfo_internal(sb, istate, ce, path);
 }
 
 static void write_name(const char *name)
@@ -83,6 +100,16 @@ static void write_name(const char *name)
 	 */
 	write_name_quoted_relative(name, prefix_len ? prefix : NULL,
 				   stdout, line_terminator);
+}
+
+static void write_name_to_buf(struct strbuf *sb, const char *name)
+{
+	name = relative_path(name, prefix_len ? prefix : NULL, sb);
+	if (line_terminator) {
+		quote_c_style(name, sb, NULL, 0);
+	} else {
+		strbuf_add(sb, name, strlen(name));
+	}
 }
 
 static const char *get_tag(const struct cache_entry *ce, const char *tag)
@@ -222,6 +249,86 @@ static void show_submodule(struct repository *superproject,
 	repo_clear(&subrepo);
 }
 
+struct show_index_data {
+	const char *tag;
+	const char *pathname;
+	struct index_state *istate;
+	const struct cache_entry *ce;
+};
+
+static size_t expand_show_index(struct strbuf *sb, const char *start,
+			       void *context)
+{
+	struct show_index_data *data = context;
+	const char *end;
+	const char *p;
+	unsigned int errlen;
+	const struct stat_data *sd = &data->ce->ce_stat_data;
+	size_t len = strbuf_expand_literal_cb(sb, start, NULL);
+	if (len)
+		return len;
+	if (*start != '(')
+		die(_("bad ls-files format: element '%s' does not start with '('"), start);
+
+	end = strchr(start + 1, ')');
+	if (!end)
+		die(_("bad ls-files format: element '%s' does not end in ')'"), start);
+
+	len = end - start + 1;
+	if (skip_prefix(start, "(tag)", &p)) {
+		strbuf_addstr(sb, get_tag(data->ce, data->tag));
+	} else if (skip_prefix(start, "(objectmode)", &p)) {
+		strbuf_addf(sb, "%06o", data->ce->ce_mode);
+	} else if (skip_prefix(start, "(objectname)", &p)) {
+		strbuf_add_unique_abbrev(sb, &data->ce->oid, abbrev);
+	} else if (skip_prefix(start, "(stage)", &p)) {
+		strbuf_addf(sb, "%d", ce_stage(data->ce));
+	} else if (skip_prefix(start, "(eol)", &p)) {
+		write_eolinfo_to_buf(sb, data->istate, data->ce, data->pathname);
+	} else if (skip_prefix(start, "(path)", &p)) {
+		write_name_to_buf(sb, data->pathname);
+	} else if (skip_prefix(start, "(ctime)", &p)) {
+		strbuf_addf(sb, "ctime: %u:%u", sd->sd_ctime.sec, sd->sd_ctime.nsec);
+	} else if (skip_prefix(start, "(mtime)", &p)) {
+		strbuf_addf(sb, "mtime: %u:%u", sd->sd_mtime.sec, sd->sd_mtime.nsec);
+	} else if (skip_prefix(start, "(dev)", &p)) {
+		strbuf_addf(sb, "dev: %u", sd->sd_dev);
+	} else if (skip_prefix(start, "(ino)", &p)) {
+		strbuf_addf(sb, "ino: %u", sd->sd_ino);
+	} else if (skip_prefix(start, "(uid)", &p)) {
+		strbuf_addf(sb, "uid: %u", sd->sd_uid);
+	} else if (skip_prefix(start, "(gid)", &p)) {
+		strbuf_addf(sb, "gid: %u", sd->sd_gid);
+	} else if (skip_prefix(start, "(size)", &p)) {
+		strbuf_addf(sb, "size: %u", sd->sd_size);
+	} else if (skip_prefix(start, "(flags)", &p)) {
+		strbuf_addf(sb, "flags: %x", data->ce->ce_flags);
+	} else {
+		errlen = (unsigned long)len;
+		die(_("bad ls-files format: %%%.*s"), errlen, start);
+	}
+
+	return len;
+}
+
+static void show_ce_fmt(struct repository *repo, const struct cache_entry *ce,
+			const char *format, const char *fullname, const char *tag) {
+
+	struct show_index_data data = {
+		.tag = tag,
+		.pathname = fullname,
+		.istate = repo->index,
+		.ce = ce,
+	};
+
+	struct strbuf sb = STRBUF_INIT;
+	strbuf_expand(&sb, format, expand_show_index, &data);
+	strbuf_addch(&sb, line_terminator);
+	fwrite(sb.buf, sb.len, 1, stdout);
+	strbuf_release(&sb);
+	return;
+}
+
 static void show_ce(struct repository *repo, struct dir_struct *dir,
 		    const struct cache_entry *ce, const char *fullname,
 		    const char *tag)
@@ -236,6 +343,11 @@ static void show_ce(struct repository *repo, struct dir_struct *dir,
 				  max_prefix_len, ps_matched,
 				  S_ISDIR(ce->ce_mode) ||
 				  S_ISGITLINK(ce->ce_mode))) {
+		if (format) {
+			show_ce_fmt(repo, ce, format, fullname, tag);
+			return;
+		}
+
 		tag = get_tag(ce, tag);
 
 		if (!show_stage) {
@@ -675,6 +787,9 @@ int cmd_ls_files(int argc, const char **argv, const char *cmd_prefix)
 			 N_("suppress duplicate entries")),
 		OPT_BOOL(0, "sparse", &show_sparse_dirs,
 			 N_("show sparse directories in the presence of a sparse index")),
+		OPT_STRING_F(0, "format", &format, N_("format"),
+					 N_("format to use for the output"),
+					 PARSE_OPT_NONEG),
 		OPT_END()
 	};
 	int ret = 0;
@@ -699,6 +814,11 @@ int cmd_ls_files(int argc, const char **argv, const char *cmd_prefix)
 	for (i = 0; i < exclude_list.nr; i++) {
 		add_pattern(exclude_list.items[i].string, "", 0, pl, --exclude_args);
 	}
+
+	if (format && (show_stage || show_others || show_killed ||
+		show_resolve_undo || skipping_duplicates || debug_mode))
+			die(_("ls-files --format cannot used with -s, -o, -k, --resolve-undo, --deduplicate, --debug"));
+
 	if (show_tag || show_valid_bit || show_fsmonitor_bit) {
 		tag_cached = "H ";
 		tag_unmerged = "M ";
