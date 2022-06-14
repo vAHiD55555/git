@@ -20,7 +20,7 @@ test_expect_success 'do not switch branches with dirty file' '
 	git reset --hard &&
 	git checkout other &&
 	echo dirt >file &&
-	git update-index --assume-unchanged file &&
+	git update-index --verbose --assume-unchanged file &&
 	test_must_fail git checkout - 2>err &&
 	test_i18ngrep overwritten err
 '
