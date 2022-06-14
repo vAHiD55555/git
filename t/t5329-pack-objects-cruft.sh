@@ -451,11 +451,13 @@ test_expect_success 'expiring cruft objects with git gc' '
 		sort <reachable.raw >reachable &&
 		comm -13 reachable objects >unreachable &&
 
-		git repack --cruft -d &&
+		# Write a cruft pack instead of deleting files.
+		git gc --cruft &&
 
 		mtimes=$(ls .git/objects/pack/pack-*.mtimes) &&
 		test_path_is_file $mtimes &&
 
+		# Ignore the cruft pack and delete every unreachable object.
 		git gc --cruft --prune=now &&
 
 		git cat-file --batch-all-objects --batch-check="%(objectname)" >objects &&
