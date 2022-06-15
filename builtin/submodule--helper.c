@@ -2512,6 +2512,8 @@ static int update_submodule(struct update_data *update_data)
 
 		next.recursive_prefix = get_submodule_displaypath(prefixed_path,
 								  update_data->prefix);
+		free(prefixed_path);
+
 		next.prefix = NULL;
 		oidcpy(&next.oid, null_oid());
 		oidcpy(&next.suboid, null_oid());
