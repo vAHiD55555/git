@@ -137,3 +137,8 @@ push.negotiate::
 	server attempt to find commits in common. If "false", Git will
 	rely solely on the server's ref advertisement to find commits
 	in common.
+
+push.useBitmaps::
+    If this config and `pack.useBitmaps` are both `true`, then Git will
+    use reachability bitmaps during `git push`, if available (disabled
+    by default).
