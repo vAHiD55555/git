@@ -526,6 +526,7 @@ static struct pack_list * add_pack(struct packed_git *p)
 	}
 	l.all_objects_size = l.remaining_objects->size;
 	l.unique_objects = NULL;
+	l.next = NULL;
 	if (p->pack_local)
 		return pack_list_insert(&local_packs, &l);
 	else
