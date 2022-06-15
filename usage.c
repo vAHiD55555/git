@@ -343,6 +343,7 @@ void bug_fl(const char *file, int line, const char *fmt, ...)
 	BUG_vfl_common(file, line, fmt, ap);
 	va_end(ap);
 	trace2_cmd_error_va(fmt, cp);
+	va_end(cp);
 }
 
 #ifdef SUPPRESS_ANNOTATED_LEAKS
