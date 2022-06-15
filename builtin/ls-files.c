@@ -60,6 +60,27 @@ static const char *tag_modified = "";
 static const char *tag_skip_worktree = "";
 static const char *tag_resolve_undo = "";
 
+static enum ls_files_cmdmode {
+	MODE_DEFAULT = 0,
+	MODE_OBJECT_ONLY,
+} ls_files_cmdmode;
+
+struct ls_files_cmdmodee_to_fmt {
+	enum ls_files_cmdmode mode;
+	const char *const fmt;
+};
+
+static struct ls_files_cmdmodee_to_fmt ls_files_cmdmode_format[] = {
+	{
+		.mode = MODE_DEFAULT,
+		.fmt = NULL,
+	},
+	{
+		.mode = MODE_OBJECT_ONLY,
+		.fmt = "%(objectname)",
+	},
+};
+
 static void write_eolinfo_internal(struct strbuf *sb, struct index_state *istate,
 				   const struct cache_entry *ce, const char *path)
 {
@@ -747,6 +768,8 @@ int cmd_ls_files(int argc, const char **argv, const char *cmd_prefix)
 			DIR_SHOW_IGNORED),
 		OPT_BOOL('s', "stage", &show_stage,
 			N_("show staged contents' object name in the output")),
+		OPT_CMDMODE(0, "object-only", &ls_files_cmdmode, N_("list only objects"),
+			    MODE_OBJECT_ONLY),
 		OPT_BOOL('k', "killed", &show_killed,
 			N_("show files on the filesystem that need to be removed")),
 		OPT_BIT(0, "directory", &dir.flags,
@@ -815,9 +838,20 @@ int cmd_ls_files(int argc, const char **argv, const char *cmd_prefix)
 		add_pattern(exclude_list.items[i].string, "", 0, pl, --exclude_args);
 	}
 
+	if (format && ls_files_cmdmode)
+		die(_("--format can't be combined with other format-altering options"));
+
+	for (i = 0; !format && i < ARRAY_SIZE(ls_files_cmdmode_format); i++) {
+		if (ls_files_cmdmode == ls_files_cmdmode_format[i].mode) {
+			format = ls_files_cmdmode_format[i].fmt;
+			break;
+		}
+	}
+
 	if (format && (show_stage || show_others || show_killed ||
 		show_resolve_undo || skipping_duplicates || debug_mode))
-			die(_("ls-files --format cannot used with -s, -o, -k, --resolve-undo, --deduplicate, --debug"));
+		die(_("ls-files --format or other format-altering options "
+		      "cannot used with -s, -o, -k, --resolve-undo, --deduplicate, --debug"));
 
 	if (show_tag || show_valid_bit || show_fsmonitor_bit) {
 		tag_cached = "H ";

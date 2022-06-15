@@ -139,4 +139,38 @@ test_expect_success 'git ls-files --format with --debug must fail' '
 	test_must_fail git ls-files --format="%(objectname)" --debug
 '
 
+test_expect_success 'git ls-files --object-only equal to --format=%(objectname)' '
+	git ls-files --format="%(objectname)" >expect &&
+	git ls-files --object-only >actual &&
+	test_cmp expect actual
+'
+
+test_expect_success 'git ls-files --object-only with --format must fail' '
+	test_must_fail git ls-files --format="%(path)" --object-only
+'
+
+test_expect_success 'git ls-files --object-only with -s must fail' '
+	test_must_fail git ls-files --object-only -s
+'
+
+test_expect_success 'git ls-files --object-only with -o must fail' '
+	test_must_fail git ls-files --object-only -o
+'
+
+test_expect_success 'git ls-files --object-only with -k must fail' '
+	test_must_fail git ls-files --object-only -k
+'
+
+test_expect_success 'git ls-files --object-only with --resolve-undo must fail' '
+	test_must_fail git ls-files --object-only --resolve-undo
+'
+
+test_expect_success 'git ls-files --object-only with --deduplicate must fail' '
+	test_must_fail git ls-files --object-only --deduplicate
+'
+
+test_expect_success 'git ls-files --object-only with --debug must fail' '
+	test_must_fail git ls-files --object-only --debug
+'
+
 test_done

@@ -13,7 +13,7 @@ SYNOPSIS
 		[-c|--cached] [-d|--deleted] [-o|--others] [-i|--|ignored]
 		[-s|--stage] [-u|--unmerged] [-k|--|killed] [-m|--modified]
 		[--directory [--no-empty-directory]] [--eol]
-		[--deduplicate]
+		[--deduplicate] [--object-only]
 		[-x <pattern>|--exclude=<pattern>]
 		[-X <file>|--exclude-from=<file>]
 		[--exclude-per-directory=<file>]
@@ -199,6 +199,12 @@ followed by the  ("attr/<eolattr>").
 	interpolates to `\0` (NUL), `%09` to `\t` (TAB) and %0a to `\n` (LF).
 	--format cannot be combined with `-s`, `-o`, `-k`, `--resolve-undo`,
 	`--debug`.
+
+--object-only::
+	List only names of the objects, one per line. This is equivalent
+	to specifying `--format='%(objectname)'`. Cannot be combined with
+	`--format=<format>`.
+
 \--::
 	Do not interpret any more arguments as options.
 
