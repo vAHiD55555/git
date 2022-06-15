@@ -1865,4 +1865,15 @@ test_expect_success 'push warns or fails when using username:password' '
 	test_line_count = 1 warnings
 '
 
+test_expect_success 'push with config push.useBitmaps' '
+	mk_test testrepo heads/main &&
+	git checkout main &&
+	GIT_TRACE=1 git push testrepo main:test >/dev/null 2>stderr &&
+	grep "no-use-bitmap-index" stderr &&
+
+	git config push.useBitmaps true &&
+	GIT_TRACE=1 git push testrepo main:test2 >/dev/null 2>stderr &&
+	! grep "no-use-bitmap-index" stderr
+'
+
 test_done

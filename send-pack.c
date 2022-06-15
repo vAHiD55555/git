@@ -84,6 +84,8 @@ static int pack_objects(int fd, struct ref *refs, struct oid_array *advertised,
 		strvec_push(&po.args, "--progress");
 	if (is_repository_shallow(the_repository))
 		strvec_push(&po.args, "--shallow");
+	if (!args->use_bitmaps)
+		strvec_push(&po.args, "--no-use-bitmap-index");
 	po.in = -1;
 	po.out = args->stateless_rpc ? -1 : fd;
 	po.git_cmd = 1;
@@ -482,6 +484,7 @@ int send_pack(struct send_pack_args *args,
 	int use_push_options = 0;
 	int push_options_supported = 0;
 	int object_format_supported = 0;
+	int use_bitmaps = 0;
 	unsigned cmds_sent = 0;
 	int ret;
 	struct async demux;
@@ -497,6 +500,9 @@ int send_pack(struct send_pack_args *args,
 	git_config_get_bool("push.negotiate", &push_negotiate);
 	if (push_negotiate)
 		get_commons_through_negotiation(args->url, remote_refs, &commons);
+	git_config_get_bool("push.usebitmaps", &use_bitmaps);
+	if (use_bitmaps)
+		args->use_bitmaps = 1;
 
 	git_config_get_bool("transfer.advertisesid", &advertise_sid);
 
