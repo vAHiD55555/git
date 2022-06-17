@@ -574,6 +574,7 @@ test_unconfig () {
 # Set git config, automatically unsetting it after the test is over.
 test_config () {
 	global=
+	add=
 	config_dir=
 	while test $# != 0
 	do
@@ -584,6 +585,9 @@ test_config () {
 			;;
 		--global)
 			global=--global
+			;;
+		--add)
+			add=--add
 			;;
 		-*)
 			BUG "invalid test_config option: $1"
@@ -606,7 +610,7 @@ test_config () {
 	esac
 
 	test_when_finished "test_unconfig ${config_dir:+-C '$config_dir'} --fixed-value $global '$1' '$2'" &&
-	git ${config_dir:+-C "$config_dir"} config $global "$1" "$2"
+	git ${config_dir:+-C "$config_dir"} config $global $add "$1" "$2"
 }
 
 write_script () {

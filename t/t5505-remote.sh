@@ -95,7 +95,7 @@ test_expect_success 'filters for promisor remotes are listed by git remote -v' '
 	git -C pc remote -v >out &&
 	grep "srv.bare (fetch) \[blob:none\]" out &&
 
-	git -C pc config remote.origin.partialCloneFilter object:type=commit &&
+	test_config -C pc remote.origin.partialCloneFilter object:type=commit &&
 	git -C pc remote -v >out &&
 	grep "srv.bare (fetch) \[object:type=commit\]" out
 '
@@ -155,10 +155,10 @@ test_expect_success 'remove remote protects local branches' '
 	  git branch -d main
 	EOF
 	git -C test tag footag &&
-	git -C test config --add remote.oops.fetch "+refs/*:refs/*" &&
+	test_config -C test --add remote.oops.fetch "+refs/*:refs/*" &&
 	git -C test remote remove oops 2>actual1 &&
 	git -C test branch foobranch &&
-	git -C test config --add remote.oops.fetch "+refs/*:refs/*" &&
+	test_config -C test --add remote.oops.fetch "+refs/*:refs/*" &&
 	git -C test remote rm oops 2>actual2 &&
 	git -C test branch -d foobranch &&
 	git -C test tag -d footag &&
@@ -183,7 +183,7 @@ test_expect_success 'remove remote with a branch without configured merge' '
 	git -C test remote add two ../two &&
 	git -C test fetch two &&
 	git -C test checkout -b second two/main^0 &&
-	git -C test config branch.second.remote two &&
+	test_config -C test branch.second.remote two &&
 	git -C test checkout main &&
 	git -C test remote rm two
 '
@@ -294,8 +294,7 @@ cat >expect <<EOF
 EOF
 
 test_expect_success 'show with negative refspecs' '
-	test_when_finished "git -C test config --unset-all --fixed-value remote.origin.fetch ^refs/heads/main" &&
-	git -C test config --add remote.origin.fetch ^refs/heads/main &&
+	test_config -C test --add remote.origin.fetch ^refs/heads/main &&
 	git -C test remote show origin >output &&
 	test_cmp expect output
 '
@@ -317,8 +316,7 @@ cat >expect <<EOF
 EOF
 
 test_expect_failure 'show stale with negative refspecs' '
-	test_when_finished "git -C test config --unset-all --fixed-value remote.origin.fetch ^refs/heads/side" &&
-	git -C test config --add remote.origin.fetch ^refs/heads/side &&
+	test_config -C test --add remote.origin.fetch ^refs/heads/side &&
 	git -C test remote show origin >output &&
 	test_cmp expect output
 '
@@ -488,8 +486,8 @@ test_expect_success 'add alt && prune' '
 	mkdir alttst &&
 	git -C alttst init &&
 	git -C alttst remote add -f origin ../one &&
-	git -C alttst config remote.alt.url ../one &&
-	git -C alttst config remote.alt.fetch "+refs/heads/*:refs/remotes/origin/*" &&
+	test_config -C alttst remote.alt.url ../one &&
+	test_config -C alttst remote.alt.fetch "+refs/heads/*:refs/remotes/origin/*" &&
 	git -C one branch -m side side2 &&
 	git -C alttst rev-parse --verify refs/remotes/origin/side &&
 	test_must_fail git -C alttst rev-parse --verify refs/remotes/origin/side2 &&
@@ -590,8 +588,8 @@ test_expect_success 'update with arguments' '
 	done &&
 	git -C one remote add manduca ../mirror &&
 	git -C one remote add megaloprepus ../mirror &&
-	git -C one config remotes.phobaeticus "drosophila megaloprepus" &&
-	git -C one config remotes.titanus manduca &&
+	test_config -C one remotes.phobaeticus "drosophila megaloprepus" &&
+	test_config -C one remotes.titanus manduca &&
 	git -C one remote update phobaeticus titanus &&
 	git -C one branch -r >output &&
 	test_cmp expect output
@@ -619,7 +617,7 @@ test_expect_success 'update default' '
 	do
 	git -C one branch -r -d $b || exit 1
 	done &&
-	git -C one config remote.drosophila.skipDefaultUpdate true &&
+	test_config -C one remote.drosophila.skipDefaultUpdate true &&
 	git -C one remote update default &&
 	git -C one branch -r >output &&
 	test_cmp expect output
@@ -636,7 +634,7 @@ test_expect_success 'update default (overridden, with funny whitespace)' '
 	do
 	git -C one branch -r -d $b || exit 1
 	done &&
-	git -C one config remotes.default "$(printf "\t drosophila  \n")" &&
+	test_config -C one remotes.default "$(printf "\t drosophila  \n")" &&
 	git -C one remote update default &&
 	git -C one branch -r >output &&
 	test_cmp expect output
@@ -647,7 +645,7 @@ test_expect_success 'update (with remotes.default defined)' '
 	do
 	git -C one branch -r -d $b || exit 1
 	done &&
-	git -C one config remotes.default "drosophila" &&
+	test_config -C one remotes.default "drosophila" &&
 	git -C one remote update &&
 	git -C one branch -r >output &&
 	test_cmp expect output
@@ -670,7 +668,7 @@ test_expect_success 'reject adding remote with an invalid name' '
 test_expect_success 'rename a remote' '
 	test_config --global remote.pushDefault origin &&
 	git clone one four &&
-	git -C four config branch.main.pushRemote origin &&
+	test_config -C four branch.main.pushRemote origin &&
 	GIT_TRACE2_EVENT=$(pwd)/trace \
 		git -C four remote rename --progress origin upstream &&
 	test_region progress "Renaming remote references" trace &&
@@ -686,7 +684,7 @@ test_expect_success 'rename a remote' '
 
 test_expect_success 'rename a remote renames repo remote.pushDefault' '
 	git clone one four.1 &&
-	git -C four.1 config remote.pushDefault origin &&
+	test_config -C four.1 remote.pushDefault origin &&
 	git -C four.1 remote rename origin upstream &&
 	grep pushDefault four.1/.git/config &&
 	test "$(git -C four.1 config --local remote.pushDefault)" = "upstream"
@@ -695,7 +693,7 @@ test_expect_success 'rename a remote renames repo remote.pushDefault' '
 test_expect_success 'rename a remote renames repo remote.pushDefault but ignores global' '
 	test_config --global remote.pushDefault other &&
 	git clone one four.2 &&
-	git -C four.2 config remote.pushDefault origin &&
+	test_config -C four.2 remote.pushDefault origin &&
 	git -C four.2 remote rename origin upstream &&
 	test "$(git -C four.2 config --global remote.pushDefault)" = "other" &&
 	test "$(git -C four.2 config --local remote.pushDefault)" = "upstream"
@@ -704,7 +702,7 @@ test_expect_success 'rename a remote renames repo remote.pushDefault but ignores
 test_expect_success 'rename a remote renames repo remote.pushDefault but keeps global' '
 	test_config --global remote.pushDefault origin &&
 	git clone one four.3 &&
-	git -C four.3 config remote.pushDefault origin &&
+	test_config -C four.3 remote.pushDefault origin &&
 	git -C four.3 remote rename origin upstream &&
 	test "$(git -C four.3 config --global remote.pushDefault)" = "origin" &&
 	test "$(git -C four.3 config --local remote.pushDefault)" = "upstream"
@@ -712,7 +710,7 @@ test_expect_success 'rename a remote renames repo remote.pushDefault but keeps g
 
 test_expect_success 'rename does not update a non-default fetch refspec' '
 	git clone one four.one &&
-	git -C four.one config remote.origin.fetch +refs/heads/*:refs/heads/origin/* &&
+	test_config -C four.one remote.origin.fetch +refs/heads/*:refs/heads/origin/* &&
 	git -C four.one remote rename origin upstream &&
 	test "$(git -C four.one config remote.upstream.fetch)" = "+refs/heads/*:refs/heads/origin/*" &&
 	git -C four.one rev-parse -q origin/main
@@ -742,7 +740,7 @@ test_expect_success 'rename succeeds with existing remote.<target>.prune' '
 test_expect_success 'remove a remote' '
 	test_config --global remote.pushDefault origin &&
 	git clone one four.five &&
-	git -C four.five config branch.main.pushRemote origin &&
+	test_config -C four.five branch.main.pushRemote origin &&
 	git -C four.five remote remove origin &&
 	test -z "$(git -C four.five for-each-ref refs/remotes/origin)" &&
 	test_must_fail git -C four.five config branch.main.remote &&
@@ -752,7 +750,7 @@ test_expect_success 'remove a remote' '
 
 test_expect_success 'remove a remote removes repo remote.pushDefault' '
 	git clone one four.five.1 &&
-	git -C four.five.1 config remote.pushDefault origin &&
+	test_config -C four.five.1 remote.pushDefault origin &&
 	git -C four.five.1 remote remove origin &&
 	test_must_fail git -C four.five.1 config --local remote.pushDefault
 '
@@ -760,7 +758,7 @@ test_expect_success 'remove a remote removes repo remote.pushDefault' '
 test_expect_success 'remove a remote removes repo remote.pushDefault but ignores global' '
 	test_config --global remote.pushDefault other &&
 	git clone one four.five.2 &&
-	git -C four.five.2 config remote.pushDefault origin &&
+	test_config -C four.five.2 remote.pushDefault origin &&
 	git -C four.five.2 remote remove origin &&
 	test "$(git -C four.five.2 config --global remote.pushDefault)" = "other" &&
 	test_must_fail git -C four.five.2 config --local remote.pushDefault
@@ -769,7 +767,7 @@ test_expect_success 'remove a remote removes repo remote.pushDefault but ignores
 test_expect_success 'remove a remote removes repo remote.pushDefault but keeps global' '
 	test_config --global remote.pushDefault origin &&
 	git clone one four.five.3 &&
-	git -C four.five.3 config remote.pushDefault origin &&
+	test_config -C four.five.3 remote.pushDefault origin &&
 	git -C four.five.3 remote remove origin &&
 	test "$(git -C four.five.3 config --global remote.pushDefault)" = "origin" &&
 	test_must_fail git -C four.five.3 config --local remote.pushDefault
@@ -1210,9 +1208,9 @@ test_expect_success 'refs/remotes/* <src> refspec and unqualified <dst> DWIM and
 	git -C two tag -a -m "Some tag" my-tag main &&
 	git -C two update-ref refs/trees/my-head-tree HEAD^{tree} &&
 	git -C two update-ref refs/blobs/my-file-blob HEAD:file &&
-	git -C test config --add remote.two.fetch "+refs/tags/*:refs/remotes/tags-from-two/*" &&
-	git -C test config --add remote.two.fetch "+refs/trees/*:refs/remotes/trees-from-two/*" &&
-	git -C test config --add remote.two.fetch "+refs/blobs/*:refs/remotes/blobs-from-two/*" &&
+	test_config -C test --add remote.two.fetch "+refs/tags/*:refs/remotes/tags-from-two/*" &&
+	test_config -C test --add remote.two.fetch "+refs/trees/*:refs/remotes/trees-from-two/*" &&
+	test_config -C test --add remote.two.fetch "+refs/blobs/*:refs/remotes/blobs-from-two/*" &&
 	git -C test fetch --no-tags two &&
 
 	test_must_fail git -C test push origin refs/remotes/two/another:dst 2>err &&
