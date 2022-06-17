@@ -506,15 +506,18 @@ test_modebits () {
 			  -e 's|^\(......\)S|\1-|' -e 's|^\(......\)s|\1x|'
 }
 
-# Usage: test_unconfig [options] <name>
+# Usage: test_unconfig [options] <name> <value-pattern>
 #   -C <dir>:
 #	Run all git commits in directory <dir>
 #   --global:
 #	Modify the global configuration instead of repository.
+#   --fixed-value:
+#	Match the value pattern as a fixed string instead of a regex.
 #
 # Unset a configuration variable, but don't fail if it doesn't exist.
 test_unconfig () {
 	global=
+	fixed=
 	config_dir=
 	while test $# != 0
 	do
@@ -526,6 +529,9 @@ test_unconfig () {
 		--global)
 			global=--global
 			;;
+		--fixed-value)
+			fixed=--fixed-value
+			;;
 		-*)
 			BUG "invalid test_unconfig option: $1"
 			;;
@@ -535,7 +541,20 @@ test_unconfig () {
 		esac
 		shift
 	done
-	git ${config_dir:+-C "$config_dir"} config $global --unset-all "$1"
+
+	case "$#" in
+	1)
+		# Only enable --fixed-value if we have two parameters
+		fixed=
+		;;
+	2)
+		;;
+	*)
+		BUG "test_unconfig requires 1 or 2 positional arguments"
+		;;
+	esac
+
+	git ${config_dir:+-C "$config_dir"} config $global $fixed --unset-all "$1" "$2"
 	config_status=$?
 	case "$config_status" in
 	5) # ok, nothing to unset
@@ -575,7 +594,18 @@ test_config () {
 		esac
 		shift
 	done
-	test_when_finished "test_unconfig ${config_dir:+-C '$config_dir'} $global '$1'" &&
+
+	case "$#" in
+	1)
+		;;
+	2)
+		;;
+	*)
+		BUG "test_config requires 1 or 2 positional arguments"
+		;;
+	esac
+
+	test_when_finished "test_unconfig ${config_dir:+-C '$config_dir'} --fixed-value $global '$1' '$2'" &&
 	git ${config_dir:+-C "$config_dir"} config $global "$1" "$2"
 }
 
