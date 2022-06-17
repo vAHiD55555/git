@@ -138,7 +138,7 @@ test_expect_success CASE_INSENSITIVE_FS 'collision report on clone (w/ racy file
 test_expect_success CASE_INSENSITIVE_FS,!MINGW,!CYGWIN \
 	'collision report on clone (w/ colliding peer after the detected entry)' '
 
-	test_config_global filter.logger.smudge "\"$TEST_ROOT/logger_script\" %f" &&
+	test_config --global filter.logger.smudge "\"$TEST_ROOT/logger_script\" %f" &&
 	git reset --hard basename_collision &&
 	echo "file_x filter=logger" >.gitattributes &&
 	git add .gitattributes &&

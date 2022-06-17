@@ -87,7 +87,7 @@ test_expect_success 'clone with --filter' '
 # check that clone.filterSubmodules works (--also-filter-submodules can be
 # omitted)
 test_expect_success 'filters applied with clone.filterSubmodules' '
-	test_config_global clone.filterSubmodules true &&
+	test_config --global clone.filterSubmodules true &&
 	git clone --recurse-submodules --filter blob:none \
 		"file://$pwd/srv.bare" super_clone2 &&
 	test_cmp_config -C super_clone2 true remote.origin.promisor &&
@@ -97,7 +97,7 @@ test_expect_success 'filters applied with clone.filterSubmodules' '
 '
 
 test_expect_success '--no-also-filter-submodules overrides clone.filterSubmodules=true' '
-	test_config_global clone.filterSubmodules true &&
+	test_config --global clone.filterSubmodules true &&
 	git clone --recurse-submodules --filter blob:none \
 		--no-also-filter-submodules \
 		"file://$pwd/srv.bare" super_clone3 &&

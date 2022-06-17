@@ -251,8 +251,8 @@ sane_unset GIT_TRACE2_BRIEF
 
 test_expect_success 'using global config, normal stream, return code 0' '
 	test_when_finished "rm trace.normal actual expect" &&
-	test_config_global trace2.normalBrief 1 &&
-	test_config_global trace2.normalTarget "$(pwd)/trace.normal" &&
+	test_config --global trace2.normalBrief 1 &&
+	test_config --global trace2.normalTarget "$(pwd)/trace.normal" &&
 	test-tool trace2 001return 0 &&
 	perl "$TEST_DIRECTORY/t0210/scrub_normal.perl" <trace.normal >actual &&
 	cat >expect <<-EOF &&
@@ -267,10 +267,10 @@ test_expect_success 'using global config, normal stream, return code 0' '
 
 test_expect_success 'using global config with include' '
 	test_when_finished "rm trace.normal actual expect real.gitconfig" &&
-	test_config_global trace2.normalBrief 1 &&
-	test_config_global trace2.normalTarget "$(pwd)/trace.normal" &&
+	test_config --global trace2.normalBrief 1 &&
+	test_config --global trace2.normalTarget "$(pwd)/trace.normal" &&
 	mv "$(pwd)/.gitconfig" "$(pwd)/real.gitconfig" &&
-	test_config_global include.path "$(pwd)/real.gitconfig" &&
+	test_config --global include.path "$(pwd)/real.gitconfig" &&
 	test-tool trace2 001return 0 &&
 	perl "$TEST_DIRECTORY/t0210/scrub_normal.perl" <trace.normal >actual &&
 	cat >expect <<-EOF &&

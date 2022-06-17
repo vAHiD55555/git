@@ -18,11 +18,11 @@ test_expect_success 'setup' '
 
 test_expect_success 'submodule.stickyRecursiveClone flag manipulates submodule.recurse value' '
 
-	test_config_global submodule.stickyRecursiveClone true &&
+	test_config --global submodule.stickyRecursiveClone true &&
 	git clone --recurse-submodules parent clone_recurse_true &&
 	test_cmp_config -C clone_recurse_true true submodule.recurse &&
 
-	test_config_global submodule.stickyRecursiveClone false &&
+	test_config --global submodule.stickyRecursiveClone false &&
 	git clone --recurse-submodules parent clone_recurse_false &&
 	test_expect_code 1 git -C clone_recurse_false config --get submodule.recurse
 
@@ -94,7 +94,7 @@ test_expect_success 'prefers --template config over normal config' '
 	template="$TRASH_DIRECTORY/template-with-config" &&
 	mkdir "$template" &&
 	git config --file "$template/config" foo.bar from_template &&
-	test_config_global foo.bar from_global &&
+	test_config --global foo.bar from_global &&
 	git clone "--template=$template" parent clone-template-config &&
 	test "$(git -C clone-template-config config --local foo.bar)" = "from_template"
 
@@ -112,7 +112,7 @@ test_expect_success 'prefers -c config over --template config' '
 
 test_expect_success 'prefers config "clone.defaultRemoteName" over default' '
 
-	test_config_global clone.defaultRemoteName from_config &&
+	test_config --global clone.defaultRemoteName from_config &&
 	git clone parent clone-config-origin &&
 	git -C clone-config-origin rev-parse --verify refs/remotes/from_config/main
 
@@ -142,7 +142,7 @@ test_expect_success 'redirected clone -v does show progress' '
 '
 
 test_expect_success 'clone does not segfault with --bare and core.bare=false' '
-	test_config_global core.bare false &&
+	test_config --global core.bare false &&
 	git clone --bare parent clone-bare &&
 	echo true >expect &&
 	git -C clone-bare rev-parse --is-bare-repository >actual &&

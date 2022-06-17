@@ -339,8 +339,8 @@ test_expect_success "filter: smudge empty file" '
 '
 
 test_expect_success 'disable filter with empty override' '
-	test_config_global filter.disable.smudge false &&
-	test_config_global filter.disable.clean false &&
+	test_config --global filter.disable.smudge false &&
+	test_config --global filter.disable.clean false &&
 	test_config filter.disable.smudge false &&
 	test_config filter.disable.clean false &&
 
@@ -366,8 +366,8 @@ test_expect_success 'diff does not reuse worktree files that need cleaning' '
 '
 
 test_expect_success PERL 'required process filter should filter data' '
-	test_config_global filter.protocol.process "rot13-filter.pl debug.log clean smudge" &&
-	test_config_global filter.protocol.required true &&
+	test_config --global filter.protocol.process "rot13-filter.pl debug.log clean smudge" &&
+	test_config --global filter.protocol.required true &&
 	rm -rf repo &&
 	mkdir repo &&
 	(
@@ -451,8 +451,8 @@ test_expect_success PERL 'required process filter should filter data' '
 '
 
 test_expect_success PERL 'required process filter should filter data for various subcommands' '
-	test_config_global filter.protocol.process "rot13-filter.pl debug.log clean smudge" &&
-	test_config_global filter.protocol.required true &&
+	test_config --global filter.protocol.process "rot13-filter.pl debug.log clean smudge" &&
+	test_config --global filter.protocol.required true &&
 	(
 		cd repo &&
 
@@ -562,9 +562,9 @@ test_expect_success PERL 'required process filter should filter data for various
 '
 
 test_expect_success PERL 'required process filter takes precedence' '
-	test_config_global filter.protocol.clean false &&
-	test_config_global filter.protocol.process "rot13-filter.pl debug.log clean" &&
-	test_config_global filter.protocol.required true &&
+	test_config --global filter.protocol.clean false &&
+	test_config --global filter.protocol.process "rot13-filter.pl debug.log clean" &&
+	test_config --global filter.protocol.required true &&
 	rm -rf repo &&
 	mkdir repo &&
 	(
@@ -588,7 +588,7 @@ test_expect_success PERL 'required process filter takes precedence' '
 '
 
 test_expect_success PERL 'required process filter should be used only for "clean" operation only' '
-	test_config_global filter.protocol.process "rot13-filter.pl debug.log clean" &&
+	test_config --global filter.protocol.process "rot13-filter.pl debug.log clean" &&
 	rm -rf repo &&
 	mkdir repo &&
 	(
@@ -623,8 +623,8 @@ test_expect_success PERL 'required process filter should be used only for "clean
 '
 
 test_expect_success PERL 'required process filter should process multiple packets' '
-	test_config_global filter.protocol.process "rot13-filter.pl debug.log clean smudge" &&
-	test_config_global filter.protocol.required true &&
+	test_config --global filter.protocol.process "rot13-filter.pl debug.log clean smudge" &&
+	test_config --global filter.protocol.required true &&
 
 	rm -rf repo &&
 	mkdir repo &&
@@ -688,8 +688,8 @@ test_expect_success PERL 'required process filter should process multiple packet
 '
 
 test_expect_success PERL 'required process filter with clean error should fail' '
-	test_config_global filter.protocol.process "rot13-filter.pl debug.log clean smudge" &&
-	test_config_global filter.protocol.required true &&
+	test_config --global filter.protocol.process "rot13-filter.pl debug.log clean smudge" &&
+	test_config --global filter.protocol.required true &&
 	rm -rf repo &&
 	mkdir repo &&
 	(
@@ -707,7 +707,7 @@ test_expect_success PERL 'required process filter with clean error should fail' 
 '
 
 test_expect_success PERL 'process filter should restart after unexpected write failure' '
-	test_config_global filter.protocol.process "rot13-filter.pl debug.log clean smudge" &&
+	test_config --global filter.protocol.process "rot13-filter.pl debug.log clean smudge" &&
 	rm -rf repo &&
 	mkdir repo &&
 	(
@@ -762,7 +762,7 @@ test_expect_success PERL 'process filter should restart after unexpected write f
 '
 
 test_expect_success PERL 'process filter should not be restarted if it signals an error' '
-	test_config_global filter.protocol.process "rot13-filter.pl debug.log clean smudge" &&
+	test_config --global filter.protocol.process "rot13-filter.pl debug.log clean smudge" &&
 	rm -rf repo &&
 	mkdir repo &&
 	(
@@ -805,7 +805,7 @@ test_expect_success PERL 'process filter should not be restarted if it signals a
 '
 
 test_expect_success PERL 'process filter abort stops processing of all further files' '
-	test_config_global filter.protocol.process "rot13-filter.pl debug.log clean smudge" &&
+	test_config --global filter.protocol.process "rot13-filter.pl debug.log clean smudge" &&
 	rm -rf repo &&
 	mkdir repo &&
 	(
@@ -845,8 +845,8 @@ test_expect_success PERL 'process filter abort stops processing of all further f
 '
 
 test_expect_success PERL 'invalid process filter must fail (and not hang!)' '
-	test_config_global filter.protocol.process cat &&
-	test_config_global filter.protocol.required true &&
+	test_config --global filter.protocol.process cat &&
+	test_config --global filter.protocol.required true &&
 	rm -rf repo &&
 	mkdir repo &&
 	(
@@ -862,10 +862,10 @@ test_expect_success PERL 'invalid process filter must fail (and not hang!)' '
 '
 
 test_expect_success PERL 'delayed checkout in process filter' '
-	test_config_global filter.a.process "rot13-filter.pl a.log clean smudge delay" &&
-	test_config_global filter.a.required true &&
-	test_config_global filter.b.process "rot13-filter.pl b.log clean smudge delay" &&
-	test_config_global filter.b.required true &&
+	test_config --global filter.a.process "rot13-filter.pl a.log clean smudge delay" &&
+	test_config --global filter.a.required true &&
+	test_config --global filter.b.process "rot13-filter.pl b.log clean smudge delay" &&
+	test_config --global filter.b.required true &&
 
 	rm -rf repo &&
 	mkdir repo &&
@@ -941,8 +941,8 @@ test_expect_success PERL 'delayed checkout in process filter' '
 '
 
 test_expect_success PERL 'missing file in delayed checkout' '
-	test_config_global filter.bug.process "rot13-filter.pl bug.log clean smudge delay" &&
-	test_config_global filter.bug.required true &&
+	test_config --global filter.bug.process "rot13-filter.pl bug.log clean smudge delay" &&
+	test_config --global filter.bug.required true &&
 
 	rm -rf repo &&
 	mkdir repo &&
@@ -961,8 +961,8 @@ test_expect_success PERL 'missing file in delayed checkout' '
 '
 
 test_expect_success PERL 'invalid file in delayed checkout' '
-	test_config_global filter.bug.process "rot13-filter.pl bug.log clean smudge delay" &&
-	test_config_global filter.bug.required true &&
+	test_config --global filter.bug.process "rot13-filter.pl bug.log clean smudge delay" &&
+	test_config --global filter.bug.required true &&
 
 	rm -rf repo &&
 	mkdir repo &&
@@ -992,9 +992,9 @@ do
 
 	test_expect_success PERL,SYMLINKS,$mode_prereq \
 	"delayed checkout with $mode-collision don't write to the wrong place" '
-		test_config_global filter.delay.process \
+		test_config --global filter.delay.process \
 			"\"$TEST_ROOT/rot13-filter.pl\" --always-delay delayed.log clean smudge delay" &&
-		test_config_global filter.delay.required true &&
+		test_config --global filter.delay.required true &&
 
 		git init $mode-collision &&
 		(

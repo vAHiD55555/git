@@ -92,7 +92,7 @@ test_expect_success 'rebase.forkPoint set to false' '
 '
 
 test_expect_success 'rebase.forkPoint set to false and then to true' '
-	test_config_global rebase.forkPoint false &&
+	test_config --global rebase.forkPoint false &&
 	test_config rebase.forkPoint true &&
 	do_test_rebase "G F E D B A"
 '

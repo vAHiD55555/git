@@ -126,7 +126,7 @@ test_expect_success GPG 'pull commit into unborn branch with untrusted signature
 test_expect_success GPG 'pull commit into unborn branch with untrusted signature and --verify-signatures and minTrustLevel=ultimate' '
 	test_when_finished "rm -rf empty-repo" &&
 	git init empty-repo &&
-	test_config_global gpg.minTrustLevel ultimate &&
+	test_config --global gpg.minTrustLevel ultimate &&
 	test_must_fail \
 		git -C empty-repo pull --ff-only --verify-signatures ../untrusted 2>pullerror &&
 	test_i18ngrep "has an untrusted GPG signature" pullerror
@@ -135,7 +135,7 @@ test_expect_success GPG 'pull commit into unborn branch with untrusted signature
 test_expect_success GPG 'pull commit into unborn branch with untrusted signature and --verify-signatures and minTrustLevel=marginal' '
 	test_when_finished "rm -rf empty-repo" &&
 	git init empty-repo &&
-	test_config_global gpg.minTrustLevel marginal &&
+	test_config --global gpg.minTrustLevel marginal &&
 	test_must_fail \
 		git -C empty-repo pull --ff-only --verify-signatures ../untrusted 2>pullerror &&
 	test_i18ngrep "has an untrusted GPG signature" pullerror
@@ -144,7 +144,7 @@ test_expect_success GPG 'pull commit into unborn branch with untrusted signature
 test_expect_success GPG 'pull commit into unborn branch with untrusted signature and --verify-signatures and minTrustLevel=undefined' '
 	test_when_finished "rm -rf empty-repo" &&
 	git init empty-repo &&
-	test_config_global gpg.minTrustLevel undefined &&
+	test_config --global gpg.minTrustLevel undefined &&
 	git -C empty-repo pull --ff-only --verify-signatures ../untrusted >pulloutput &&
 	test_i18ngrep "has a good GPG signature" pulloutput
 '

@@ -506,16 +506,36 @@ test_modebits () {
 			  -e 's|^\(......\)S|\1-|' -e 's|^\(......\)s|\1x|'
 }
 
+# Usage: test_unconfig [options] <name>
+#   -C <dir>:
+#	Run all git commits in directory <dir>
+#   --global:
+#	Modify the global configuration instead of repository.
+#
 # Unset a configuration variable, but don't fail if it doesn't exist.
 test_unconfig () {
+	global=
 	config_dir=
-	if test "$1" = -C
-	then
+	while test $# != 0
+	do
+		case "$1" in
+		-C)
+			config_dir="$2"
+			shift
+			;;
+		--global)
+			global=--global
+			;;
+		-*)
+			BUG "invalid test_unconfig option: $1"
+			;;
+		*)
+			break
+			;;
+		esac
 		shift
-		config_dir=$1
-		shift
-	fi
-	git ${config_dir:+-C "$config_dir"} config --unset-all "$@"
+	done
+	git ${config_dir:+-C "$config_dir"} config $global --unset-all "$1"
 	config_status=$?
 	case "$config_status" in
 	5) # ok, nothing to unset
@@ -525,22 +545,38 @@ test_unconfig () {
 	return $config_status
 }
 
+# Usage: test_config [options] <name> <value>
+#   -C <dir>:
+#	Run all git commits in directory <dir>
+#   --global:
+#	Modify the global configuration instead of the repository
+#	configuration.
+#
 # Set git config, automatically unsetting it after the test is over.
 test_config () {
+	global=
 	config_dir=
-	if test "$1" = -C
-	then
+	while test $# != 0
+	do
+		case "$1" in
+		-C)
+			config_dir="$2"
+			shift
+			;;
+		--global)
+			global=--global
+			;;
+		-*)
+			BUG "invalid test_config option: $1"
+			;;
+		*)
+			break
+			;;
+		esac
 		shift
-		config_dir=$1
-		shift
-	fi
-	test_when_finished "test_unconfig ${config_dir:+-C '$config_dir'} '$1'" &&
-	git ${config_dir:+-C "$config_dir"} config "$@"
-}
-
-test_config_global () {
-	test_when_finished "test_unconfig --global '$1'" &&
-	git config --global "$@"
+	done
+	test_when_finished "test_unconfig ${config_dir:+-C '$config_dir'} $global '$1'" &&
+	git ${config_dir:+-C "$config_dir"} config $global "$1" "$2"
 }
 
 write_script () {

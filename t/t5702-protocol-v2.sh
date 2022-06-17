@@ -341,7 +341,7 @@ test_expect_success 'upload-pack respects config using protocol v2' '
 	EOF
 	test_commit -C server one &&
 
-	test_config_global uploadpack.packobjectshook ./hook &&
+	test_config --global uploadpack.packobjectshook ./hook &&
 	test_path_is_missing server/.git/hookout &&
 	git -c protocol.version=2 clone "file://$(pwd)/server" client &&
 	test_path_is_file server/.git/hookout

@@ -24,7 +24,7 @@ clear_hook_results () {
 
 test_expect_success 'hook runs via global config' '
 	clear_hook_results &&
-	test_config_global uploadpack.packObjectsHook ./hook &&
+	test_config --global uploadpack.packObjectsHook ./hook &&
 	git clone --no-local . dst.git 2>stderr &&
 	grep "hook running" stderr
 '
@@ -61,8 +61,8 @@ test_expect_success 'hook does not run from repo config' '
 
 test_expect_success 'hook works with partial clone' '
 	clear_hook_results &&
-	test_config_global uploadpack.packObjectsHook ./hook &&
-	test_config_global uploadpack.allowFilter true &&
+	test_config --global uploadpack.packObjectsHook ./hook &&
+	test_config --global uploadpack.allowFilter true &&
 	git clone --bare --no-local --filter=blob:none . dst.git &&
 	git -C dst.git rev-list --objects --missing=allow-any --no-object-names --all >objects &&
 	git -C dst.git cat-file --batch-check="%(objecttype)" <objects >types &&

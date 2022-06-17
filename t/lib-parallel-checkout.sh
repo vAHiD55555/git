@@ -9,8 +9,8 @@ set_checkout_config () {
 		BUG "usage: set_checkout_config <workers> <threshold>"
 	fi &&
 
-	test_config_global checkout.workers $1 &&
-	test_config_global checkout.thresholdForParallelism $2
+	test_config --global checkout.workers $1 &&
+	test_config --global checkout.thresholdForParallelism $2
 }
 
 # Run "${@:2}" and check that $1 checkout workers were used

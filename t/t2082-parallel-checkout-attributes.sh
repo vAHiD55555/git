@@ -142,9 +142,9 @@ test_expect_success PERL 'parallel-checkout and delayed checkout' '
 	write_script rot13-filter.pl "$PERL_PATH" \
 		<"$TEST_DIRECTORY"/t0021/rot13-filter.pl &&
 
-	test_config_global filter.delay.process \
+	test_config --global filter.delay.process \
 		"\"$(pwd)/rot13-filter.pl\" --always-delay \"$(pwd)/delayed.log\" clean smudge delay" &&
-	test_config_global filter.delay.required true &&
+	test_config --global filter.delay.required true &&
 
 	echo "abcd" >original &&
 	echo "nopq" >rot13 &&

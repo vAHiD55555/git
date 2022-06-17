@@ -159,8 +159,8 @@ sane_unset GIT_TRACE2_PERF_BRIEF
 
 test_expect_success 'using global config, perf stream, return code 0' '
 	test_when_finished "rm trace.perf actual expect" &&
-	test_config_global trace2.perfBrief 1 &&
-	test_config_global trace2.perfTarget "$(pwd)/trace.perf" &&
+	test_config --global trace2.perfBrief 1 &&
+	test_config --global trace2.perfTarget "$(pwd)/trace.perf" &&
 	test-tool trace2 001return 0 &&
 	perl "$TEST_DIRECTORY/t0211/scrub_perf.perl" <trace.perf >actual &&
 	cat >expect <<-EOF &&

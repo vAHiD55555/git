@@ -444,7 +444,7 @@ test_expect_success 'grep --recurse-submodules with --cached ignores worktree mo
 
 test_expect_failure 'grep --textconv: superproject .gitattributes does not affect submodules' '
 	reset_and_clean &&
-	test_config_global diff.d2x.textconv "sed -e \"s/d/x/\"" &&
+	test_config --global diff.d2x.textconv "sed -e \"s/d/x/\"" &&
 	echo "a diff=d2x" >.gitattributes &&
 
 	cat >expect <<-\EOF &&
@@ -456,7 +456,7 @@ test_expect_failure 'grep --textconv: superproject .gitattributes does not affec
 
 test_expect_failure 'grep --textconv: superproject .gitattributes (from index) does not affect submodules' '
 	reset_and_clean &&
-	test_config_global diff.d2x.textconv "sed -e \"s/d/x/\"" &&
+	test_config --global diff.d2x.textconv "sed -e \"s/d/x/\"" &&
 	echo "a diff=d2x" >.gitattributes &&
 	git add .gitattributes &&
 	rm .gitattributes &&
@@ -470,7 +470,7 @@ test_expect_failure 'grep --textconv: superproject .gitattributes (from index) d
 
 test_expect_failure 'grep --textconv: superproject .git/info/attributes does not affect submodules' '
 	reset_and_clean &&
-	test_config_global diff.d2x.textconv "sed -e \"s/d/x/\"" &&
+	test_config --global diff.d2x.textconv "sed -e \"s/d/x/\"" &&
 	super_attr="$(git rev-parse --git-path info/attributes)" &&
 	test_when_finished "rm -f \"$super_attr\"" &&
 	echo "a diff=d2x" >"$super_attr" &&
@@ -488,7 +488,7 @@ test_expect_failure 'grep --textconv: superproject .git/info/attributes does not
 #
 test_expect_failure 'grep --textconv correctly reads submodule .gitattributes' '
 	reset_and_clean &&
-	test_config_global diff.d2x.textconv "sed -e \"s/d/x/\"" &&
+	test_config --global diff.d2x.textconv "sed -e \"s/d/x/\"" &&
 	echo "a diff=d2x" >submodule/.gitattributes &&
 
 	cat >expect <<-\EOF &&
@@ -500,7 +500,7 @@ test_expect_failure 'grep --textconv correctly reads submodule .gitattributes' '
 
 test_expect_failure 'grep --textconv correctly reads submodule .gitattributes (from index)' '
 	reset_and_clean &&
-	test_config_global diff.d2x.textconv "sed -e \"s/d/x/\"" &&
+	test_config --global diff.d2x.textconv "sed -e \"s/d/x/\"" &&
 	echo "a diff=d2x" >submodule/.gitattributes &&
 	git -C submodule add .gitattributes &&
 	rm submodule/.gitattributes &&
@@ -514,7 +514,7 @@ test_expect_failure 'grep --textconv correctly reads submodule .gitattributes (f
 
 test_expect_failure 'grep --textconv correctly reads submodule .git/info/attributes' '
 	reset_and_clean &&
-	test_config_global diff.d2x.textconv "sed -e \"s/d/x/\"" &&
+	test_config --global diff.d2x.textconv "sed -e \"s/d/x/\"" &&
 
 	submodule_attr="$(git -C submodule rev-parse --path-format=absolute --git-path info/attributes)" &&
 	test_when_finished "rm -f \"$submodule_attr\"" &&
@@ -529,8 +529,8 @@ test_expect_failure 'grep --textconv correctly reads submodule .git/info/attribu
 
 test_expect_failure 'grep saves textconv cache in the appropriate repository' '
 	reset_and_clean &&
-	test_config_global diff.d2x_cached.textconv "sed -e \"s/d/x/\"" &&
-	test_config_global diff.d2x_cached.cachetextconv true &&
+	test_config --global diff.d2x_cached.textconv "sed -e \"s/d/x/\"" &&
+	test_config --global diff.d2x_cached.cachetextconv true &&
 	echo "a diff=d2x_cached" >submodule/.gitattributes &&
 
 	# We only read/write to the textconv cache when grepping from an OID,

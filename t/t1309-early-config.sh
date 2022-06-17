@@ -96,7 +96,7 @@ test_expect_success 'early config and onbranch' '
 '
 
 test_expect_success 'onbranch config outside of git repo' '
-	test_config_global includeIf.onbranch:topic.path non-existent &&
+	test_config --global includeIf.onbranch:topic.path non-existent &&
 	nongit git help
 '
 

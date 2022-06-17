@@ -200,7 +200,7 @@ init_no_templatedir_env () {
 test_expect_success 'init with init.templatedir set' '
 	mkdir templatedir-source &&
 	echo Content >templatedir-source/file &&
-	test_config_global init.templatedir "${HOME}/templatedir-source" &&
+	test_config --global init.templatedir "${HOME}/templatedir-source" &&
 
 	init_no_templatedir_env templatedir-set &&
 	test_cmp templatedir-source/file templatedir-set/.git/file
@@ -209,15 +209,15 @@ test_expect_success 'init with init.templatedir set' '
 test_expect_success 'init with init.templatedir using ~ expansion' '
 	mkdir -p templatedir-source &&
 	echo Content >templatedir-source/file &&
-	test_config_global init.templatedir "~/templatedir-source" &&
+	test_config --global init.templatedir "~/templatedir-source" &&
 
 	init_no_templatedir_env templatedir-expansion &&
 	test_cmp templatedir-source/file templatedir-expansion/.git/file
 '
 
 test_expect_success 'init --bare/--shared overrides system/global config' '
-	test_config_global core.bare false &&
-	test_config_global core.sharedRepository 0640 &&
+	test_config --global core.bare false &&
+	test_config --global core.sharedRepository 0640 &&
 	git init --bare --shared=0666 init-bare-shared-override &&
 	check_config init-bare-shared-override true unset &&
 	test x0666 = \
@@ -225,7 +225,7 @@ test_expect_success 'init --bare/--shared overrides system/global config' '
 '
 
 test_expect_success 'init honors global core.sharedRepository' '
-	test_config_global core.sharedRepository 0666 &&
+	test_config --global core.sharedRepository 0666 &&
 	git init shared-honor-global &&
 	test x0666 = \
 	x$(git config -f shared-honor-global/.git/config core.sharedRepository)
@@ -569,7 +569,7 @@ test_expect_success '--initial-branch' '
 '
 
 test_expect_success 'overridden default initial branch name (config)' '
-	test_config_global init.defaultBranch nmb &&
+	test_config --global init.defaultBranch nmb &&
 	GIT_TEST_DEFAULT_INITIAL_BRANCH_NAME= git init initial-branch-config &&
 	git -C initial-branch-config symbolic-ref HEAD >actual &&
 	grep nmb actual
@@ -583,7 +583,7 @@ test_expect_success 'advice on unconfigured init.defaultBranch' '
 '
 
 test_expect_success 'overridden default main branch name (env)' '
-	test_config_global init.defaultBranch nmb &&
+	test_config --global init.defaultBranch nmb &&
 	GIT_TEST_DEFAULT_INITIAL_BRANCH_NAME=env git init main-branch-env &&
 	git -C main-branch-env symbolic-ref HEAD >actual &&
 	grep env actual

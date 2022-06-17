@@ -668,7 +668,7 @@ test_expect_success 'reject adding remote with an invalid name' '
 # the last two ones check if the config is updated.
 
 test_expect_success 'rename a remote' '
-	test_config_global remote.pushDefault origin &&
+	test_config --global remote.pushDefault origin &&
 	git clone one four &&
 	git -C four config branch.main.pushRemote origin &&
 	GIT_TRACE2_EVENT=$(pwd)/trace \
@@ -693,7 +693,7 @@ test_expect_success 'rename a remote renames repo remote.pushDefault' '
 '
 
 test_expect_success 'rename a remote renames repo remote.pushDefault but ignores global' '
-	test_config_global remote.pushDefault other &&
+	test_config --global remote.pushDefault other &&
 	git clone one four.2 &&
 	git -C four.2 config remote.pushDefault origin &&
 	git -C four.2 remote rename origin upstream &&
@@ -702,7 +702,7 @@ test_expect_success 'rename a remote renames repo remote.pushDefault but ignores
 '
 
 test_expect_success 'rename a remote renames repo remote.pushDefault but keeps global' '
-	test_config_global remote.pushDefault origin &&
+	test_config --global remote.pushDefault origin &&
 	git clone one four.3 &&
 	git -C four.3 config remote.pushDefault origin &&
 	git -C four.3 remote rename origin upstream &&
@@ -740,7 +740,7 @@ test_expect_success 'rename succeeds with existing remote.<target>.prune' '
 '
 
 test_expect_success 'remove a remote' '
-	test_config_global remote.pushDefault origin &&
+	test_config --global remote.pushDefault origin &&
 	git clone one four.five &&
 	git -C four.five config branch.main.pushRemote origin &&
 	git -C four.five remote remove origin &&
@@ -758,7 +758,7 @@ test_expect_success 'remove a remote removes repo remote.pushDefault' '
 '
 
 test_expect_success 'remove a remote removes repo remote.pushDefault but ignores global' '
-	test_config_global remote.pushDefault other &&
+	test_config --global remote.pushDefault other &&
 	git clone one four.five.2 &&
 	git -C four.five.2 config remote.pushDefault origin &&
 	git -C four.five.2 remote remove origin &&
@@ -767,7 +767,7 @@ test_expect_success 'remove a remote removes repo remote.pushDefault but ignores
 '
 
 test_expect_success 'remove a remote removes repo remote.pushDefault but keeps global' '
-	test_config_global remote.pushDefault origin &&
+	test_config --global remote.pushDefault origin &&
 	git clone one four.five.3 &&
 	git -C four.five.3 config remote.pushDefault origin &&
 	git -C four.five.3 remote remove origin &&

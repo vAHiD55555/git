@@ -100,7 +100,7 @@ test_expect_success 'http auth can request both user and pass' '
 '
 
 test_expect_success 'http auth respects credential helper config' '
-	test_config_global credential.helper "!f() {
+	test_config --global credential.helper "!f() {
 		cat >/dev/null
 		echo username=user@host
 		echo password=pass@host
@@ -111,14 +111,14 @@ test_expect_success 'http auth respects credential helper config' '
 '
 
 test_expect_success 'http auth can get username from config' '
-	test_config_global "credential.$HTTPD_URL.username" user@host &&
+	test_config --global "credential.$HTTPD_URL.username" user@host &&
 	set_askpass wrong pass@host &&
 	git clone "$HTTPD_URL/auth/dumb/repo.git" clone-auth-user &&
 	expect_askpass pass user@host
 '
 
 test_expect_success 'configured username does not override URL' '
-	test_config_global "credential.$HTTPD_URL.username" wrong &&
+	test_config --global "credential.$HTTPD_URL.username" wrong &&
 	set_askpass wrong pass@host &&
 	git clone "$HTTPD_URL_USER/auth/dumb/repo.git" clone-auth-user2 &&
 	expect_askpass pass user@host
@@ -452,7 +452,7 @@ test_expect_success 'http-alternates cannot point at funny protocols' '
 test_expect_success 'http-alternates triggers not-from-user protocol check' '
 	echo "$HTTPD_URL/dumb/victim.git/objects" \
 		>"$evil/objects/info/http-alternates" &&
-	test_config_global http.followRedirects true &&
+	test_config --global http.followRedirects true &&
 	test_must_fail git -c protocol.http.allow=user \
 		clone $HTTPD_URL/dumb/evil.git evil-user &&
 	git -c protocol.http.allow=always \

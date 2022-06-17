@@ -277,7 +277,7 @@ test_expect_success JSON_PP 'basic trace2_data' '
 
 test_expect_success JSON_PP 'using global config, event stream, error event' '
 	test_when_finished "rm trace.event actual expect" &&
-	test_config_global trace2.eventTarget "$(pwd)/trace.event" &&
+	test_config --global trace2.eventTarget "$(pwd)/trace.event" &&
 	test-tool trace2 003error "hello world" "this is a test" &&
 	perl "$TEST_DIRECTORY/t0212/parse_events.perl" <trace.event >actual &&
 	sed -e "s/^|//" >expect <<-EOF &&
