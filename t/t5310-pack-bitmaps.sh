@@ -43,6 +43,20 @@ test_expect_success 'full repack creates bitmaps' '
 
 basic_bitmap_tests
 
+test_expect_success 'using lookup table does not affect basic bitmap tests' '
+	test_config pack.writeBitmapLookupTable true &&
+	git repack -adb
+'
+basic_bitmap_tests
+
+test_expect_success 'using lookup table does not let each entries to be parsed one by one' '
+	test_config pack.writeBitmapLookupTable true &&
+	git repack -adb &&
+	git rev-list --test-bitmap HEAD 2>out &&
+	grep "Found bitmap for" out &&
+	! grep "Bitmap v1 test "
+'
+
 test_expect_success 'incremental repack fails when bitmaps are requested' '
 	test_commit more-1 &&
 	test_must_fail git repack -d 2>err &&

@@ -306,5 +306,24 @@ test_expect_success 'graceful fallback when missing reverse index' '
 		! grep "ignoring extra bitmap file" err
 	)
 '
+test_expect_success 'multi-pack-index write --bitmap writes lookup table if enabled' '
+	rm -fr repo &&
+	git init repo &&
+	test_when_finished "rm -fr repo" &&
+	(
+		cd repo &&
+		test_commit_bulk 106 &&
+
+		git repack -d &&
+
+		git config pack.writeBitmapLookupTable true &&
+		git multi-pack-index write --bitmap &&
+
+		git rev-list --test-bitmap HEAD 2>out &&
+		grep "Found bitmap for" out &&
+		! grep "Bitmap v1 test "
+
+	)
+'
 
 test_done
