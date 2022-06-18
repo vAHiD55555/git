@@ -307,4 +307,17 @@ test_expect_success 'graceful fallback when missing reverse index' '
 	)
 '
 
+test_expect_success 'multi-pack-index write writes lookup table if enabled' '
+	rm -fr repo &&
+	git init repo &&
+	test_when_finished "rm -fr repo" &&
+	(
+		cd repo &&
+		test_commit base &&
+		git repack -ad &&
+		GIT_TRACE2_EVENT="$(pwd)/trace" \
+			git multi-pack-index write --bitmap &&
+		grep "\"label\":\"writing_lookup_table\"" trace
+	)
+'
 test_done

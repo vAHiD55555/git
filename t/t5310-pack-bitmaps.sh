@@ -38,7 +38,8 @@ test_expect_success 'full repack creates bitmaps' '
 	ls .git/objects/pack/ | grep bitmap >output &&
 	test_line_count = 1 output &&
 	grep "\"key\":\"num_selected_commits\",\"value\":\"106\"" trace &&
-	grep "\"key\":\"num_maximal_commits\",\"value\":\"107\"" trace
+	grep "\"key\":\"num_maximal_commits\",\"value\":\"107\"" trace &&
+	grep "\"label\":\"writing_lookup_table\"" trace
 '
 
 basic_bitmap_tests

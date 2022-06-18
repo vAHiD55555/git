@@ -713,6 +713,7 @@ static void write_lookup_table(struct hashfile *f,
 	for (i = 0; i < writer.selected_nr; i++)
 		table_inv[table[i]] = i;
 
+	trace2_region_enter("pack-bitmap-write", "writing_lookup_table", the_repository);
 	for (i = 0; i < writer.selected_nr; i++) {
 		struct bitmapped_commit *selected = &writer.selected[table[i]];
 		uint32_t xor_offset = selected->xor_offset;
@@ -725,6 +726,7 @@ static void write_lookup_table(struct hashfile *f,
 
 	free(table);
 	free(table_inv);
+	trace2_region_leave("pack-bitmap-write", "writing_lookup_table", the_repository);
 }
 
 static void write_hash_cache(struct hashfile *f,

@@ -87,6 +87,13 @@ static int git_multi_pack_index_write_config(const char *var, const char *value,
 			opts.flags &= ~MIDX_WRITE_BITMAP_HASH_CACHE;
 	}
 
+	if (!strcmp(var, "pack.writebitmaplookuptable")) {
+		if (git_config_bool(var, value))
+			opts.flags |= MIDX_WRITE_BITMAP_LOOKUP_TABLE;
+		else
+			opts.flags &= ~MIDX_WRITE_BITMAP_LOOKUP_TABLE;
+	}
+
 	/*
 	 * We should never make a fall-back call to 'git_default_config', since
 	 * this was already called in 'cmd_multi_pack_index()'.
@@ -123,6 +130,7 @@ static int cmd_multi_pack_index_write(int argc, const char **argv)
 	};
 
 	opts.flags |= MIDX_WRITE_BITMAP_HASH_CACHE;
+	opts.flags |= MIDX_WRITE_BITMAP_LOOKUP_TABLE;
 
 	git_config(git_multi_pack_index_write_config, NULL);
 
