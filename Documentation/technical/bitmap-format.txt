@@ -67,6 +67,19 @@ MIDXs, both the bit-cache and rev-cache extensions are required.
 			pack/MIDX. The format and meaning of the name-hash is
 			described below.
 
+			** {empty}
+			BITMAP_OPT_LOOKUP_TABLE (0x10): :::
+			If present, the end of the bitmap file contains a table
+			containing a list of `N` <commit pos, offset, xor offset>
+			triplets. The format and meaning of the table is described
+			below.
++
+NOTE: This xor_offset is different from the bitmap's xor_offset.
+Bitmap's xor_offset is relative i.e. it tells how many bitmaps we have
+to go back from the current bitmap. Lookup table's xor_offset tells the
+position of the triplet in the list whose bitmap the current commit's
+bitmap have to xor with.
+
 		4-byte entry count (network byte order)
 
 			The total count of entries (bitmapped commits) in this bitmap index.
@@ -205,3 +218,31 @@ Note that this hashing scheme is tied to the BITMAP_OPT_HASH_CACHE flag.
 If implementations want to choose a different hashing scheme, they are
 free to do so, but MUST allocate a new header flag (because comparing
 hashes made under two different schemes would be pointless).
+
+Commit lookup table
+-------------------
+
+If the BITMAP_OPT_LOOKUP_TABLE flag is set, the last `N * (4 + 8 + 4)`
+(preceding the name-hash cache and trailing hash) of the `.bitmap` file
+contains a lookup table specifying the information needed to get the
+desired bitmap from the entries without parsing previous unnecessary
+bitmaps.
+
+For a `.bitmap` containing `nr_entries` reachability bitmaps, the table
+contains a list of `nr_entries` <commit pos, offset, xor offset> triplets.
+The content of i'th triplet is -
+
+	* {empty}
+	commit pos (4 byte integer, network byte order): ::
+	It stores the object position of the commit (in the midx or pack index)
+	to which the i'th bitmap in the bitmap entries belongs.
+
+	* {empty}
+	offset (8 byte integer, network byte order): ::
+	The offset from which that commit's bitmap can be read.
+
+	* {empty}
+	xor offset (4 byte integer, network byte order): ::
+	It holds the position of the triplet with whose bitmap the
+	current bitmap need to xor. If the current triplet's bitmap
+	do not have any xor bitmap, it defaults to 0xffffffff.
