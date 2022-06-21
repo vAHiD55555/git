@@ -312,9 +312,12 @@ char *pack_bitmap_filename(struct packed_git *p)
 static int open_midx_bitmap_1(struct bitmap_index *bitmap_git,
 			      struct multi_pack_index *midx)
 {
+	int fd;
 	struct stat st;
+
 	char *bitmap_name = midx_bitmap_filename(midx);
-	int fd = git_open(bitmap_name);
+	trace2_data_string("midx", the_repository, "path", bitmap_name);
+	fd = git_open(bitmap_name);
 
 	free(bitmap_name);
 
@@ -346,8 +349,10 @@ static int open_midx_bitmap_1(struct bitmap_index *bitmap_git,
 	if (load_bitmap_header(bitmap_git) < 0)
 		goto cleanup;
 
-	if (!hasheq(get_midx_checksum(bitmap_git->midx), bitmap_git->checksum))
+	if (!hasheq(get_midx_checksum(bitmap_git->midx), bitmap_git->checksum)) {
+		error(_("midx and bitmap checksum don't match"));
 		goto cleanup;
+	}
 
 	if (load_midx_revindex(bitmap_git->midx) < 0) {
 		warning(_("multi-pack bitmap is missing required reverse index"));
@@ -374,6 +379,7 @@ static int open_pack_bitmap_1(struct bitmap_index *bitmap_git, struct packed_git
 		return -1;
 
 	bitmap_name = pack_bitmap_filename(packfile);
+	trace2_data_string("bitmap", the_repository, "path", bitmap_name);
 	fd = git_open(bitmap_name);
 	free(bitmap_name);
 
@@ -509,11 +515,16 @@ static int open_midx_bitmap(struct repository *r,
 static int open_bitmap(struct repository *r,
 		       struct bitmap_index *bitmap_git)
 {
-	assert(!bitmap_git->map);
+	int ret = 0;
 
+	assert(!bitmap_git->map);
+	trace2_region_enter("pack-bitmap", "open_bitmap", r);
 	if (!open_midx_bitmap(r, bitmap_git))
-		return 0;
-	return open_pack_bitmap(r, bitmap_git);
+		goto done;
+	ret = open_pack_bitmap(r, bitmap_git);
+done:
+	trace2_region_leave("pack-bitmap", "open_bitmap", r);
+	return ret;
 }
 
 struct bitmap_index *prepare_bitmap_git(struct repository *r)
