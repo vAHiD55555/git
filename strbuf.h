@@ -664,6 +664,13 @@ int launch_sequence_editor(const char *path, struct strbuf *buffer,
 int strbuf_edit_interactively(struct strbuf *buffer, const char *path,
 			      const char *const *env);
 
+/*
+ * Remove the deepest subdirectory in the provided path string. If path
+ * contains a trailing separator, then the path is considered a directory
+ * and nothing is modified.
+ */
+size_t strbuf_parent_directory(struct strbuf *buf);
+
 void strbuf_add_lines(struct strbuf *sb,
 		      const char *prefix,
 		      const char *buf,
