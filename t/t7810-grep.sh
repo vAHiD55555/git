@@ -77,6 +77,7 @@ test_expect_success setup '
 	# Say hello.
 	function hello() {
 	  echo "Hello world."
+	  echo "Hello again."
 	} # hello
 
 	# Still a no-op.
@@ -593,6 +594,88 @@ test_expect_success 'grep -L -C' '
 test_expect_success 'grep --files-without-match --quiet' '
 	git grep --files-without-match --quiet nonexistent_string >actual &&
 	test_must_be_empty actual
+'
+
+cat >expected <<EOF &&
+EOF
+
+test_expect_success 'grep --max-count 0 (must exit with non-zero)' '
+	test_must_fail git grep --max-count 0 foo >actual &&
+	test_cmp expected actual
+'
+
+cat >expected <<EOF &&
+file:foo mmap bar
+EOF
+
+test_expect_success 'grep --max-count 1' '
+	git grep --max-count 1 foo >actual &&
+	test_cmp expected actual
+'
+
+cat >expected <<EOF &&
+file:foo mmap bar
+file:foo_mmap bar
+file:foo_mmap bar mmap
+EOF
+
+test_expect_success 'grep --max-count 3' '
+	git grep --max-count 3 foo >actual &&
+	test_cmp expected actual
+'
+
+cat >expected <<EOF &&
+file:foo mmap bar
+file:foo_mmap bar
+file:foo_mmap bar mmap
+file:foo mmap bar_mmap
+file:foo_mmap bar mmap baz
+EOF
+
+test_expect_success 'grep --max-count -1 (no limit)' '
+	git grep --max-count -1 foo >actual &&
+	test_cmp expected actual
+'
+
+cat >expected <<EOF &&
+file-foo mmap bar
+file:foo_mmap bar
+file-foo_mmap bar mmap
+EOF
+
+test_expect_success 'grep --max-count 1 --context 2' '
+	git grep --max-count 1 --context 1 foo_mmap >actual &&
+	test_cmp expected actual
+'
+
+cat >expected <<EOF &&
+hello.ps1=function hello() {
+hello.ps1:  echo "Hello world."
+EOF
+
+test_expect_success 'grep --max-count 1 --show-function' '
+	git grep --max-count 1 --show-function Hello hello.ps1 >actual &&
+	test_cmp expected actual
+'
+
+cat >expected <<EOF &&
+hello.ps1=function hello() {
+hello.ps1:  echo "Hello world."
+hello.ps1:  echo "Hello again."
+EOF
+
+test_expect_success 'grep --max-count 2 --show-function' '
+	git grep --max-count 2 --show-function Hello hello.ps1 >actual &&
+	test_cmp expected actual
+'
+
+cat >expected <<EOF &&
+hello.ps1:1
+EOF
+
+test_expect_success 'grep --max-count 1 -c' '
+	git grep --max-count 1 --count Hello hello.ps1 >actual &&
+	test_cmp expected actual
 '
 
 cat >expected <<EOF
