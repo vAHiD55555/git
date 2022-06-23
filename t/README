@@ -547,6 +547,53 @@ This test harness library does the following things:
    consistently when command line arguments --verbose (or -v),
    --debug (or -d), and --immediate (or -i) is given.
 
+Recommended style
+-----------------
+Here are some recommented style that you should follow when you write some test cases.
+
+ - Keep test title the same line with test helper function itself.
+
+   Take test_expect_success helper for example, write it like:
+
+  test_expect_success 'test title' '
+  ... test body ...
+  '
+
+   Instead of:
+
+  test_expect_success \
+  'test title' \
+  '... test body ...'
+
+
+ - End the line with a single quote.
+
+ - Indent the body of here-document, and cut off prefix TAB by using
+ "<<-":
+
+  test_expect_success 'test something' '
+      cat >expect <<-\EOF &&
+      one
+      two
+      three
+      EOF
+      test_something > actual &&
+      test_cmp expect actual
+  '
+
+   Instead of:
+
+  test_expect_success 'test something' '
+      cat >expect <<\EOF &&
+  one
+  two
+  three
+  EOF
+      test_something > actual &&
+      test_cmp expect actual
+  '
+
+
 Do's & don'ts
 -------------
 
