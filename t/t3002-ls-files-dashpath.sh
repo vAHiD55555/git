@@ -16,15 +16,14 @@ filesystem.
 TEST_PASSES_SANITIZE_LEAK=true
 . ./test-lib.sh
 
-test_expect_success \
-	setup \
-	'echo frotz >path0 &&
+test_expect_success 'setup' '
+    echo frotz >path0 &&
 	echo frotz >./-foo &&
-	echo frotz >./--'
+	echo frotz >./--
+'
 
-test_expect_success \
-    'git ls-files without path restriction.' \
-    'git ls-files --others >output &&
+test_expect_success 'git ls-files without path restriction.' '
+    git ls-files --others >output &&
      test_cmp output - <<EOF
 --
 -foo
@@ -33,33 +32,29 @@ path0
 EOF
 '
 
-test_expect_success \
-    'git ls-files with path restriction.' \
-    'git ls-files --others path0 >output &&
+test_expect_success 'git ls-files with path restriction.' '
+    git ls-files --others path0 >output &&
 	test_cmp output - <<EOF
 path0
 EOF
 '
 
-test_expect_success \
-    'git ls-files with path restriction with --.' \
-    'git ls-files --others -- path0 >output &&
+test_expect_success 'git ls-files with path restriction with --.' '
+    git ls-files --others -- path0 >output &&
 	test_cmp output - <<EOF
 path0
 EOF
 '
 
-test_expect_success \
-    'git ls-files with path restriction with -- --.' \
-    'git ls-files --others -- -- >output &&
+test_expect_success 'git ls-files with path restriction with -- --.' '
+    git ls-files --others -- -- >output &&
 	test_cmp output - <<EOF
 --
 EOF
 '
 
-test_expect_success \
-    'git ls-files with no path restriction.' \
-    'git ls-files --others -- >output &&
+test_expect_success 'git ls-files with no path restriction.' '
+    git ls-files --others -- >output &&
 	test_cmp output - <<EOF
 --
 -foo

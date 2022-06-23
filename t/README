@@ -560,6 +560,21 @@ Here are the "do's:"
    Even code that isn't a test per se, but merely some setup code
    should be inside a test assertion.
 
+ - Keep test title the same line with test helper function itself,
+   and end the line with a single quote.
+
+   Take test_expect_success helper for example, write it like:
+
+  test_expect_success 'test title to describe this test case' '
+  # test body
+  '
+
+   Instead of:
+
+  test_expect_success \
+  'test title to describe this test case' \
+  '# test body'
+
  - Chain your test assertions
 
    Write test code like this:
