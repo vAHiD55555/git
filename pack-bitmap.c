@@ -83,6 +83,12 @@ struct bitmap_index {
 	const unsigned char *checksum;
 
 	/*
+	 * If not NULL, this point into the commit table extension
+	 * (within map).
+	 */
+	unsigned char *table_lookup;
+
+	/*
 	 * Extended index.
 	 *
 	 * When trying to perform bitmap operations with objects that are not
@@ -185,6 +191,22 @@ static int load_bitmap_header(struct bitmap_index *index)
 			index->hashes = (void *)(index_end - cache_size);
 			index_end -= cache_size;
 		}
+
+		if (flags & BITMAP_OPT_LOOKUP_TABLE &&
+			git_env_bool("GIT_TEST_READ_COMMIT_TABLE", 1)) {
+			size_t table_size = 0;
+			size_t triplet_sz = st_add3(sizeof(uint32_t),    /* commit position */
+							sizeof(uint64_t),    /* offset */
+							sizeof(uint32_t));    /* xor offset */
+
+			table_size = st_add(table_size,
+					st_mult(ntohl(header->entry_count),
+						triplet_sz));
+			if (table_size > index_end - index->map - header_size)
+				return error("corrupted bitmap index file (too short to fit lookup table)");
+			index->table_lookup = (void *)(index_end - table_size);
+			index_end -= table_size;
+		}
 	}
 
 	index->entry_count = ntohl(header->entry_count);
@@ -211,12 +233,20 @@ static struct stored_bitmap *store_bitmap(struct bitmap_index *index,
 
 	hash_pos = kh_put_oid_map(index->bitmaps, stored->oid, &ret);
 
-	/* a 0 return code means the insertion succeeded with no changes,
-	 * because the SHA1 already existed on the map. this is bad, there
-	 * shouldn't be duplicated commits in the index */
+	/* A 0 return code means the insertion succeeded with no changes,
+	 * because the SHA1 already existed on the map. If lookup table
+	 * is NULL, this is bad, there shouldn't be duplicated commits
+	 * in the index.
+	 *
+	 * If table_lookup exists, that means the desired bitmap is already
+	 * loaded. Either this bitmap has been stored directly or another
+	 * bitmap has a direct or indirect xor relation with it. */
 	if (ret == 0) {
-		error("Duplicate entry in bitmap index: %s", oid_to_hex(oid));
-		return NULL;
+		if (!index->table_lookup) {
+			error("Duplicate entry in bitmap index: %s", oid_to_hex(oid));
+			return NULL;
+		}
+		return kh_value(index->bitmaps, hash_pos);
 	}
 
 	kh_value(index->bitmaps, hash_pos) = stored;
@@ -470,7 +500,7 @@ static int load_bitmap(struct bitmap_index *bitmap_git)
 		!(bitmap_git->tags = read_bitmap_1(bitmap_git)))
 		goto failed;
 
-	if (load_bitmap_entries_v1(bitmap_git) < 0)
+	if (!bitmap_git->table_lookup && load_bitmap_entries_v1(bitmap_git) < 0)
 		goto failed;
 
 	return 0;
@@ -557,13 +587,145 @@ struct include_data {
 	struct bitmap *seen;
 };
 
+static inline const void *bitmap_get_triplet(struct bitmap_index *bitmap_git, uint32_t xor_pos)
+{
+	size_t triplet_sz = st_add3(sizeof(uint32_t), sizeof(uint64_t), sizeof(uint32_t));
+	const void *p = bitmap_git->table_lookup + st_mult(xor_pos, triplet_sz);
+	return p;
+}
+
+static uint64_t triplet_get_offset(const void *triplet)
+{
+	const void *p = (unsigned char*) triplet + sizeof(uint32_t);
+	return get_be64(p);
+}
+
+static uint32_t triplet_get_xor_pos(const void *triplet)
+{
+	const void *p = (unsigned char*) triplet + st_add(sizeof(uint32_t), sizeof(uint64_t));
+	return get_be32(p);
+}
+
+static int triplet_cmp(const void *va, const void *vb)
+{
+	int result = 0;
+	uint32_t *a = (uint32_t *) va;
+	uint32_t b = get_be32(vb);
+	if (*a > b)
+		result = 1;
+	else if (*a < b)
+		result = -1;
+	else
+		result = 0;
+
+	return result;
+}
+
+static uint32_t bsearch_pos(struct bitmap_index *bitmap_git, struct object_id *oid,
+						uint32_t *result)
+{
+	int found;
+
+	if (bitmap_git->midx)
+		found = bsearch_midx(oid, bitmap_git->midx, result);
+	else
+		found = bsearch_pack(oid, bitmap_git->pack, result);
+
+	return found;
+}
+
+static struct stored_bitmap *lazy_bitmap_for_commit(struct bitmap_index *bitmap_git,
+					  struct commit *commit)
+{
+	uint32_t commit_pos, xor_pos;
+	uint64_t offset;
+	int flags;
+	const void *triplet = NULL;
+	struct object_id *oid = &commit->object.oid;
+	struct ewah_bitmap *bitmap;
+	struct stored_bitmap *xor_bitmap = NULL;
+	size_t triplet_sz = st_add3(sizeof(uint32_t), sizeof(uint64_t), sizeof(uint32_t));
+
+	int found = bsearch_pos(bitmap_git, oid, &commit_pos);
+
+	if (!found)
+		return NULL;
+
+	triplet = bsearch(&commit_pos, bitmap_git->table_lookup, bitmap_git->entry_count,
+						triplet_sz, triplet_cmp);
+	if (!triplet)
+		return NULL;
+
+	offset = triplet_get_offset(triplet);
+	xor_pos = triplet_get_xor_pos(triplet);
+
+	if (xor_pos != 0xffffffff) {
+		int xor_flags;
+		uint64_t offset_xor;
+		uint32_t *xor_positions;
+		struct object_id xor_oid;
+		size_t size = 0;
+
+		ALLOC_ARRAY(xor_positions, bitmap_git->entry_count);
+		while (xor_pos != 0xffffffff) {
+			xor_positions[size++] = xor_pos;
+			triplet = bitmap_get_triplet(bitmap_git, xor_pos);
+			xor_pos = triplet_get_xor_pos(triplet);
+		}
+
+		while (size){
+			xor_pos = xor_positions[size - 1];
+			triplet = bitmap_get_triplet(bitmap_git, xor_pos);
+			commit_pos = get_be32(triplet);
+			offset_xor = triplet_get_offset(triplet);
+
+			if (nth_bitmap_object_oid(bitmap_git, &xor_oid, commit_pos) < 0) {
+				free(xor_positions);
+				return NULL;
+			}
+
+			bitmap_git->map_pos = offset_xor + sizeof(uint32_t) + sizeof(uint8_t);
+			xor_flags = read_u8(bitmap_git->map, &bitmap_git->map_pos);
+			bitmap = read_bitmap_1(bitmap_git);
+
+			if (!bitmap){
+				free(xor_positions);
+				return NULL;
+			}
+
+			xor_bitmap = store_bitmap(bitmap_git, bitmap, &xor_oid, xor_bitmap, xor_flags);
+			size--;
+		}
+
+		free(xor_positions);
+	}
+
+	bitmap_git->map_pos = offset + sizeof(uint32_t) + sizeof(uint8_t);
+	flags = read_u8(bitmap_git->map, &bitmap_git->map_pos);
+	bitmap = read_bitmap_1(bitmap_git);
+
+	if (!bitmap)
+		return NULL;
+
+	return store_bitmap(bitmap_git, bitmap, oid, xor_bitmap, flags);
+}
+
 struct ewah_bitmap *bitmap_for_commit(struct bitmap_index *bitmap_git,
 				      struct commit *commit)
 {
 	khiter_t hash_pos = kh_get_oid_map(bitmap_git->bitmaps,
 					   commit->object.oid);
-	if (hash_pos >= kh_end(bitmap_git->bitmaps))
-		return NULL;
+	if (hash_pos >= kh_end(bitmap_git->bitmaps)) {
+		struct stored_bitmap *bitmap = NULL;
+		if (!bitmap_git->table_lookup)
+			return NULL;
+
+		/* NEEDSWORK: cache misses aren't recorded */
+		bitmap = lazy_bitmap_for_commit(bitmap_git, commit);
+		if(!bitmap)
+			return NULL;
+		return lookup_stored_bitmap(bitmap);
+	}
 	return lookup_stored_bitmap(kh_value(bitmap_git->bitmaps, hash_pos));
 }
 
@@ -1699,8 +1861,12 @@ void test_bitmap_walk(struct rev_info *revs)
 	if (revs->pending.nr != 1)
 		die("you must specify exactly one commit to test");
 
-	fprintf(stderr, "Bitmap v%d test (%d entries loaded)\n",
+	fprintf(stderr, "Bitmap v%d test (%d entries)\n",
 		bitmap_git->version, bitmap_git->entry_count);
+
+	if (!bitmap_git->table_lookup)
+		fprintf(stderr, "Bitmap v%d test (%d entries loaded)\n",
+			bitmap_git->version, bitmap_git->entry_count);
 
 	root = revs->pending.objects[0].item;
 	bm = bitmap_for_commit(bitmap_git, (struct commit *)root);
@@ -1753,10 +1919,16 @@ void test_bitmap_walk(struct rev_info *revs)
 
 int test_bitmap_commits(struct repository *r)
 {
-	struct bitmap_index *bitmap_git = prepare_bitmap_git(r);
+	struct bitmap_index *bitmap_git = NULL;
 	struct object_id oid;
 	MAYBE_UNUSED void *value;
 
+	/* As this function is only used to print bitmap selected
+	 * commits, we don't have to read the commit table.
+	 */
+	setenv("GIT_TEST_READ_COMMIT_TABLE", "0", 1);
+
+	bitmap_git = prepare_bitmap_git(r);
 	if (!bitmap_git)
 		die("failed to load bitmap indexes");
 
@@ -1764,6 +1936,7 @@ int test_bitmap_commits(struct repository *r)
 		printf("%s\n", oid_to_hex(&oid));
 	});
 
+	setenv("GIT_TEST_READ_COMMIT_TABLE", "1", 1);
 	free_bitmap_index(bitmap_git);
 
 	return 0;

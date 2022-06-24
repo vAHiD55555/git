@@ -42,6 +42,12 @@ test_expect_success 'full repack creates bitmaps' '
 	grep "\"label\":\"writing_lookup_table\"" trace
 '
 
+test_expect_success 'using lookup table loads only necessary bitmaps' '
+	git rev-list --test-bitmap HEAD 2>out &&
+	! grep "Bitmap v1 test (106 entries loaded)" out &&
+	grep "Found bitmap for" out
+'
+
 basic_bitmap_tests
 
 test_expect_success 'incremental repack fails when bitmaps are requested' '
@@ -255,6 +261,7 @@ test_expect_success 'pack reuse respects --incremental' '
 
 test_expect_success 'truncated bitmap fails gracefully (ewah)' '
 	test_config pack.writebitmaphashcache false &&
+	test_config pack.writebitmaplookuptable false &&
 	git repack -ad &&
 	git rev-list --use-bitmap-index --count --all >expect &&
 	bitmap=$(ls .git/objects/pack/*.bitmap) &&

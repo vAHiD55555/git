@@ -320,4 +320,5 @@ test_expect_success 'multi-pack-index write writes lookup table if enabled' '
 		grep "\"label\":\"writing_lookup_table\"" trace
 	)
 '
+
 test_done
