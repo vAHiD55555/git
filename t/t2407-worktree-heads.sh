@@ -7,8 +7,11 @@ TEST_PASSES_SANITIZE_LEAK=true
 
 test_expect_success 'setup' '
 	test_commit init &&
-	git branch -f fake-1 &&
-	git branch -f fake-2 &&
+
+	for i in 1 2 3 4
+	do
+		git branch -f fake-$i || return 1
+	done &&
 
 	for i in 1 2 3 4
 	do
@@ -73,8 +76,19 @@ test_expect_success 'refuse to overwrite: worktree in rebase (merge)' '
 	echo refs/heads/fake-1 >.git/worktrees/wt-3/rebase-merge/head-name &&
 	echo refs/heads/fake-2 >.git/worktrees/wt-3/rebase-merge/onto &&
 
-	test_must_fail git branch -f fake-1 HEAD 2>err &&
-	grep "cannot force update the branch '\''fake-1'\'' checked out at.*wt-3" err
+	cat >.git/worktrees/wt-3/rebase-merge/update-refs <<-EOF &&
+	refs/heads/fake-3
+	$(git rev-parse HEAD~1)
+	refs/heads/fake-4
+	$(git rev-parse HEAD)
+	EOF
+
+	for i in 1 3 4
+	do
+		test_must_fail git branch -f fake-$i HEAD 2>err &&
+		grep "cannot force update the branch '\''fake-$i'\'' checked out at.*wt-3" err ||
+			return 1
+	done
 '
 
 test_expect_success !SANITIZE_LEAK 'refuse to fetch over ref: checked out' '

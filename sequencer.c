@@ -5901,3 +5901,45 @@ int sequencer_determine_whence(struct repository *r, enum commit_whence *whence)
 
 	return 0;
 }
+
+int sequencer_get_update_refs_state(const char *wt_dir,
+				    struct string_list *refs)
+{
+	int result = 0;
+	struct stat st;
+	FILE *fp = NULL;
+	struct strbuf ref = STRBUF_INIT;
+	struct strbuf hash = STRBUF_INIT;
+	char *path = xstrfmt("%s/rebase-merge/update-refs", wt_dir);
+
+	if (stat(path, &st))
+		goto cleanup;
+
+	fp = fopen(path, "r");
+	if (!fp)
+		goto cleanup;
+
+	while (strbuf_getline(&ref, fp) != EOF) {
+		struct object_id oid;
+		struct string_list_item *item;
+
+		if (strbuf_getline(&hash, fp) == EOF ||
+		    get_oid_hex(hash.buf, &oid)) {
+			warning(_("update-refs file at '%s' is invalid"),
+				  path);
+			result = -1;
+			goto cleanup;
+		}
+
+		item = string_list_append(refs, ref.buf);
+		item->util = oiddup(&oid);
+	}
+
+cleanup:
+	if (fp)
+		fclose(fp);
+	free(path);
+	strbuf_release(&ref);
+	strbuf_release(&hash);
+	return result;
+}
