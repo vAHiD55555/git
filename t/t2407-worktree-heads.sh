@@ -54,7 +54,18 @@ test_expect_success 'refuse to overwrite: worktree in bisect' '
 	grep "cannot force update the branch '\''fake-2'\'' checked out at.*wt-4" err
 '
 
-test_expect_success 'refuse to overwrite: worktree in rebase' '
+test_expect_success 'refuse to overwrite: worktree in rebase (apply)' '
+	test_when_finished rm -rf .git/worktrees/wt-*/rebase-apply &&
+
+	mkdir -p .git/worktrees/wt-3/rebase-apply &&
+	echo refs/heads/fake-1 >.git/worktrees/wt-3/rebase-apply/head-name &&
+	echo refs/heads/fake-2 >.git/worktrees/wt-3/rebase-apply/onto &&
+
+	test_must_fail git branch -f fake-1 HEAD 2>err &&
+	grep "cannot force update the branch '\''fake-1'\'' checked out at.*wt-3" err
+'
+
+test_expect_success 'refuse to overwrite: worktree in rebase (merge)' '
 	test_when_finished rm -rf .git/worktrees/wt-*/rebase-merge &&
 
 	mkdir -p .git/worktrees/wt-3/rebase-merge &&
