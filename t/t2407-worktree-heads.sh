@@ -151,4 +151,21 @@ test_expect_success 'refuse to overwrite when in error states' '
 	done
 '
 
+. "$TEST_DIRECTORY"/lib-rebase.sh
+
+test_expect_success !SANITIZE_LEAK 'refuse to overwrite during rebase with --update-refs' '
+	git commit --fixup HEAD~2 --allow-empty &&
+	(
+		set_cat_todo_editor &&
+		test_must_fail git rebase -i --update-refs HEAD~3 >todo &&
+		! grep "update-refs" todo
+	) &&
+	git branch -f allow-update HEAD~2 &&
+	(
+		set_cat_todo_editor &&
+		test_must_fail git rebase -i --update-refs HEAD~3 >todo &&
+		grep "update-ref refs/heads/allow-update" todo
+	)
+'
+
 test_done
