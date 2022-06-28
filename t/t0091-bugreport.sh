@@ -78,7 +78,7 @@ test_expect_success 'indicates populated hooks' '
 	test_cmp expect actual
 '
 
-test_expect_failure UNZIP '--diagnose creates diagnostics zip archive' '
+test_expect_success UNZIP '--diagnose creates diagnostics zip archive' '
 	test_when_finished rm -rf report &&
 
 	git bugreport --diagnose -o report -s test >out &&
@@ -96,6 +96,15 @@ test_expect_failure UNZIP '--diagnose creates diagnostics zip archive' '
 
 	"$GIT_UNZIP" -p "$zip_path" objects-local.txt >out &&
 	grep "^Total: [0-9][0-9]*" out
+'
+
+test_expect_success '--diagnose warns when archived dir does not exist' '
+	test_when_finished rm -rf report &&
+
+	# Remove logs - not guaranteed to exist
+	rm -rf .git/logs &&
+	git bugreport --diagnose -o report -s test 2>err &&
+	grep "directory .\.git/logs. does not exist, will not be archived" err
 '
 
 test_done

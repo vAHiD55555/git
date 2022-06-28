@@ -176,12 +176,18 @@ static int add_directory_to_archiver(struct strvec *archiver_args,
 				     const char *path, int recurse)
 {
 	int at_root = !*path;
-	DIR *dir = opendir(at_root ? "." : path);
+	DIR *dir;
 	struct dirent *e;
 	struct strbuf buf = STRBUF_INIT;
 	size_t len;
 	int res = 0;
 
+	if (!file_exists(at_root ? "." : path)) {
+		warning(_("directory '%s' does not exist, will not be archived"), path);
+		return 0;
+	}
+
+	dir = opendir(at_root ? "." : path);
 	if (!dir)
 		return error_errno(_("could not open directory '%s'"), path);
 
