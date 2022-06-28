@@ -361,7 +361,7 @@ int cmd_bugreport(int argc, const char **argv, const char *prefix)
 	int report = -1;
 	time_t now = time(NULL);
 	struct tm tm;
-	int diagnose = 0;
+	int diagnose = 0, skip_summary = 0;
 	char *option_output = NULL;
 	char *option_suffix = "%Y-%m-%d-%H%M";
 	const char *user_relative_path = NULL;
@@ -371,6 +371,8 @@ int cmd_bugreport(int argc, const char **argv, const char *prefix)
 	const struct option bugreport_options[] = {
 		OPT_BOOL(0, "diagnose", &diagnose,
 			 N_("generate a diagnostics zip archive")),
+		OPT_BOOL(0, "no-report", &skip_summary,
+			 N_("do not create a summary report")),
 		OPT_STRING('o', "output-directory", &option_output, N_("path"),
 			   N_("specify a destination for the bugreport file(s)")),
 		OPT_STRING('s', "suffix", &option_suffix, N_("format"),
@@ -380,6 +382,11 @@ int cmd_bugreport(int argc, const char **argv, const char *prefix)
 
 	argc = parse_options(argc, argv, prefix, bugreport_options,
 			     bugreport_usage, 0);
+
+	if (skip_summary && !diagnose) {
+		warning(_("Nothing to do!"));
+		return 0;
+	}
 
 	/* Prepare the path to put the result */
 	prefixed_filename = prefix_filename(prefix,
@@ -413,6 +420,13 @@ int cmd_bugreport(int argc, const char **argv, const char *prefix)
 			die_errno(_("unable to create diagnostics archive %s"), zip_path.buf);
 
 		strbuf_release(&zip_path);
+	}
+
+	if (skip_summary) {
+		free(prefixed_filename);
+		strbuf_release(&buffer);
+		strbuf_release(&report_path);
+		return 0;
 	}
 
 	/* Prepare the report contents */

@@ -58,6 +58,12 @@ OPTIONS
 	archive is written to the same output directory as the bug report and is
 	named 'git-diagnostics-<formatted suffix>'.
 
+--no-report::
+	Do not write out a 'git-bugreport-<suffix>.txt' file. This option is
+	intended for use with `--diagnose` when only the diagnostic archive is
+	needed. If `--no-report` is used without `--diagnose`, `git bugreport`
+	is a no-op.
+
 GIT
 ---
 Part of the linkgit:git[1] suite
