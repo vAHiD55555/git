@@ -940,7 +940,7 @@ static int external_specification_len(const char *url)
 	return strchr(url, ':') - url;
 }
 
-static const struct string_list *protocol_whitelist(void)
+static const struct string_list *protocol_allowlist(void)
 {
 	static int enabled = -1;
 	static struct string_list allowed = STRING_LIST_INIT_DUP;
@@ -1020,9 +1020,9 @@ static enum protocol_allow_config get_protocol_config(const char *type)
 
 int is_transport_allowed(const char *type, int from_user)
 {
-	const struct string_list *whitelist = protocol_whitelist();
-	if (whitelist)
-		return string_list_has_string(whitelist, type);
+	const struct string_list *allowlist = protocol_allowlist();
+	if (allowlist)
+		return string_list_has_string(allowlist, type);
 
 	switch (get_protocol_config(type)) {
 	case PROTOCOL_ALLOW_ALWAYS:
