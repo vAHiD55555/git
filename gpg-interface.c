@@ -165,6 +165,7 @@ static struct {
 	{ 0, "TRUST_", GPG_STATUS_TRUST_LEVEL },
 };
 
+/* Keep the order same as enum signature_trust_level */
 static struct {
 	const char *key;
 	enum signature_trust_level value;
@@ -903,6 +904,12 @@ const char *get_signing_key(void)
 	}
 
 	return git_committer_info(IDENT_STRICT | IDENT_NO_DATE);
+}
+
+const char *gpg_trust_level_to_str(enum signature_trust_level level){
+	if (level < TRUST_UNDEFINED || level > TRUST_ULTIMATE)
+		return NULL;
+	return sigcheck_gpg_trust_level[level].key;
 }
 
 int sign_buffer(struct strbuf *buffer, struct strbuf *signature, const char *signing_key)
