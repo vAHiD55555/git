@@ -71,6 +71,16 @@ size_t parse_signed_buffer(const char *buf, size_t size);
 int sign_buffer(struct strbuf *buffer, struct strbuf *signature,
 		const char *signing_key);
 
+
+/*
+ * Returns corresponding string in lowercase for a given member of
+ * enum signature_trust_level. For example, `TRUST_ULTIMATE` will
+ * return "ultimate". Since it uses xstrdup_tolower(), which uses
+ * xmallocz(), the caller has to free up the memory for returned string
+ * after usage.
+ */
+char *gpg_trust_level_to_str(enum signature_trust_level level);
+
 int git_gpg_config(const char *, const char *, void *);
 void set_signing_key(const char *);
 const char *get_signing_key(void);
