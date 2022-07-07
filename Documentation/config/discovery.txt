@@ -1,0 +1,21 @@
+discovery.bare::
+	Specifies whether Git will work with a bare repository that
+	wasn't specified via the top-level `--git-dir` command-line
+	option, or the `GIT_DIR` environment variable (see
+	linkgit:git[1]). If the repository is specified, Git will always
+	use the specified repository, regardless of this value.
++
+This config setting is only respected in protected configuration (see
+<<SCOPES>>). This prevents the untrusted repository from tampering with
+this value.
++
+The currently supported values are:
++
+* `always`: Git always works with bare repositories
+* `never`: Git never works with bare repositories
++
+If you do not use bare repositories in your workflow, then it may be
+beneficial to set `discovery.bare` to `never` in your global config.
+This will protect you from attacks that involve cloning a repository
+that contains a bare repository and running a Git command within that
+directory.
