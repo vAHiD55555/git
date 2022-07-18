@@ -1179,4 +1179,68 @@ test_expect_success 'submodule update --recursive skip submodules with strategy=
 	test_cmp expect.err actual.err
 '
 
+test_expect_success 'setup superproject with submodule.propagateBranches' '
+	git init sub1 &&
+	test_commit -C sub1 "sub1" &&
+	git init branch-super &&
+	git -C branch-super submodule add ../sub1 sub1 &&
+	git -C branch-super commit -m "super" &&
+
+	# Clone into a clean repo that we can cp around
+	git clone --recurse-submodules \
+		-c submodule.propagateBranches=true \
+		branch-super branch-super-clean &&
+	git -C branch-super-clean config submodule.propagateBranches true &&
+
+	# Create an upstream submodule not in the clone
+	git init sub2 &&
+	test_commit -C sub2 "sub2" &&
+	git -C branch-super submodule add ../sub2 sub2 &&
+	git -C branch-super commit -m "add sub2"
+'
+
+test_expect_success 'submodule.propagateBranches - detached HEAD' '
+	test_when_finished "rm -fr branch-super-cloned" &&
+	cp -r branch-super-clean branch-super-cloned &&
+
+	git -C branch-super-cloned checkout --detach &&
+	git -C branch-super-cloned pull origin main &&
+	git -C branch-super-cloned submodule update &&
+
+	# sub2 should be in detached HEAD
+	git -C branch-super-cloned/sub2 rev-parse --verify HEAD &&
+	test_must_fail git -C branch-super-cloned/sub2 symbolic-ref HEAD
+'
+
+test_expect_success 'submodule.propagateBranches - branch checked out' '
+	test_when_finished "rm -fr branch-super-cloned" &&
+	cp -r branch-super-clean branch-super-cloned &&
+
+	git -C branch-super-cloned branch --recurse-submodules new-branch &&
+	git -C branch-super-cloned checkout --recurse-submodules new-branch &&
+	git -C branch-super-cloned pull origin main &&
+	git -C branch-super-cloned submodule update &&
+
+	HEAD_BRANCH1=$(git -C branch-super-cloned/sub1 symbolic-ref HEAD) &&
+	test $HEAD_BRANCH1 = "refs/heads/new-branch" &&
+	HEAD_BRANCH2=$(git -C branch-super-cloned/sub2 symbolic-ref HEAD) &&
+	test $HEAD_BRANCH2 = "refs/heads/new-branch"
+'
+
+test_expect_success 'submodule.propagateBranches - other branch checked out' '
+	test_when_finished "rm -fr branch-super-cloned" &&
+	cp -r branch-super-clean branch-super-cloned &&
+
+	git -C branch-super-cloned branch --recurse-submodules new-branch &&
+	git -C branch-super-cloned checkout --recurse-submodules new-branch &&
+	git -C branch-super-cloned/sub1 checkout -b other-branch &&
+	git -C branch-super-cloned pull origin main &&
+	git -C branch-super-cloned submodule update &&
+
+	HEAD_BRANCH1=$(git -C branch-super-cloned/sub1 symbolic-ref HEAD) &&
+	test $HEAD_BRANCH1 = "refs/heads/new-branch" &&
+	HEAD_BRANCH2=$(git -C branch-super-cloned/sub2 symbolic-ref HEAD) &&
+	test $HEAD_BRANCH2 = "refs/heads/new-branch"
+'
+
 test_done
