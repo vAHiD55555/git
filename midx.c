@@ -1063,6 +1063,7 @@ static int write_midx_bitmap(char *midx_name, unsigned char *midx_hash,
 	struct commit **commits = NULL;
 	uint32_t i, commits_nr;
 	uint16_t options = 0;
+	uint32_t *pack_order;
 	char *bitmap_name = xstrfmt("%s-%s.bitmap", midx_name, hash_to_hex(midx_hash));
 	int ret;
 
@@ -1075,6 +1076,15 @@ static int write_midx_bitmap(char *midx_name, unsigned char *midx_hash,
 	prepare_midx_packing_data(&pdata, ctx);
 
 	commits = find_commits_for_midx_bitmap(&commits_nr, refs_snapshot, ctx);
+
+	/*
+	 * Remove the ctx.entries to reduce memory pressure.
+	 * Nullify 'ctx' to help avoid adding new references to ctx->entries.
+	 */
+	FREE_AND_NULL(ctx->entries);
+	ctx->entries_nr = 0;
+	pack_order = ctx->pack_order;
+	ctx = NULL;
 
 	/*
 	 * Build the MIDX-order index based on pdata.objects (which is already
@@ -1102,7 +1112,7 @@ static int write_midx_bitmap(char *midx_name, unsigned char *midx_hash,
 	 * bitmap_writer_finish().
 	 */
 	for (i = 0; i < pdata.nr_objects; i++)
-		index[ctx->pack_order[i]] = &pdata.objects[i].idx;
+		index[pack_order[i]] = &pdata.objects[i].idx;
 
 	bitmap_writer_select_commits(commits, commits_nr, -1);
 	ret = bitmap_writer_build(&pdata);
@@ -1443,6 +1453,11 @@ static int write_midx_internal(const char *object_dir,
 	if (flags & MIDX_WRITE_REV_INDEX &&
 	    git_env_bool("GIT_TEST_MIDX_WRITE_REV", 0))
 		write_midx_reverse_index(midx_name.buf, midx_hash, &ctx);
+
+	/*
+	 * Writing the bitmap must be last, as it will free ctx.entries
+	 * to reduce memory pressure during the bitmap write.
+	 */
 	if (flags & MIDX_WRITE_BITMAP) {
 		if (write_midx_bitmap(midx_name.buf, midx_hash, &ctx,
 				      refs_snapshot, flags) < 0) {
