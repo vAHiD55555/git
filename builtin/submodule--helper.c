@@ -2455,6 +2455,8 @@ static void update_data_to_args(struct update_data *update_data, struct strvec *
 
 static int update_submodule(struct update_data *update_data)
 {
+	int submodule_up_to_date;
+
 	ensure_core_worktree(update_data->sm_path);
 
 	update_data->displaypath = get_submodule_displaypath(
@@ -2491,7 +2493,8 @@ static int update_submodule(struct update_data *update_data)
 		free(remote_ref);
 	}
 
-	if (!oideq(&update_data->oid, &update_data->suboid) || update_data->force)
+	submodule_up_to_date = oideq(&update_data->oid, &update_data->suboid);
+	if (!submodule_up_to_date || update_data->force)
 		if (run_update_procedure(update_data))
 			return 1;
 
