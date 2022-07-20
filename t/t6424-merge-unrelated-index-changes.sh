@@ -268,4 +268,20 @@ test_expect_success 'subtree' '
 	test_path_is_missing .git/MERGE_HEAD
 '
 
+test_expect_success 'resolve && recursive && ort' '
+	git reset --hard &&
+	git checkout B^0 &&
+
+	test_seq 0 10 >a &&
+	git add a &&
+
+	sane_unset GIT_TEST_MERGE_ALGORITHM &&
+	test_must_fail git merge -s resolve -s recursive -s ort C^0 >output 2>&1 &&
+
+	grep "Trying merge strategy resolve..." output &&
+	grep "Trying merge strategy recursive..." output &&
+	grep "Trying merge strategy ort..." output &&
+	grep "No merge strategy handled the merge." output
+'
+
 test_done
