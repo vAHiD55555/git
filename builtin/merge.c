@@ -1599,6 +1599,26 @@ int cmd_merge(int argc, const char **argv, const char *prefix)
 		 */
 		refresh_cache(REFRESH_QUIET);
 		if (allow_trivial && fast_forward != FF_ONLY) {
+			/*
+			 * Must first ensure that index matches HEAD before
+			 * attempting a trivial merge.
+			 */
+			struct tree *head_tree = get_commit_tree(head_commit);
+			struct strbuf sb = STRBUF_INIT;
+
+			if (repo_index_has_changes(the_repository, head_tree,
+						   &sb)) {
+				struct strbuf err = STRBUF_INIT;
+				strbuf_addstr(&err, "error: ");
+				strbuf_addf(&err, _("Your local changes to the following files would be overwritten by merge:\n  %s"),
+					    sb.buf);
+				strbuf_addch(&err, '\n');
+				fputs(err.buf, stderr);
+				strbuf_release(&err);
+				strbuf_release(&sb);
+				return -1;
+			}
+
 			/* See if it is really trivial. */
 			git_committer_info(IDENT_STRICT);
 			printf(_("Trying really trivial in-index merge...\n"));
