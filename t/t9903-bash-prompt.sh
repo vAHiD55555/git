@@ -183,7 +183,7 @@ test_expect_success 'prompt - interactive rebase' '
 '
 
 test_expect_success 'prompt - rebase merge' '
-	printf " (b2|REBASE 1/3)" >expected &&
+	printf " (b2|REBASE 1/3|CONFLICT)" >expected &&
 	git checkout b2 &&
 	test_when_finished "git checkout main" &&
 	test_must_fail git rebase --merge b1 b2 &&
@@ -193,7 +193,7 @@ test_expect_success 'prompt - rebase merge' '
 '
 
 test_expect_success 'prompt - rebase am' '
-	printf " (b2|REBASE 1/3)" >expected &&
+	printf " (b2|REBASE 1/3|CONFLICT)" >expected &&
 	git checkout b2 &&
 	test_when_finished "git checkout main" &&
 	test_must_fail git rebase --apply b1 b2 &&
@@ -203,7 +203,7 @@ test_expect_success 'prompt - rebase am' '
 '
 
 test_expect_success 'prompt - merge' '
-	printf " (b1|MERGING)" >expected &&
+	printf " (b1|MERGING|CONFLICT)" >expected &&
 	git checkout b1 &&
 	test_when_finished "git checkout main" &&
 	test_must_fail git merge b2 &&
@@ -213,11 +213,12 @@ test_expect_success 'prompt - merge' '
 '
 
 test_expect_success 'prompt - cherry-pick' '
-	printf " (main|CHERRY-PICKING)" >expected &&
+	printf " (main|CHERRY-PICKING|CONFLICT)" >expected &&
 	test_must_fail git cherry-pick b1 b1^ &&
 	test_when_finished "git cherry-pick --abort" &&
 	__git_ps1 >"$actual" &&
 	test_cmp expected "$actual" &&
+	printf " (main|CHERRY-PICKING)" >expected &&
 	git reset --merge &&
 	test_must_fail git rev-parse CHERRY_PICK_HEAD &&
 	__git_ps1 >"$actual" &&

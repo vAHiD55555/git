@@ -84,6 +84,9 @@
 # single '?' character by setting GIT_PS1_COMPRESSSPARSESTATE, or omitted
 # by setting GIT_PS1_OMITSPARSESTATE.
 #
+# When there is a conflict, the prompt will include "|CONFLICT". This can
+# be omitted by setting GIT_PS1_OMITCONFLICTSTATE.
+#
 # If you would like to see more information about the identity of
 # commits checked out as a detached HEAD, set GIT_PS1_DESCRIBE_STYLE
 # to one of these values:
@@ -508,6 +511,12 @@ __git_ps1 ()
 		r="$r $step/$total"
 	fi
 
+	local conflict="" # state indicator for unresolved conflicts
+	if [[ -z "${GIT_PS1_OMITCONFLICTSTATE-}" ]] &&
+	   [[ $(git ls-files --unmerged 2>/dev/null) ]]; then
+		conflict="|CONFLICT"
+	fi
+
 	local w=""
 	local i=""
 	local s=""
@@ -572,7 +581,7 @@ __git_ps1 ()
 	fi
 
 	local f="$h$w$i$s$u$p"
-	local gitstring="$c$b${f:+$z$f}${sparse}$r${upstream}"
+	local gitstring="$c$b${f:+$z$f}${sparse}$r${upstream}${conflict}"
 
 	if [ $pcmode = yes ]; then
 		if [ "${__git_printf_supports_v-}" != yes ]; then
