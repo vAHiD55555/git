@@ -2645,9 +2645,12 @@ static void read_protected_config(void)
 	system_config = git_system_config();
 	git_global_config(&user_config, &xdg_config);
 
-	git_configset_add_file(&protected_config, system_config);
-	git_configset_add_file(&protected_config, xdg_config);
-	git_configset_add_file(&protected_config, user_config);
+	if (system_config)
+		git_configset_add_file(&protected_config, system_config);
+	if (xdg_config)
+		git_configset_add_file(&protected_config, xdg_config);
+	if (user_config)
+		git_configset_add_file(&protected_config, user_config);
 	git_configset_add_parameters(&protected_config);
 
 	free(system_config);
