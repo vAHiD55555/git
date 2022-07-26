@@ -8,8 +8,13 @@ test_description='--ancestry-path'
 #   /                     \
 #  A-------K---------------L--M
 #
-#  D..M                 == E F G H I J K L M
-#  --ancestry-path D..M == E F H I J L M
+#  D..M                                     == E F G H I J K L M
+#  --ancestry-path                     D..M == E F   H I J   L M
+#  --ancestry-path=F                   D..M == E F       J   L M
+#  --ancestry-path=G                   D..M ==     G H I J   L M
+#  --ancestry-path=H                   D..M == E   G H I J   L M
+#  --ancestry-path=K                   D..M ==             K L M
+#  --ancestry-path=K --ancestry-path=F D..M == E F       J K L M
 #
 #  D..M -- M.t                 == M
 #  --ancestry-path D..M -- M.t == M
@@ -61,6 +66,44 @@ test_expect_success 'rev-list D..M' '
 test_expect_success 'rev-list --ancestry-path D..M' '
 	test_write_lines E F H I J L M >expect &&
 	git rev-list --ancestry-path --format=%s D..M |
+	sed -e "/^commit /d" |
+	sort >actual &&
+	test_cmp expect actual
+'
+
+test_expect_success 'rev-list --ancestry-path=F D..M' '
+	test_write_lines E F J L M >expect &&
+	git rev-list --ancestry-path=F --format=%s D..M |
+	sed -e "/^commit /d" |
+	sort >actual &&
+	test_cmp expect actual
+'
+test_expect_success 'rev-list --ancestry-path=G D..M' '
+	test_write_lines G H I J L M >expect &&
+	git rev-list --ancestry-path=G --format=%s D..M |
+	sed -e "/^commit /d" |
+	sort >actual &&
+	test_cmp expect actual
+'
+test_expect_success 'rev-list --ancestry-path=H D..M' '
+	test_write_lines E G H I J L M >expect &&
+	git rev-list --ancestry-path=H --format=%s D..M |
+	sed -e "/^commit /d" |
+	sort >actual &&
+	test_cmp expect actual
+'
+
+test_expect_success 'rev-list --ancestry-path=K D..M' '
+	test_write_lines K L M >expect &&
+	git rev-list --ancestry-path=K --format=%s D..M |
+	sed -e "/^commit /d" |
+	sort >actual &&
+	test_cmp expect actual
+'
+
+test_expect_success 'rev-list --ancestry-path=F --ancestry-path=K D..M' '
+	test_write_lines E F J K L M >expect &&
+	git rev-list --ancestry-path=F --ancestry-path=K --format=%s D..M |
 	sed -e "/^commit /d" |
 	sort >actual &&
 	test_cmp expect actual
