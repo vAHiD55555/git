@@ -410,6 +410,11 @@ void roaring_bitmap_andnot_inplace(roaring_bitmap_t *r1,
 void roaring_bitmap_free(const roaring_bitmap_t *r);
 
 /**
+ * Frees the memory if exists
+ */
+void roaring_bitmap_free_safe(roaring_bitmap_t **r);
+
+/**
  * Add value n_args from pointer vals, faster than repeatedly calling
  * `roaring_bitmap_add()`
  */
@@ -605,6 +610,9 @@ roaring_bitmap_t *roaring_bitmap_portable_deserialize(const char *buf);
 roaring_bitmap_t *roaring_bitmap_portable_deserialize_safe(const char *buf,
                                                            size_t maxbytes);
 
+roaring_bitmap_t *roaring_bitmap_portable_network_deserialize_safe(const char *buf,
+								   size_t maxbytes);
+
 /**
  * Check how many bytes would be read (up to maxbytes) at this pointer if there
  * is a bitmap, returns zero if there is no valid bitmap.
@@ -615,6 +623,9 @@ roaring_bitmap_t *roaring_bitmap_portable_deserialize_safe(const char *buf,
 size_t roaring_bitmap_portable_deserialize_size(const char *buf,
                                                 size_t maxbytes);
 
+size_t roaring_bitmap_portable_network_deserialize_size(const char *buf,
+							size_t maxbytes);
+
 /**
  * How many bytes are required to serialize this bitmap.
  *
@@ -622,6 +633,8 @@ size_t roaring_bitmap_portable_deserialize_size(const char *buf,
  * https://github.com/RoaringBitmap/RoaringFormatSpec
  */
 size_t roaring_bitmap_portable_size_in_bytes(const roaring_bitmap_t *r);
+
+size_t roaring_bitmap_network_portable_size_in_bytes(const roaring_bitmap_t *r);
 
 /**
  * Write a bitmap to a char buffer.  The output buffer should refer to at least
@@ -634,6 +647,10 @@ size_t roaring_bitmap_portable_size_in_bytes(const roaring_bitmap_t *r);
  * https://github.com/RoaringBitmap/RoaringFormatSpec
  */
 size_t roaring_bitmap_portable_serialize(const roaring_bitmap_t *r, char *buf);
+
+int roaring_bitmap_portable_network_serialize(roaring_bitmap_t *rb,
+				     int (*write_fn) (void *, const void *, size_t),
+				     void *data);
 
 /*
  * "Frozen" serialization format imitates memory layout of roaring_bitmap_t.
