@@ -249,6 +249,76 @@ If this hook exits with a non-zero status, `git push` will abort without
 pushing anything.  Information about why the push is rejected may be sent
 to the user by writing to standard error.
 
+[[refs-advertise]]
+refs-advertise
+~~~~~~~~~~~~
+
+This hook is invoked by 'git-receive-pack' and 'git-upload-pack' during the
+reference discovery phase and the commit fetching phase, each reference and
+commit to fetch will be filtered by this hook. The hook executes once with
+no arguments for each 'git-upload-pack' and 'git-receive-pack' process and
+if the exit status is non-zero, `git push` and `git fetch` will abort.
+
+Once the hook is invoked, a version number and server process name
+('git-upload-pack' or 'git-receive-pack' or 'ls-refs') should send to it in
+packet-line format, followed by a flush-pkt. The hook should response with
+its version number and process name list it support. If the list does not
+contains the server process name, the server will close the connection with
+the hook and keep going without the hook child process.
+
+During reference discovery phase, each reference will be filtered by this hook,
+In the following example, the letter 'G' stands for 'git-receive-pack' or
+'git-upload-pack' and the letter 'H' stands for this hook. The hook decides if
+the reference will be advertised or not, it sends result back with pkt-line format
+protocol, a response in "ok ref <ref>" format followed by a flush-pkt means
+the references "<ref>" can be advertised, and "ng ref <ref>" means not.
+
+    # Version negotiation
+    G: PKT-LINE(version=1\0git-upload-pack)
+    G: flush-pkt
+    H: PKT-LINE(version=1\0git-upload-pack git-receive-pack ls-refs)
+    H: flush-pkt
+
+    # Send reference filter request to hook
+    G: PKT-LINE(ref <ref> <oid>)
+    G: flush-pkt
+
+    # Receive result from the hook.
+    # Case 1: this reference is valid
+    H: PKT-LINE(ok ref <ref>)
+    H: flush-pkt
+    # Case 2: this reference is filtered out
+    H: PKT-LINE(ng ref <ref>)
+    H: flush-pkt
+
+During commit fetch phase of 'git-upload-pack' process, git client may send `want <oid>`
+requests and 'git-upload-pack' will send object filter requests to the hook to check if
+the object "<oid>" will be sent to the client or not. In the following example, the letter
+'G' stands for 'git-upload-pack' and the letter 'H' stands for this hook.
+
+The hook will decides if a commit will be sent to the client or not, it sends result with
+pkt-line format protocol to `git-upload-pack`, a response in "ok obj <oid>" format
+followed by a flush-pkt means the object "<oid>" can be sent to client, and "ng obj <oid>"
+means not.
+
+    # Version negotiation
+    G: PKT-LINE(version=1\0ls-refs)
+    G: flush-pkt
+    H: PKT-LINE(version=1\0git-upload-pack git-receive-pack ls-refs)
+    H: flush-pkt
+
+    # Send commit filter request to hook
+    G: PKT-LINE(obj <oid>)
+    G: flush-pkt
+
+    # Receive result from the hook.
+    # Case 1: this object is valid
+    H: PKT-LINE(ok obj <oid>)
+    H: flush-pkt
+    # Case 2: this object is filtered out
+    H: PKT-LINE(ng obj <oid>)
+    H: flush-pkt
+
 [[pre-receive]]
 pre-receive
 ~~~~~~~~~~~
