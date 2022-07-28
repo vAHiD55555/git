@@ -6,10 +6,13 @@
 #include "ls-refs.h"
 #include "pkt-line.h"
 #include "config.h"
+#include "run-command.h"
+#include "refs/refs-advertise.h"
 
 static int config_read;
 static int advertise_unborn;
 static int allow_unborn;
+static struct string_list symref = STRING_LIST_INIT_DUP;
 
 static void ensure_config_read(void)
 {
@@ -81,6 +84,7 @@ static int send_ref(const char *refname, const struct object_id *oid,
 {
 	struct ls_refs_data *data = cb_data;
 	const char *refname_nons = strip_namespace(refname);
+	const char *refname_to_filter = refname_nons;
 
 	strbuf_reset(&data->buf);
 
@@ -88,6 +92,16 @@ static int send_ref(const char *refname, const struct object_id *oid,
 		return 0;
 
 	if (!ref_match(&data->prefixes, refname_nons))
+		return 0;
+
+	if (!strcmp(refname_nons, "HEAD")) {
+		struct string_list_item *item = string_list_lookup(&symref, "HEAD");
+		if (item) {
+			refname_to_filter = (const char *)item->util;
+		}
+	}
+
+	if (filter_advertise_ref(refname_to_filter, oid))
 		return 0;
 
 	if (oid)
@@ -121,18 +135,24 @@ static int send_ref(const char *refname, const struct object_id *oid,
 
 static void send_possibly_unborn_head(struct ls_refs_data *data)
 {
+	const char *symref_target;
+	struct string_list_item *item;
 	struct strbuf namespaced = STRBUF_INIT;
 	struct object_id oid;
 	int flag;
 	int oid_is_null;
 
 	strbuf_addf(&namespaced, "%sHEAD", get_git_namespace());
-	if (!resolve_ref_unsafe(namespaced.buf, 0, &oid, &flag))
+	symref_target = resolve_ref_unsafe(namespaced.buf, 0, &oid, &flag);
+	if (!symref_target)
 		return; /* bad ref */
 	oid_is_null = is_null_oid(&oid);
 	if (!oid_is_null ||
-	    (data->unborn && data->symrefs && (flag & REF_ISSYMREF)))
+	    (data->unborn && data->symrefs && (flag & REF_ISSYMREF))) {
+		item = string_list_append(&symref, "HEAD");
+		item->util = xstrdup(strip_namespace(symref_target));
 		send_ref(namespaced.buf, oid_is_null ? NULL : &oid, flag, data);
+	}
 	strbuf_release(&namespaced);
 }
 
@@ -146,6 +166,10 @@ static int ls_refs_config(const char *var, const char *value, void *data)
 	return parse_hide_refs_config(var, value, "uploadpack");
 }
 
+static void clean_refs_advertise_filter(void) {
+	clean_advertise_refs_filter();
+}
+
 int ls_refs(struct repository *r, struct packet_reader *request)
 {
 	struct ls_refs_data data;
@@ -156,6 +180,8 @@ int ls_refs(struct repository *r, struct packet_reader *request)
 
 	ensure_config_read();
 	git_config(ls_refs_config, NULL);
+	create_advertise_refs_filter("ls-refs");
+	atexit(clean_refs_advertise_filter);
 
 	while (packet_reader_read(request) == PACKET_READ_NORMAL) {
 		const char *arg = request->line;

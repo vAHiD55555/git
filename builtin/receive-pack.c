@@ -30,6 +30,7 @@
 #include "commit-reach.h"
 #include "worktree.h"
 #include "shallow.h"
+#include "refs/refs-advertise.h"
 
 static const char * const receive_pack_usage[] = {
 	N_("git receive-pack <git-dir>"),
@@ -298,6 +299,10 @@ static int show_ref_cb(const char *path_full, const struct object_id *oid,
 
 	if (ref_is_hidden(path, path_full))
 		return 0;
+
+	if (filter_advertise_ref(path, oid)) {
+		return 0;
+	}
 
 	/*
 	 * Advertise refs outside our current namespace as ".have"
@@ -2458,6 +2463,10 @@ static int delete_only(struct command *commands)
 	return 1;
 }
 
+static void clean_refs_advertise_filter(void) {
+	clean_advertise_refs_filter();
+}
+
 int cmd_receive_pack(int argc, const char **argv, const char *prefix)
 {
 	int advertise_refs = 0;
@@ -2491,6 +2500,9 @@ int cmd_receive_pack(int argc, const char **argv, const char *prefix)
 
 	if (!enter_repo(service_dir, 0))
 		die("'%s' does not appear to be a git repository", service_dir);
+
+	create_advertise_refs_filter("git-receive-pack");
+	atexit(clean_refs_advertise_filter);
 
 	git_config(receive_pack_config, NULL);
 	if (cert_nonce_seed)

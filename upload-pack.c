@@ -27,6 +27,7 @@
 #include "commit-graph.h"
 #include "commit-reach.h"
 #include "shallow.h"
+#include "refs/refs-advertise.h"
 
 /* Remember to update object flag allocation in object.h */
 #define THEY_HAVE	(1u << 11)
@@ -1118,7 +1119,7 @@ static void receive_needs(struct upload_pack_data *data,
 		}
 
 		o = parse_object(the_repository, &oid_buf);
-		if (!o) {
+		if ((!o) || (filter_advertise_object(&oid_buf))) {
 			packet_writer_error(&data->writer,
 					    "upload-pack: not our ref %s",
 					    oid_to_hex(&oid_buf));
@@ -1164,6 +1165,12 @@ static int mark_our_ref(const char *refname, const char *refname_full,
 		o->flags |= HIDDEN_REF;
 		return 1;
 	}
+
+	if (filter_advertise_ref(refname, oid)) {
+		o->flags |= HIDDEN_REF;
+		return 1;
+	}
+
 	o->flags |= OUR_REF;
 	return 0;
 }
@@ -1183,8 +1190,10 @@ static void format_symref_info(struct strbuf *buf, struct string_list *symref)
 
 	if (!symref->nr)
 		return;
-	for_each_string_list_item(item, symref)
-		strbuf_addf(buf, " symref=%s:%s", item->string, (char *)item->util);
+	for_each_string_list_item(item, symref) {
+		if (!filter_advertise_ref((char *)item->util, NULL))
+			strbuf_addf(buf, " symref=%s:%s", item->string, (char *)item->util);
+	}
 }
 
 static void format_session_id(struct strbuf *buf, struct upload_pack_data *d) {
@@ -1198,11 +1207,19 @@ static int send_ref(const char *refname, const struct object_id *oid,
 	static const char *capabilities = "multi_ack thin-pack side-band"
 		" side-band-64k ofs-delta shallow deepen-since deepen-not"
 		" deepen-relative no-progress include-tag multi_ack_detailed";
-	const char *refname_nons = strip_namespace(refname);
 	struct object_id peeled;
 	struct upload_pack_data *data = cb_data;
+	const char *refname_nons = strip_namespace(refname);
+	const char *refname_to_filter = refname_nons;
 
-	if (mark_our_ref(refname_nons, refname, oid))
+	if (!strcmp(refname_nons, "HEAD")) {
+		struct string_list_item *item = string_list_lookup(&data->symref, "HEAD");
+		if (item) {
+			refname_to_filter = (const char *)item->util;
+		}
+	}
+
+	if (mark_our_ref(refname_to_filter, refname, oid))
 		return 0;
 
 	if (capabilities) {
@@ -1342,11 +1359,18 @@ static void get_upload_pack_config(struct upload_pack_data *data)
 	git_protected_config(upload_pack_protected_config, data);
 }
 
+static void clean_refs_advertise_filter(void) {
+	clean_advertise_refs_filter();
+}
+
 void upload_pack(const int advertise_refs, const int stateless_rpc,
 		 const int timeout)
 {
 	struct packet_reader reader;
 	struct upload_pack_data data;
+
+	create_advertise_refs_filter("git-upload-pack");
+	atexit(clean_refs_advertise_filter);
 
 	upload_pack_data_init(&data);
 	get_upload_pack_config(&data);
@@ -1421,7 +1445,7 @@ static int parse_want(struct packet_writer *writer, const char *line,
 		else
 			o = parse_object(the_repository, &oid);
 
-		if (!o) {
+		if ((!o) || (filter_advertise_object(&oid))) {
 			packet_writer_error(writer,
 					    "upload-pack: not our ref %s",
 					    oid_to_hex(&oid));
@@ -1453,7 +1477,8 @@ static int parse_want_ref(struct packet_writer *writer, const char *line,
 
 		strbuf_addf(&refname, "%s%s", get_git_namespace(), refname_nons);
 		if (ref_is_hidden(refname_nons, refname.buf) ||
-		    read_ref(refname.buf, &oid)) {
+		    read_ref(refname.buf, &oid) ||
+			filter_advertise_ref(refname_nons, &oid)) {
 			packet_writer_error(writer, "unknown ref %s", refname_nons);
 			die("unknown ref %s", refname_nons);
 		}
@@ -1700,6 +1725,9 @@ int upload_pack_v2(struct repository *r, struct packet_reader *request)
 	struct upload_pack_data data;
 
 	clear_object_flags(ALL_FLAGS);
+
+	create_advertise_refs_filter("git-upload-pack");
+	atexit(clean_refs_advertise_filter);
 
 	upload_pack_data_init(&data);
 	data.use_sideband = LARGE_PACKET_MAX;
