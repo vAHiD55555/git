@@ -352,6 +352,8 @@ log -GF -p --pickaxe-all master
 log -IA -IB -I1 -I2 -p master
 log --decorate --all
 log --decorate=full --all
+log --decorate --decorate-all --all
+log --decorate=full --decorate-all --all
 
 rev-list --parents HEAD
 rev-list --children HEAD

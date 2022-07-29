@@ -101,6 +101,25 @@ static int parse_decoration_style(const char *value)
 	return -1;
 }
 
+static int decorate_all;
+static struct string_list decorate_refs_exclude = STRING_LIST_INIT_NODUP;
+static struct string_list decorate_refs_exclude_config = STRING_LIST_INIT_NODUP;
+static struct string_list decorate_refs_include = STRING_LIST_INIT_NODUP;
+
+static int decorate_all_callback(const struct option *opt,
+				 const char *arg, int unset)
+{
+	if (unset) {
+		decorate_all = 0;
+		return 0;
+	}
+
+	string_list_clear(&decorate_refs_include, 0);
+	string_list_clear(&decorate_refs_exclude, 0);
+	decorate_all = 1;
+	return 0;
+}
+
 static int decorate_callback(const struct option *opt, const char *arg, int unset)
 {
 	if (unset)
@@ -176,7 +195,8 @@ static void set_default_decoration_filter(struct decoration_filter *decoration_f
 					   item->string);
 	}
 
-	if (decoration_filter->exclude_ref_pattern->nr ||
+	if (decorate_all ||
+	    decoration_filter->exclude_ref_pattern->nr ||
 	    decoration_filter->include_ref_pattern->nr ||
 	    decoration_filter->exclude_ref_config_pattern->nr)
 		return;
@@ -199,9 +219,6 @@ static void cmd_log_init_finish(int argc, const char **argv, const char *prefix,
 	struct userformat_want w;
 	int quiet = 0, source = 0, mailmap;
 	static struct line_opt_callback_data line_cb = {NULL, NULL, STRING_LIST_INIT_DUP};
-	static struct string_list decorate_refs_exclude = STRING_LIST_INIT_NODUP;
-	static struct string_list decorate_refs_exclude_config = STRING_LIST_INIT_NODUP;
-	static struct string_list decorate_refs_include = STRING_LIST_INIT_NODUP;
 	struct decoration_filter decoration_filter = {
 		.exclude_ref_pattern = &decorate_refs_exclude,
 		.include_ref_pattern = &decorate_refs_include,
@@ -214,6 +231,8 @@ static void cmd_log_init_finish(int argc, const char **argv, const char *prefix,
 		OPT_BOOL(0, "source", &source, N_("show source")),
 		OPT_BOOL(0, "use-mailmap", &mailmap, N_("use mail map file")),
 		OPT_ALIAS(0, "mailmap", "use-mailmap"),
+		OPT_CALLBACK_F(0, "decorate-all", NULL, NULL, N_("how all ref decorations"),
+			       PARSE_OPT_NOARG, decorate_all_callback),
 		OPT_STRING_LIST(0, "decorate-refs", &decorate_refs_include,
 				N_("pattern"), N_("only decorate refs that match <pattern>")),
 		OPT_STRING_LIST(0, "decorate-refs-exclude", &decorate_refs_exclude,
