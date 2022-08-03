@@ -534,7 +534,7 @@ static int cmd_diagnose(int argc, const char **argv)
 		goto diagnose_cleanup;
 	}
 
-	res = create_diagnostics_archive(&zip_path);
+	res = create_diagnostics_archive(&zip_path, 1);
 
 diagnose_cleanup:
 	strbuf_release(&zip_path);

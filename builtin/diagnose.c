@@ -4,7 +4,7 @@
 
 
 static const char * const diagnose_usage[] = {
-	N_("git diagnose [-o|--output-directory <file>] [-s|--suffix <format>]"),
+	N_("git diagnose [-o|--output-directory <file>] [-s|--suffix <format>] [-a|--all]"),
 	NULL
 };
 
@@ -13,6 +13,7 @@ int cmd_diagnose(int argc, const char **argv, const char *prefix)
 	struct strbuf zip_path = STRBUF_INIT;
 	time_t now = time(NULL);
 	struct tm tm;
+	int include_everything = 0;
 	char *option_output = NULL;
 	char *option_suffix = "%Y-%m-%d-%H%M";
 	char *prefixed_filename;
@@ -22,6 +23,9 @@ int cmd_diagnose(int argc, const char **argv, const char *prefix)
 			   N_("specify a destination for the diagnostics archive")),
 		OPT_STRING('s', "suffix", &option_suffix, N_("format"),
 			   N_("specify a strftime format suffix for the filename")),
+		OPT_BOOL_F('a', "all", &include_everything,
+			   N_("collect complete diagnostic information"),
+			   PARSE_OPT_NONEG),
 		OPT_END()
 	};
 
@@ -48,7 +52,7 @@ int cmd_diagnose(int argc, const char **argv, const char *prefix)
 	}
 
 	/* Prepare diagnostics */
-	if (create_diagnostics_archive(&zip_path))
+	if (create_diagnostics_archive(&zip_path, include_everything))
 		die_errno(_("unable to create diagnostics archive %s"),
 			  zip_path.buf);
 

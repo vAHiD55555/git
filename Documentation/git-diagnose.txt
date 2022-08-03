@@ -9,6 +9,7 @@ SYNOPSIS
 --------
 [verse]
 'git diagnose' [(-o | --output-directory) <path>] [(-s | --suffix) <format>]
+	       [-a | --all]
 
 DESCRIPTION
 -----------
@@ -26,8 +27,6 @@ The following information is captured in the archive:
     stores
   * The total count of loose objects, as well as counts broken down by
     `.git/objects` subdirectory
-  * The contents of the `.git`, `.git/hooks`, `.git/info`, `.git/logs`, and
-    `.git/objects/info` directories
 
 This tool differs from linkgit:git-bugreport[1] in that it collects much more
 detailed information with a greater focus on reporting the size and data shape
@@ -46,6 +45,15 @@ OPTIONS
 	a file named 'git-diagnostics-<formatted suffix>'. This should take the
 	form of a strftime(3) format string; the current local time will be
 	used.
+
+-a::
+--all::
+	Include more complete repository diagnostic information in the archive.
+	Specifically, this will add copies of `.git`, `.git/hooks`, `.git/info`,
+	`.git/logs`, and `.git/objects/info` directories to the output archive.
+	This additional data may be sensitive; a user can reconstruct the full
+	contents of the diagnosed repository with this information. Users should
+	exercise caution when sharing an archive generated with this option.
 
 GIT
 ---

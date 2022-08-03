@@ -131,7 +131,7 @@ static int add_directory_to_archiver(struct strvec *archiver_args,
 	return res;
 }
 
-int create_diagnostics_archive(struct strbuf *zip_path)
+int create_diagnostics_archive(struct strbuf *zip_path, int include_everything)
 {
 	struct strvec archiver_args = STRVEC_INIT;
 	char **argv_copy = NULL;
@@ -176,11 +176,13 @@ int create_diagnostics_archive(struct strbuf *zip_path)
 	loose_objs_stats(&buf, ".git/objects");
 	strvec_push(&archiver_args, buf.buf);
 
-	if ((res = add_directory_to_archiver(&archiver_args, ".git", 0)) ||
-	    (res = add_directory_to_archiver(&archiver_args, ".git/hooks", 0)) ||
-	    (res = add_directory_to_archiver(&archiver_args, ".git/info", 0)) ||
-	    (res = add_directory_to_archiver(&archiver_args, ".git/logs", 1)) ||
-	    (res = add_directory_to_archiver(&archiver_args, ".git/objects/info", 0)))
+	/* Only include this if explicitly requested */
+	if (include_everything &&
+	    ((res = add_directory_to_archiver(&archiver_args, ".git", 0)) ||
+	     (res = add_directory_to_archiver(&archiver_args, ".git/hooks", 0)) ||
+	     (res = add_directory_to_archiver(&archiver_args, ".git/info", 0)) ||
+	     (res = add_directory_to_archiver(&archiver_args, ".git/logs", 1)) ||
+	     (res = add_directory_to_archiver(&archiver_args, ".git/objects/info", 0))))
 		goto diagnose_cleanup;
 
 	strvec_pushl(&archiver_args, "--prefix=",
