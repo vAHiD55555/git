@@ -46,6 +46,7 @@ static const char rev_list_usage[] =
 "    --parents\n"
 "    --children\n"
 "    --objects | --objects-edge\n"
+"    --disk-usage | --disk-usage=human\n"
 "    --unpacked\n"
 "    --header | --pretty\n"
 "    --[no-]object-names\n"
@@ -81,6 +82,7 @@ static int arg_show_object_names = 1;
 
 static int show_disk_usage;
 static off_t total_disk_usage;
+static int human_readable;
 
 static off_t get_object_disk_usage(struct object *obj)
 {
@@ -473,6 +475,8 @@ static int try_bitmap_disk_usage(struct rev_info *revs,
 				 int filter_provided_objects)
 {
 	struct bitmap_index *bitmap_git;
+	struct strbuf disk_buf = STRBUF_INIT;
+	off_t size_from_bitmap;
 
 	if (!show_disk_usage)
 		return -1;
@@ -481,8 +485,13 @@ static int try_bitmap_disk_usage(struct rev_info *revs,
 	if (!bitmap_git)
 		return -1;
 
-	printf("%"PRIuMAX"\n",
-	       (uintmax_t)get_disk_usage_from_bitmap(bitmap_git, revs));
+	size_from_bitmap = get_disk_usage_from_bitmap(bitmap_git, revs);
+	if (human_readable)
+		strbuf_humanise_bytes(&disk_buf, size_from_bitmap);
+	else
+		strbuf_addf(&disk_buf, "%"PRIuMAX"", (uintmax_t)size_from_bitmap);
+	puts(disk_buf.buf);
+	strbuf_release(&disk_buf);
 	return 0;
 }
 
@@ -624,10 +633,20 @@ int cmd_rev_list(int argc, const char **argv, const char *prefix)
 			continue;
 		}
 
-		if (!strcmp(arg, "--disk-usage")) {
-			show_disk_usage = 1;
-			info.flags |= REV_LIST_QUIET;
-			continue;
+		if (skip_prefix(arg, "--disk-usage", &arg)) {
+			if (*arg == '=') {
+				if (!strcmp(++arg, "human")) {
+					human_readable = 1;
+					show_disk_usage = 1;
+					info.flags |= REV_LIST_QUIET;
+					continue;
+				} else
+					die(_("invalid value for '%s': '%s', try --disk-usage=human"), "--disk-usage", arg);
+			} else {
+				show_disk_usage = 1;
+				info.flags |= REV_LIST_QUIET;
+				continue;
+			}
 		}
 
 		usage(rev_list_usage);
@@ -752,8 +771,15 @@ int cmd_rev_list(int argc, const char **argv, const char *prefix)
 			printf("%d\n", revs.count_left + revs.count_right);
 	}
 
-	if (show_disk_usage)
-		printf("%"PRIuMAX"\n", (uintmax_t)total_disk_usage);
+	if (show_disk_usage) {
+		struct strbuf disk_buf = STRBUF_INIT;
+		if (human_readable)
+			strbuf_humanise_bytes(&disk_buf, total_disk_usage);
+		else
+			strbuf_addf(&disk_buf, "%"PRIuMAX"", (uintmax_t)total_disk_usage);
+		puts(disk_buf.buf);
+		strbuf_release(&disk_buf);
+	}
 
 cleanup:
 	release_revisions(&revs);
