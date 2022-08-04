@@ -242,8 +242,11 @@ ifdef::git-rev-list[]
 	to `/dev/null` as the output does not have to be formatted.
 
 --disk-usage::
+--disk-usage=human::
 	Suppress normal output; instead, print the sum of the bytes used
-	for on-disk storage by the selected commits or objects. This is
+	for on-disk storage by the selected commits or objects.
+	When it accepts a value `human`, like: `--disk-usage=human`, this
+	means to print objects size in human readable format. This is
 	equivalent to piping the output into `git cat-file
 	--batch-check='%(objectsize:disk)'`, except that it runs much
 	faster (especially with `--use-bitmap-index`). See the `CAVEATS`
