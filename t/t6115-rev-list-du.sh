@@ -48,4 +48,22 @@ check_du HEAD
 check_du --objects HEAD
 check_du --objects HEAD^..HEAD
 
+
+test_expect_success 'rev-list --disk-usage with --human-readable' '
+	git rev-list --objects HEAD --disk-usage --human-readable >actual &&
+	test_i18ngrep -e "446 bytes" actual
+'
+
+test_expect_success 'rev-list --disk-usage with bitmap and --human-readable' '
+	git rev-list --objects HEAD --use-bitmap-index --disk-usage -H >actual &&
+	test_i18ngrep -e "446 bytes" actual
+'
+
+test_expect_success 'rev-list use --human-readable without --disk-usage' '
+	test_must_fail git rev-list --objects HEAD --human-readable 2> err &&
+	echo "fatal: option '\''--human-readable/-H'\'' should be used with" \
+	"'\''--disk-usage'\'' together" >expect &&
+	test_cmp err expect
+'
+
 test_done

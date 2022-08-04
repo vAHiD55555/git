@@ -81,6 +81,7 @@ static int arg_show_object_names = 1;
 
 static int show_disk_usage;
 static off_t total_disk_usage;
+static int human_readable;
 
 static off_t get_object_disk_usage(struct object *obj)
 {
@@ -473,6 +474,8 @@ static int try_bitmap_disk_usage(struct rev_info *revs,
 				 int filter_provided_objects)
 {
 	struct bitmap_index *bitmap_git;
+	struct strbuf bitmap_size_buf = STRBUF_INIT;
+	off_t size_from_bitmap;
 
 	if (!show_disk_usage)
 		return -1;
@@ -481,8 +484,13 @@ static int try_bitmap_disk_usage(struct rev_info *revs,
 	if (!bitmap_git)
 		return -1;
 
-	printf("%"PRIuMAX"\n",
-	       (uintmax_t)get_disk_usage_from_bitmap(bitmap_git, revs));
+	size_from_bitmap = get_disk_usage_from_bitmap(bitmap_git, revs);
+	if (human_readable) {
+		strbuf_humanise_bytes(&bitmap_size_buf, size_from_bitmap);
+		printf("%s\n", bitmap_size_buf.buf);
+	} else
+		printf("%"PRIuMAX"\n", (uintmax_t)size_from_bitmap);
+	strbuf_release(&bitmap_size_buf);
 	return 0;
 }
 
@@ -490,6 +498,7 @@ int cmd_rev_list(int argc, const char **argv, const char *prefix)
 {
 	struct rev_info revs;
 	struct rev_list_info info;
+	struct strbuf disk_buf = STRBUF_INIT;
 	struct setup_revision_opt s_r_opt = {
 		.allow_exclude_promisor_objects = 1,
 	};
@@ -630,9 +639,17 @@ int cmd_rev_list(int argc, const char **argv, const char *prefix)
 			continue;
 		}
 
+		if (!strcmp(arg, "--human-readable") || !strcmp(arg, "-H")) {
+			human_readable = 1;
+			continue;
+		}
+
 		usage(rev_list_usage);
 
 	}
+
+	if (!show_disk_usage && human_readable)
+		die(_("option '%s' should be used with '%s' together"), "--human-readable/-H", "--disk-usage");
 	if (revs.commit_format != CMIT_FMT_USERFORMAT)
 		revs.include_header = 1;
 	if (revs.commit_format != CMIT_FMT_UNSPECIFIED) {
@@ -752,10 +769,16 @@ int cmd_rev_list(int argc, const char **argv, const char *prefix)
 			printf("%d\n", revs.count_left + revs.count_right);
 	}
 
-	if (show_disk_usage)
-		printf("%"PRIuMAX"\n", (uintmax_t)total_disk_usage);
+	if (show_disk_usage) {
+		if (human_readable) {
+			strbuf_humanise_bytes(&disk_buf, total_disk_usage);
+			printf("%s\n", disk_buf.buf);
+		} else
+			printf("%"PRIuMAX"\n", (uintmax_t)total_disk_usage);
+	}
 
 cleanup:
 	release_revisions(&revs);
+	strbuf_release(&disk_buf);
 	return ret;
 }

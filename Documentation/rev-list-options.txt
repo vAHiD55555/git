@@ -249,6 +249,11 @@ ifdef::git-rev-list[]
 	faster (especially with `--use-bitmap-index`). See the `CAVEATS`
 	section in linkgit:git-cat-file[1] for the limitations of what
 	"on-disk storage" means.
+
+-H::
+--human-readable::
+	Print on-disk objects size in human readable format. This option
+	must be combined with `--disk-usage` together.
 endif::git-rev-list[]
 
 --cherry-mark::
