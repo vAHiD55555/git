@@ -831,14 +831,13 @@ struct cache_entry *index_file_exists(struct index_state *istate, const char *na
 int index_name_pos(struct index_state *, const char *name, int namelen);
 
 /*
- * Determines whether an entry with the given name exists within the
- * given index. The return value is 1 if an exact match is found, otherwise
- * it is 0. Note that, unlike index_name_pos, this function does not expand
- * the index if it is sparse. If an item exists within the full index but it
- * is contained within a sparse directory (and not in the sparse index), 0 is
- * returned.
+ * Like index_name_pos, returns the position of an entry of the given name in
+ * the index if one exists, otherwise returns a negative value where the negated
+ * value minus 1 is the position where the index entry would be inserted. Unlike
+ * index_name_pos, however, a sparse index is not expanded to find an entry
+ * inside a sparse directory.
  */
-int index_entry_exists(struct index_state *, const char *name, int namelen);
+int index_name_pos_sparse(struct index_state *, const char *name, int namelen);
 
 /*
  * Some functions return the negative complement of an insert position when a

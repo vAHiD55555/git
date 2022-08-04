@@ -798,7 +798,7 @@ static void prime_cache_tree_rec(struct repository *r,
 			 * as normal.
 			 */
 			if (r->index->sparse_index &&
-			    index_entry_exists(r->index, tree_path->buf, tree_path->len))
+			    index_name_pos_sparse(r->index, tree_path->buf, tree_path->len) >= 0)
 				prime_cache_tree_sparse_dir(sub->cache_tree, subtree);
 			else
 				prime_cache_tree_rec(r, sub->cache_tree, subtree, tree_path);
