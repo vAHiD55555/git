@@ -323,7 +323,7 @@ test_expect_success 'move clean path from in-cone to out-of-cone' '
 	grep "S folder1/d" actual
 '
 
-test_expect_failure 'move clean path from in-cone to out-of-cone overwrite' '
+test_expect_success 'move clean path from in-cone to out-of-cone overwrite' '
 	test_when_finished "cleanup_sparse_checkout" &&
 	setup_sparse_checkout &&
 	echo "sub/file1 overwrite" >sub/file1 &&
