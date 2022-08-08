@@ -25,6 +25,58 @@ static enum fsmonitor_reason check_vfs4git(struct repository *r)
 }
 
 /*
+ * Check if monitoring remote working directories is allowed.
+ *
+ * By default monitoring remote working directories is not allowed,
+ * but users may override this behavior in enviroments where they
+ * have proper support.
+*/
+static enum fsmonitor_reason check_allow_remote(struct repository *r)
+{
+	int allow;
+
+	if (repo_config_get_bool(r, "fsmonitor.allowremote", &allow) || !allow)
+		return FSMONITOR_REASON_REMOTE;
+
+	return FSMONITOR_REASON_OK;
+}
+
+/*
+ * Check if the remote working directory is mounted via SMB
+ *
+ * For now, remote working directories are only supported via SMB mounts
+*/
+static enum fsmonitor_reason check_smb(wchar_t *wpath)
+{
+	HANDLE h;
+	FILE_REMOTE_PROTOCOL_INFO proto_info;
+
+	h = CreateFileW(wpath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+					FILE_FLAG_BACKUP_SEMANTICS, NULL);
+
+	if (h == INVALID_HANDLE_VALUE) {
+		error(_("[GLE %ld] unable to open for read '%ls'"),
+		      GetLastError(), wpath);
+		return FSMONITOR_REASON_ERROR;
+	}
+
+	if (!GetFileInformationByHandleEx(h, FileRemoteProtocolInfo,
+									&proto_info, sizeof(proto_info))) {
+		error(_("[GLE %ld] unable to get protocol information for '%ls'"),
+		      GetLastError(), wpath);
+		CloseHandle(h);
+		return FSMONITOR_REASON_ERROR;
+	}
+
+	CloseHandle(h);
+
+	if (proto_info.Protocol == WNNC_NET_SMB)
+		return FSMONITOR_REASON_OK;
+
+	return FSMONITOR_REASON_ERROR;
+}
+
+/*
  * Remote working directories are problematic for FSMonitor.
  *
  * The underlying file system on the server machine and/or the remote
@@ -76,6 +128,7 @@ static enum fsmonitor_reason check_vfs4git(struct repository *r)
  */
 static enum fsmonitor_reason check_remote(struct repository *r)
 {
+	enum fsmonitor_reason reason;
 	wchar_t wpath[MAX_PATH];
 	wchar_t wfullpath[MAX_PATH];
 	size_t wlen;
@@ -115,7 +168,11 @@ static enum fsmonitor_reason check_remote(struct repository *r)
 		trace_printf_key(&trace_fsmonitor,
 				 "check_remote('%s') true",
 				 r->worktree);
-		return FSMONITOR_REASON_REMOTE;
+
+		reason = check_smb(wfullpath);
+		if (reason != FSMONITOR_REASON_OK)
+			return reason;
+		return check_allow_remote(r);
 	}
 
 	return FSMONITOR_REASON_OK;
