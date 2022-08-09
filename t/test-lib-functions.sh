@@ -492,7 +492,10 @@ test_commit_bulk () {
 # of a file in the working directory and add it to the index.
 
 test_chmod () {
-	chmod "$@" &&
+	if test_have_prereq !MINGW
+	then
+		chmod "$@"
+	fi &&
 	git update-index --add "--chmod=$@"
 }
 
@@ -548,7 +551,10 @@ write_script () {
 		echo "#!${2-"$SHELL_PATH"}" &&
 		cat
 	} >"$1" &&
-	chmod +x "$1"
+	if test_have_prereq !MINGW
+	then
+		chmod +x "$1"
+	fi
 }
 
 # Usage: test_hook [options] <hook-name> <<-\EOF
