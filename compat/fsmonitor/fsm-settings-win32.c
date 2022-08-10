@@ -27,53 +27,55 @@ static enum fsmonitor_reason check_vfs4git(struct repository *r)
 /*
  * Check if monitoring remote working directories is allowed.
  *
- * By default monitoring remote working directories is not allowed,
- * but users may override this behavior in enviroments where they
- * have proper support.
-*/
-static enum fsmonitor_reason check_allow_remote(struct repository *r)
+ * By default, monitoring remote working directories is
+ * disabled unless on a network filesystem that is known to
+ * behave well.  Users may override this behavior in enviroments where
+ * they have proper support.
+ */
+static int check_config_allowremote(struct repository *r)
 {
 	int allow;
 
-	if (repo_config_get_bool(r, "fsmonitor.allowremote", &allow) || !allow)
-		return FSMONITOR_REASON_REMOTE;
+	if (!repo_config_get_bool(r, "fsmonitor.allowremote", &allow))
+		return allow;
 
-	return FSMONITOR_REASON_OK;
+	return -1; /* fsmonitor.allowremote not set */
 }
 
 /*
- * Check if the remote working directory is mounted via SMB
+ * Check remote working directory protocol.
  *
- * For now, remote working directories are only supported via SMB mounts
-*/
-static enum fsmonitor_reason check_smb(wchar_t *wpath)
+ * Error if client machine cannot get remote protocol information.
+ */
+static void check_remote_protocol(wchar_t *wpath)
 {
 	HANDLE h;
 	FILE_REMOTE_PROTOCOL_INFO proto_info;
 
 	h = CreateFileW(wpath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
-					FILE_FLAG_BACKUP_SEMANTICS, NULL);
+			FILE_FLAG_BACKUP_SEMANTICS, NULL);
 
 	if (h == INVALID_HANDLE_VALUE) {
 		error(_("[GLE %ld] unable to open for read '%ls'"),
 		      GetLastError(), wpath);
-		return FSMONITOR_REASON_ERROR;
+		return;
 	}
 
 	if (!GetFileInformationByHandleEx(h, FileRemoteProtocolInfo,
-									&proto_info, sizeof(proto_info))) {
+		&proto_info, sizeof(proto_info))) {
 		error(_("[GLE %ld] unable to get protocol information for '%ls'"),
 		      GetLastError(), wpath);
 		CloseHandle(h);
-		return FSMONITOR_REASON_ERROR;
+		return;
 	}
 
 	CloseHandle(h);
 
-	if (proto_info.Protocol == WNNC_NET_SMB)
-		return FSMONITOR_REASON_OK;
+	trace_printf_key(&trace_fsmonitor,
+				"check_remote_protocol('%ls') remote protocol %#8.8lx",
+				wpath, proto_info.Protocol);
 
-	return FSMONITOR_REASON_ERROR;
+	return;
 }
 
 /*
@@ -128,7 +130,6 @@ static enum fsmonitor_reason check_smb(wchar_t *wpath)
  */
 static enum fsmonitor_reason check_remote(struct repository *r)
 {
-	enum fsmonitor_reason reason;
 	wchar_t wpath[MAX_PATH];
 	wchar_t wfullpath[MAX_PATH];
 	size_t wlen;
@@ -169,10 +170,18 @@ static enum fsmonitor_reason check_remote(struct repository *r)
 				 "check_remote('%s') true",
 				 r->worktree);
 
-		reason = check_smb(wfullpath);
-		if (reason != FSMONITOR_REASON_OK)
-			return reason;
-		return check_allow_remote(r);
+		check_remote_protocol(wfullpath);
+
+		switch (check_config_allowremote(r)) {
+		case 0: /* config overrides and disables */
+			return FSMONITOR_REASON_REMOTE;
+		case 1: /* config overrides and enables */
+			return FSMONITOR_REASON_OK;
+		default:
+			break; /* config has no opinion */
+		}
+
+		return FSMONITOR_REASON_REMOTE;
 	}
 
 	return FSMONITOR_REASON_OK;
