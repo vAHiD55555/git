@@ -1,6 +1,7 @@
 #include "cache.h"
 #include "repository.h"
 #include "config.h"
+#include "refs.h"
 #include "pkt-line.h"
 #include "version.h"
 #include "ls-refs.h"
@@ -320,6 +321,7 @@ void protocol_v2_serve_loop(int stateless_rpc)
 	 * a single request/response exchange
 	 */
 	if (stateless_rpc) {
+		lazy_load_hidden_refs();
 		process_request();
 	} else {
 		for (;;)

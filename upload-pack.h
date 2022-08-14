@@ -12,4 +12,5 @@ struct strbuf;
 int upload_pack_advertise(struct repository *r,
 			  struct strbuf *value);
 
+void lazy_load_hidden_refs(void);
 #endif /* UPLOAD_PACK_H */
