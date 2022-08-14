@@ -249,6 +249,54 @@ If this hook exits with a non-zero status, `git push` will abort without
 pushing anything.  Information about why the push is rejected may be sent
 to the user by writing to standard error.
 
+[[hide-refs]]
+hide-refs
+~~~~~~~~~
+
+This hook would be invoked by 'git-receive-pack' and 'git-upload-pack'
+during the reference discovery phase, each reference and will be filtered
+by this hook. The hook executes once with no arguments for each
+'git-upload-pack' and 'git-receive-pack' process. Once the hook is invoked,
+a version number and server process name ('uploadpack' or 'receive') will
+send to it in pkt-line format, followed by a flush-pkt. The hook should
+response with its version number.
+
+During reference discovery phase, each reference will be filtered by this
+hook. In the following example, the letter 'G' stands for 'git-receive-pack'
+or 'git-upload-pack' and the letter 'H' stands for this hook. The hook
+decides if the reference will be hidden or not, it sends result back in
+pkt-line format protocol, a response "hide" the references will hide
+to the client and can not fetch it even in protocol V2.
+
+	# Version negotiation
+	G: PKT-LINE(version=1\0uploadpack)
+	G: flush-pkt
+	H: PKT-LINE(version=1)
+	H: flush-pkt
+
+	# Send reference filter request to hook
+	G: PKT-LINE(ref <refname>:<refnamefull>)
+	G: flush-pkt
+
+	# Receive result from the hook.
+	# Case 1: this reference is hidden
+	H: PKT-LINE(hide)
+	H: flush-pkt
+
+	# Case 2: this reference can be advertised
+	H: flush-pkt
+
+To enable the `hide-refs` hook, we should config hiderefs with `force:`
+option, eg:
+
+	git config --add transfer.hiderefs force:refs/prefix1/
+	git config --add uploadpack.hiderefs force:!refs/prefix2/
+
+the `hide-refs` will be called during reference discovery phase and
+check each matched reference, a 'hide' reponse means the reference will
+be hidden for its private data and even the `allowTipSHA1InWant` and
+`allowReachableSHA1InWant` is set to true.
+
 [[pre-receive]]
 pre-receive
 ~~~~~~~~~~~
