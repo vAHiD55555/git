@@ -296,7 +296,7 @@ static int show_ref_cb(const char *path_full, const struct object_id *oid,
 	struct oidset *seen = data;
 	const char *path = strip_namespace(path_full);
 
-	if (ref_is_hidden(path, path_full))
+	if (ref_is_hidden(path, path_full) || ref_is_force_hidden(path, path_full))
 		return 0;
 
 	/*
@@ -1794,7 +1794,8 @@ static void reject_updates_to_hidden(struct command *commands)
 		strbuf_setlen(&refname_full, prefix_len);
 		strbuf_addstr(&refname_full, cmd->ref_name);
 
-		if (!ref_is_hidden(cmd->ref_name, refname_full.buf))
+		if (!ref_is_hidden(cmd->ref_name, refname_full.buf) &&
+			!ref_is_force_hidden(cmd->ref_name, refname_full.buf))
 			continue;
 		if (is_null_oid(&cmd->new_oid))
 			cmd->error_string = "deny deleting a hidden ref";

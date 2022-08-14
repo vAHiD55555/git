@@ -8,6 +8,7 @@
 #include "lockfile.h"
 #include "iterator.h"
 #include "refs.h"
+#include "pkt-line.h"
 #include "refs/refs-internal.h"
 #include "run-command.h"
 #include "hook.h"
@@ -1296,39 +1297,191 @@ char *shorten_unambiguous_ref(const char *refname, int strict)
 }
 
 static struct string_list *hide_refs;
-
+static struct string_list *force_hide_refs;
+static struct strbuf hide_refs_section = STRBUF_INIT;
 int parse_hide_refs_config(const char *var, const char *value, const char *section)
 {
 	const char *key;
+	int force = 0;
+
 	if (!strcmp("transfer.hiderefs", var) ||
 	    (!parse_config_key(var, section, NULL, NULL, &key) &&
 	     !strcmp(key, "hiderefs"))) {
 		char *ref;
 		int len;
+		int forcelen;
 
 		if (!value)
 			return config_error_nonbool(var);
+
+		forcelen = strlen("force:");
+		len = strlen(value);
+		if ((len >= forcelen) && !strncmp(value, "force:", forcelen)) {
+			if (len == forcelen)
+				return error(_("missing value for '%s' with force option"), var);
+
+			force = 1;
+			value += forcelen;
+		}
+
 		ref = xstrdup(value);
 		len = strlen(ref);
 		while (len && ref[len - 1] == '/')
 			ref[--len] = '\0';
-		if (!hide_refs) {
-			CALLOC_ARRAY(hide_refs, 1);
-			hide_refs->strdup_strings = 1;
+
+		if (force) {
+			if (!force_hide_refs) {
+				CALLOC_ARRAY(force_hide_refs, 1);
+				force_hide_refs->strdup_strings = 1;
+			}
+			string_list_append(force_hide_refs, ref);
+		} else {
+			if (!hide_refs) {
+				CALLOC_ARRAY(hide_refs, 1);
+				hide_refs->strdup_strings = 1;
+			}
+			string_list_append(hide_refs, ref);
 		}
-		string_list_append(hide_refs, ref);
 	}
+
+	if (hide_refs_section.len == 0) {
+		strbuf_addstr(&hide_refs_section, section);
+	}
+
 	return 0;
 }
 
-int ref_is_hidden(const char *refname, const char *refname_full)
+static struct child_process *hide_refs_proc;
+static struct packet_reader *hide_refs_reader;
+static void create_hide_refs_process(void) {
+	struct child_process *proc;
+	struct packet_reader *reader;
+	const char *hook_path;
+	int version = 0;
+	int code;
+
+	hook_path = find_hook("hide-refs");
+	if (!hook_path) {
+		die("can not find hide-refs hook");
+	}
+
+	proc = (struct child_process *) xcalloc (1, sizeof (struct child_process));
+	reader = (struct packet_reader *) xcalloc (1, sizeof(struct packet_reader));
+
+	child_process_init(proc);
+	strvec_push(&proc->args, hook_path);
+	proc->in = -1;
+	proc->out = -1;
+	proc->trace2_hook_name = "hide-refs";
+	proc->err = 0;
+
+	code = start_command(proc);
+	if (code)
+		die("can not run hook hide-refs");
+
+	sigchain_push(SIGPIPE, SIG_IGN);
+
+	/* Version negotiaton */
+	packet_reader_init(reader, proc->out, NULL, 0,
+			   PACKET_READ_CHOMP_NEWLINE |
+			   PACKET_READ_GENTLE_ON_EOF);
+	code = packet_write_fmt_gently(proc->in, "version=1%c%s", '\0', hide_refs_section.buf);
+	if (!code)
+		code = packet_flush_gently(proc->in);
+
+	if (!code)
+		for (;;) {
+			enum packet_read_status status;
+
+			status = packet_reader_read(reader);
+			if (status != PACKET_READ_NORMAL) {
+				/* Check whether hide-refs exited abnormally */
+				if (status == PACKET_READ_EOF)
+					die("can not read version message from hook hide-refs");
+				break;
+			}
+
+			if (reader->pktlen > 8 && starts_with(reader->line, "version=")) {
+				version = atoi(reader->line + 8);
+			}
+		}
+
+	if (code)
+		die("can not read version message from hook hide-refs");
+
+	switch (version) {
+	case 0:
+		/* fallthrough */
+	case 1:
+		break;
+	default:
+		die(_("hook hide-refs version '%d' is not supported"), version);
+	}
+
+	sigchain_pop(SIGPIPE);
+
+	hide_refs_proc = proc;
+	hide_refs_reader = reader;
+	return;
+}
+
+static int ref_force_hidden_check(const char *refname, const char *refname_full)
 {
+	struct strbuf buf = STRBUF_INIT;
+	int code;
+	int ret = 0;
+
+	if (!force_hide_refs) {
+		return 0;
+	}
+
+	if (!hide_refs_proc) {
+		create_hide_refs_process();
+	}
+
+	sigchain_push(SIGPIPE, SIG_IGN);
+	code = packet_write_fmt_gently(hide_refs_proc->in, "ref %s:%s", refname, refname_full);
+	if (code)
+		die("hook hide-refs died abnormally");
+
+	code = packet_flush_gently(hide_refs_proc->in);
+	if (code)
+		die("hook hide-refs died abnormally");
+
+	for (;;) {
+		enum packet_read_status status;
+
+		status = packet_reader_read(hide_refs_reader);
+		if (status != PACKET_READ_NORMAL) {
+			/* Check whether hide-refs exited abnormally */
+			if (status == PACKET_READ_EOF)
+				die("hook hide-refs died abnormally");
+			break;
+		}
+
+		strbuf_reset(&buf);
+		strbuf_addstr(&buf, hide_refs_reader->line);
+	}
+
+	if (!strncmp("hide", buf.buf, 4))
+		ret = 1;
+
+	sigchain_pop(SIGPIPE);
+	return ret;
+}
+
+static int ref_hidden_check(const char *refname, const char *refname_full, int force)
+{
+	struct string_list *hide_refs_list = hide_refs;
 	int i;
 
-	if (!hide_refs)
+	if (force)
+		hide_refs_list = force_hide_refs;
+
+	if (!hide_refs_list)
 		return 0;
-	for (i = hide_refs->nr - 1; i >= 0; i--) {
-		const char *match = hide_refs->items[i].string;
+	for (i = hide_refs_list->nr - 1; i >= 0; i--) {
+		const char *match = hide_refs_list->items[i].string;
 		const char *subject;
 		int neg = 0;
 		const char *p;
@@ -1348,10 +1501,56 @@ int ref_is_hidden(const char *refname, const char *refname_full)
 		/* refname can be NULL when namespaces are used. */
 		if (subject &&
 		    skip_prefix(subject, match, &p) &&
-		    (!*p || *p == '/'))
-			return !neg;
+		    (!*p || *p == '/')) {
+			if (neg)
+				return 0;
+			if (!force)
+				return 1;
+			return ref_force_hidden_check(refname, refname_full);
+		}
 	}
 	return 0;
+}
+
+int ref_is_hidden(const char *refname, const char *refname_full)
+{
+	return ref_hidden_check(refname, refname_full, 0);
+}
+
+int ref_is_force_hidden(const char *refname, const char *refname_full)
+{
+	return ref_hidden_check(refname, refname_full, 1);
+}
+
+#define OUR_REF		(1u << 12)
+#define HIDDEN_REF	(1u << 19)
+#define HIDDEN_REF_FORCE	(1u << 20)
+static int has_force_hidden;
+int mark_our_ref(const char *refname, const char *refname_full,
+			const struct object_id *oid)
+{
+	struct object *o;
+
+	if (!oid || is_null_oid(oid)) {
+		return 0;
+	}
+
+	o = lookup_unknown_object(the_repository, oid);
+	if (ref_is_force_hidden(refname, refname_full)) {
+		o->flags |= HIDDEN_REF_FORCE;
+		has_force_hidden = 1;
+		return 1;
+	}
+	if (ref_is_hidden(refname, refname_full)) {
+		o->flags |= HIDDEN_REF;
+		return 1;
+	}
+	o->flags |= OUR_REF;
+	return 0;
+}
+
+int has_force_hidden_refs(void) {
+	return has_force_hidden;
 }
 
 const char *find_descendant_ref(const char *dirname,
