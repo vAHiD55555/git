@@ -19,6 +19,12 @@ int fsmonitor_ipc__is_supported(void);
 const char *fsmonitor_ipc__get_path(void);
 
 /*
+ * Returns the pathname to the file that contains the pathname to the
+ * IPC named pipe or Unix domain socket.
+ */
+const char *fsmonitor_ipc__get_pathfile(void);
+
+/*
  * Try to determine whether there is a `git-fsmonitor--daemon` process
  * listening on the IPC pipe/socket.
  */

@@ -4,6 +4,7 @@
 #include "fsmonitor-ipc.h"
 #include "run-command.h"
 #include "strbuf.h"
+#include "tempfile.h"
 #include "trace2.h"
 
 #ifndef HAVE_FSMONITOR_DAEMON_BACKEND
@@ -47,7 +48,51 @@ int fsmonitor_ipc__is_supported(void)
 	return 1;
 }
 
-GIT_PATH_FUNC(fsmonitor_ipc__get_path, "fsmonitor--daemon.ipc")
+GIT_PATH_FUNC(fsmonitor_ipc__get_pathfile, "fsmonitor--daemon.ipc")
+
+static char *gen_ipc_file(void)
+{
+	char *retval = NULL;
+	struct tempfile *ipc;
+
+	const char *ipc_file = fsmonitor_ipc__get_pathfile();
+	FILE *fp = fopen(ipc_file, "w");
+
+	if (!fp)
+		die_errno("error opening '%s'", ipc_file);
+	ipc = mks_tempfile_t("fsmonitor_ipc_XXXXXX");
+	strbuf_write(&ipc->filename, fp);
+	fclose(fp);
+	retval = strbuf_detach(&ipc->filename, NULL);
+	strbuf_release(&ipc->filename);
+	return retval;
+}
+
+const char *fsmonitor_ipc__get_path(void)
+{
+	char *retval = NULL;
+	struct strbuf sb = STRBUF_INIT;
+
+	const char *ipc_file = fsmonitor_ipc__get_pathfile();
+	FILE *fp = fopen(ipc_file, "r");
+
+	if (!fp) {
+		return gen_ipc_file();
+	} else {
+		strbuf_read(&sb, fileno(fp), 0);
+		fclose(fp);
+		fp = fopen(sb.buf, "r");
+		if (!fp) { /* generate new file */
+			if (unlink(ipc_file) < 0)
+				die_errno("could not remove '%s'", ipc_file);
+			return gen_ipc_file();
+		}
+		fclose(fp);
+		retval = strbuf_detach(&sb, NULL);
+		strbuf_release(&sb);
+		return retval;
+	}
+}
 
 enum ipc_active_state fsmonitor_ipc__get_state(void)
 {
