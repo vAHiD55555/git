@@ -1886,7 +1886,7 @@ cleanup:
 		const char *abbrev;
 
 		util = xmalloc(sizeof(*util));
-		util->flag = sub_flag;
+		util->flag = sub_flag; /* May still be -1 */
 		util->abbrev = NULL;
 		if (!sub_not_initialized) {
 			abbrev = repo_find_unique_abbrev(&subrepo, b, DEFAULT_ABBREV);
