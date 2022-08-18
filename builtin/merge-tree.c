@@ -454,8 +454,8 @@ static int real_merge(struct merge_tree_options *o,
 
 		merge_get_conflicted_files(&result, &conflicted_files);
 		for (i = 0; i < conflicted_files.nr; i++) {
-			const char *name = conflicted_files.items[i].string;
 			struct stage_info *c = conflicted_files.items[i].util;
+			const char *name = c->path;
 			if (!o->name_only)
 				printf("%06o %s %d\t",
 				       c->mode, oid_to_hex(&c->oid), c->stage);

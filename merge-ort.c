@@ -4488,7 +4488,7 @@ void merge_get_conflicted_files(struct merge_result *result,
 			if (!(ci->filemask & (1ul << i)))
 				continue;
 
-			si = xmalloc(sizeof(*si));
+			FLEX_ALLOC_STR(si, path, ci->pathnames[i]);
 			si->stage = i+1;
 			si->mode = ci->stages[i].mode;
 			oidcpy(&si->oid, &ci->stages[i].oid);
