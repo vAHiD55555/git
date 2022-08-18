@@ -137,6 +137,38 @@ test_expect_success 'test conflict notices and such' '
 	test_cmp expect actual
 '
 
+test_expect_success SYMLINKS 'original file names and type changes' '
+	git switch --detach side1^ &&
+	test_commit modified whatever &&
+
+	git switch --detach HEAD^ &&
+	git mv whatever wherever &&
+	ln -s wherever whatever &&
+	git add whatever &&
+	test_tick &&
+	git commit -m symlink &&
+	git tag symlink &&
+
+	test_expect_code 1 \
+	git merge-tree -z modified symlink >out &&
+	printf "\\n" >>out &&
+	anonymize_hash out >actual &&
+
+	q_to_tab <<-\EOF | lf_to_nul >expect &&
+	HASH
+	120000 HASH 3Qwhatever
+	100644 HASH 1Qwhatever
+	100644 HASH 2Qwhatever
+
+	EOF
+
+	q_to_nul <<-EOF >>expect &&
+	2QwhateverQwhatever~modifiedQCONFLICT (distinct modes)QCONFLICT (distinct types): whatever had different types on each side; renamed one of them so each can be recorded somewhere.
+	Q
+	EOF
+	test_cmp expect actual
+'
+
 for opt in $(git merge-tree --git-completion-helper-all)
 do
 	if test $opt = "--trivial-merge" || test $opt = "--write-tree"
