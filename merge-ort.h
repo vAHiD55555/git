@@ -94,6 +94,7 @@ struct stage_info {
 	struct object_id oid;
 	int mode;
 	int stage;
+	const char path[FLEX_ARRAY];
 };
 
 /*

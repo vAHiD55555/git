@@ -125,7 +125,7 @@ test_expect_success 'test conflict notices and such' '
 	cat <<-EOF >expect &&
 	HASH
 	greeting
-	whatever~side1
+	whatever
 
 	Auto-merging greeting
 	CONFLICT (content): Merge conflict in greeting
@@ -153,7 +153,7 @@ test_expect_success 'Just the conflicted files without the messages' '
 	test_expect_code 1 git merge-tree --write-tree --no-messages --name-only side1 side2 >out &&
 	anonymize_hash out >actual &&
 
-	test_write_lines HASH greeting whatever~side1 >expect &&
+	test_write_lines HASH greeting whatever >expect &&
 
 	test_cmp expect actual
 '
@@ -168,14 +168,14 @@ test_expect_success 'Check conflicted oids and modes without messages' '
 	100644 HASH 1Qgreeting
 	100644 HASH 2Qgreeting
 	100644 HASH 3Qgreeting
-	100644 HASH 1Qwhatever~side1
-	100644 HASH 2Qwhatever~side1
+	100644 HASH 1Qwhatever
+	100644 HASH 2Qwhatever
 	EOF
 
 	test_cmp expect actual &&
 
 	# Check the actual hashes against the `ls-files -u` output too
-	tail -n +2 out | sed -e s/side1/HEAD/ >actual &&
+	tail -n +2 out | sed -e s/whatever/whatever~HEAD/ >actual &&
 	test_cmp conflicted-file-info actual
 '
 
@@ -200,11 +200,11 @@ test_expect_success 'NUL terminated conflicted file "lines"' '
 	100644 HASH 1Qgreeting
 	100644 HASH 2Qgreeting
 	100644 HASH 3Qgreeting
-	100644 HASH 1Qwhatever~tweak1
-	100644 HASH 2Qwhatever~tweak1
-	100644 HASH 1QΑυτά μου φαίνονται κινέζικα
+	100644 HASH 1Qwhatever
+	100644 HASH 2Qwhatever
+	100644 HASH 1Qnumbers
 	100644 HASH 2QΑυτά μου φαίνονται κινέζικα
-	100644 HASH 3QΑυτά μου φαίνονται κινέζικα
+	100644 HASH 3Qnumbers
 
 	EOF
 
