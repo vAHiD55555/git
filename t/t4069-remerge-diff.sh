@@ -131,11 +131,12 @@ test_expect_success 'setup non-content conflicts' '
 test_expect_success 'remerge-diff with non-content conflicts' '
 	git log -1 --oneline resolution >tmp &&
 	cat <<-EOF >>tmp &&
+	diff --git a/file_or_directory b/file_or_directory
+	remerge CONFLICT (file/directory): directory in the way of file_or_directory from HASH (side1); moving it to file_or_directory~HASH (side1) instead.
 	diff --git a/file_or_directory~HASH (side1) b/wanted_content
 	similarity index 100%
 	rename from file_or_directory~HASH (side1)
 	rename to wanted_content
-	remerge CONFLICT (file/directory): directory in the way of file_or_directory from HASH (side1); moving it to file_or_directory~HASH (side1) instead.
 	diff --git a/letters b/letters
 	remerge CONFLICT (rename/rename): letters renamed to letters_side1 in HASH (side1) and to letters_side2 in HASH (side2).
 	diff --git a/letters_side2 b/letters_side2
@@ -168,7 +169,7 @@ test_expect_success 'remerge-diff with non-content conflicts' '
 test_expect_success 'remerge-diff w/ diff-filter=U: all conflict headers, no diff content' '
 	git log -1 --oneline resolution >tmp &&
 	cat <<-EOF >>tmp &&
-	diff --git a/file_or_directory~HASH (side1) b/file_or_directory~HASH (side1)
+	diff --git a/file_or_directory b/file_or_directory
 	remerge CONFLICT (file/directory): directory in the way of file_or_directory from HASH (side1); moving it to file_or_directory~HASH (side1) instead.
 	diff --git a/letters b/letters
 	remerge CONFLICT (rename/rename): letters renamed to letters_side1 in HASH (side1) and to letters_side2 in HASH (side2).
@@ -184,14 +185,13 @@ test_expect_success 'remerge-diff w/ diff-filter=U: all conflict headers, no dif
 	test_cmp expect actual
 '
 
-test_expect_success 'remerge-diff w/ diff-filter=R: relevant file + conflict header' '
+test_expect_success 'remerge-diff w/ diff-filter=R: relevant file' '
 	git log -1 --oneline resolution >tmp &&
 	cat <<-EOF >>tmp &&
 	diff --git a/file_or_directory~HASH (side1) b/wanted_content
 	similarity index 100%
 	rename from file_or_directory~HASH (side1)
 	rename to wanted_content
-	remerge CONFLICT (file/directory): directory in the way of file_or_directory from HASH (side1); moving it to file_or_directory~HASH (side1) instead.
 	EOF
 	# We still have some sha1 hashes above; rip them out so test works
 	# with sha256
