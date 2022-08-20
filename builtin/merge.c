@@ -1718,12 +1718,18 @@ int cmd_merge(int argc, const char **argv, const char *prefix)
 		 */
 		if (ret < 2) {
 			if (!ret) {
-				if (option_commit) {
+				if (option_commit)
 					/* Automerge succeeded. */
 					automerge_was_ok = 1;
-					break;
-				}
-				merge_was_ok = 1;
+				else
+					/* Merge good, but let user commit */
+					merge_was_ok = 1;
+				/*
+				 * This strategy worked; no point in trying
+				 * another.
+				 */
+				best_strategy = wt_strategy;
+				break;
 			}
 			cnt = (use_strategies_nr > 1) ? evaluate_result() : 0;
 			if (best_cnt <= 0 || cnt <= best_cnt) {
