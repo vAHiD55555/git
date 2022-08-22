@@ -25,23 +25,6 @@ static enum fsmonitor_reason check_vfs4git(struct repository *r)
 }
 
 /*
- * Check if monitoring remote working directories is allowed.
- *
- * By default, monitoring remote working directories is
- * disabled.  Users may override this behavior in enviroments where
- * they have proper support.
- */
-static int check_config_allowremote(struct repository *r)
-{
-	int allow;
-
-	if (!repo_config_get_bool(r, "fsmonitor.allowremote", &allow))
-		return allow;
-
-	return -1; /* fsmonitor.allowremote not set */
-}
-
-/*
  * Check remote working directory protocol.
  *
  * Error if client machine cannot get remote protocol information.
@@ -170,20 +153,14 @@ static enum fsmonitor_reason check_remote(struct repository *r)
 				 "check_remote('%s') true",
 				 r->worktree);
 
+		if (fsm_settings__get_allow_remote(r) < 1)
+			return FSMONITOR_REASON_REMOTE;
+
 		ret = check_remote_protocol(wfullpath);
 		if (ret < 0)
 			return FSMONITOR_REASON_ERROR;
 
-		switch (check_config_allowremote(r)) {
-		case 0: /* config overrides and disables */
-			return FSMONITOR_REASON_REMOTE;
-		case 1: /* config overrides and enables */
-			return FSMONITOR_REASON_OK;
-		default:
-			break; /* config has no opinion */
-		}
-
-		return FSMONITOR_REASON_REMOTE;
+		return FSMONITOR_REASON_OK;
 	}
 
 	return FSMONITOR_REASON_OK;
