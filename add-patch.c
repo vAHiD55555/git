@@ -238,6 +238,7 @@ struct hunk_header {
 	 * include the newline.
 	 */
 	size_t extra_start, extra_end, colored_extra_start, colored_extra_end;
+	unsigned suppress_colored_line_range:1;
 };
 
 struct hunk {
@@ -358,15 +359,14 @@ static int parse_hunk_header(struct add_p_state *s, struct hunk *hunk)
 	if (!eol)
 		eol = s->colored.buf + s->colored.len;
 	p = memmem(line, eol - line, "@@ -", 4);
-	if (!p)
-		return error(_("could not parse colored hunk header '%.*s'"),
-			     (int)(eol - line), line);
-	p = memmem(p + 4, eol - p - 4, " @@", 3);
-	if (!p)
-		return error(_("could not parse colored hunk header '%.*s'"),
-			     (int)(eol - line), line);
+	if (p && (p = memmem(p + 4, eol - p - 4, " @@", 3)))
+		header->colored_extra_start = p + 3 - s->colored.buf;
+	else {
+		/* could not parse colored hunk header, leave as-is */
+		header->colored_extra_start = hunk->colored_start;
+		header->suppress_colored_line_range = 1;
+	}
 	hunk->colored_start = eol - s->colored.buf + (*eol == '\n');
-	header->colored_extra_start = p + 3 - s->colored.buf;
 	header->colored_extra_end = hunk->colored_start;
 
 	return 0;
@@ -666,18 +666,20 @@ static void render_hunk(struct add_p_state *s, struct hunk *hunk,
 				- header->colored_extra_start;
 		}
 
-		if (s->mode->is_reverse)
-			old_offset -= delta;
-		else
-			new_offset += delta;
+		if (!colored || !header->suppress_colored_line_range) {
+			if (s->mode->is_reverse)
+				old_offset -= delta;
+			else
+				new_offset += delta;
 
-		strbuf_addf(out, "@@ -%lu", old_offset);
-		if (header->old_count != 1)
-			strbuf_addf(out, ",%lu", header->old_count);
-		strbuf_addf(out, " +%lu", new_offset);
-		if (header->new_count != 1)
-			strbuf_addf(out, ",%lu", header->new_count);
-		strbuf_addstr(out, " @@");
+			strbuf_addf(out, "@@ -%lu", old_offset);
+			if (header->old_count != 1)
+				strbuf_addf(out, ",%lu", header->old_count);
+			strbuf_addf(out, " +%lu", new_offset);
+			if (header->new_count != 1)
+				strbuf_addf(out, ",%lu", header->new_count);
+			strbuf_addstr(out, " @@");
+		}
 
 		if (len)
 			strbuf_add(out, p, len);
