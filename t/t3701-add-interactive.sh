@@ -766,6 +766,15 @@ test_expect_success 'detect bogus diffFilter output' '
 	force_color test_must_fail git add -p <y
 '
 
+test_expect_success 'handle iffy colored hunk headers' '
+	git reset --hard &&
+
+	echo content >test &&
+	printf n >n &&
+	force_color git -c interactive.diffFilter="sed s/@@/XX/g" \
+		add -p <n
+'
+
 test_expect_success 'handle very large filtered diff' '
 	git reset --hard &&
 	# The specific number here is not important, but it must
