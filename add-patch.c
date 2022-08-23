@@ -363,8 +363,17 @@ static int parse_hunk_header(struct add_p_state *s, struct hunk *hunk)
 	if (p && (p = memmem(p + 4, eol - p - 4, " @@", 3)))
 		header->colored_extra_start = p + 3 - s->colored.buf;
 	else
-		/* could not parse colored hunk header, showing nothing */
-		header->colored_extra_start = hunk->colored_start;
+		/*
+		 * We tried to parse the line range out of the colored hunk
+		 * header, so that we could show just the extra information
+		 * after the line range.
+		 *
+		 * At this point, we did not find that line range, but the hunk
+		 * header likely has information that the user might find
+		 * interesting. Let's just show the entire hunk header instead
+		 * in that case.
+		 */
+		header->colored_extra_start = line - s->colored.buf;
 	header->colored_extra_end = hunk->colored_start;
 
 	return 0;

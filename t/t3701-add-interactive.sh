@@ -775,10 +775,14 @@ test_expect_success 'handle iffy colored hunk headers' '
 		add -p <n &&
 	force_color git -c interactive.diffFilter="sed \"s/\(.*@@\).*/\1FN/\"" \
 		add -p >output 2>&1 <n &&
+	force_color git -c interactive.diffFilter="sed \"s/\(.*@@\).*/file/\"" \
+		add -p >output-so-fancy 2>&1 <n &&
 	if test_have_prereq ADD_I_USE_BUILTIN
 	then
+		grep "@ file\$" output-so-fancy &&
 		grep "@ FN\$" output
 	else
+		grep "^file\$" output-so-fancy &&
 		grep "@FN\$" output
 	fi
 '
