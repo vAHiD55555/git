@@ -26,6 +26,7 @@
 #include "fsmonitor.h"
 #include "fsm-listen.h"
 #include "fsmonitor--daemon.h"
+#include "fsmonitor-settings.h"
 
 struct fsm_listen_data
 {
@@ -183,7 +184,6 @@ static void my_add_path(struct fsmonitor_batch *batch, const char *path)
 	free(composed);
 }
 
-
 static void fsevent_callback(ConstFSEventStreamRef streamRef,
 			     void *ctx,
 			     size_t num_of_events,
@@ -209,7 +209,12 @@ static void fsevent_callback(ConstFSEventStreamRef streamRef,
 		/*
 		 * On Mac, we receive an array of absolute paths.
 		 */
-		path_k = paths[k];
+		if (fsm_settings__get_allow_remote(the_repository) > 0) {
+			strbuf_reset(&tmp);
+			strbuf_realpath_forgiving(&tmp, paths[k], 0);
+			path_k = tmp.buf;
+		} else
+			path_k = paths[k];
 
 		/*
 		 * If you want to debug FSEvents, log them to GIT_TRACE_FSMONITOR.
@@ -237,6 +242,7 @@ static void fsevent_callback(ConstFSEventStreamRef streamRef,
 
 			fsmonitor_force_resync(state);
 			fsmonitor_batch__free_list(batch);
+			batch = NULL;
 			string_list_clear(&cookie_list, 0);
 
 			/*
@@ -313,7 +319,6 @@ static void fsevent_callback(ConstFSEventStreamRef streamRef,
 
 		case IS_WORKDIR_PATH:
 			/* try to queue normal pathnames */
-
 			if (trace_pass_fl(&trace_fsmonitor))
 				log_flags_set(path_k, event_flags[k]);
 
