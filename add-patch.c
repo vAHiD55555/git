@@ -8,6 +8,7 @@
 #include "diff.h"
 #include "compat/terminal.h"
 #include "prompt.h"
+#include "utf8.h"
 
 enum prompt_mode_type {
 	PROMPT_MODE_CHANGE = 0, PROMPT_DELETION, PROMPT_ADDITION, PROMPT_HUNK,
@@ -635,6 +636,23 @@ static size_t find_next_line(struct strbuf *sb, size_t offset)
 	return eol - sb->buf + 1;
 }
 
+static int starts_with_non_ws(const char *p, size_t len)
+{
+	for (;;) {
+		size_t skip;
+
+		if (!len || isspace(*p))
+			return 0;
+		skip = display_mode_esc_sequence_len(p);
+		if (!skip)
+			return 1;
+		if (skip > len)
+			return 0;
+		p += skip;
+		len -= skip;
+	}
+}
+
 static void render_hunk(struct add_p_state *s, struct hunk *hunk,
 			ssize_t delta, int colored, struct strbuf *out)
 {
@@ -649,6 +667,7 @@ static void render_hunk(struct add_p_state *s, struct hunk *hunk,
 		size_t len;
 		unsigned long old_offset = header->old_offset;
 		unsigned long new_offset = header->new_offset;
+		int needs_extra_space = 0;
 
 		if (!colored) {
 			p = s->plain.buf + header->extra_start;
@@ -658,6 +677,7 @@ static void render_hunk(struct add_p_state *s, struct hunk *hunk,
 			p = s->colored.buf + header->colored_extra_start;
 			len = header->colored_extra_end
 				- header->colored_extra_start;
+			needs_extra_space = starts_with_non_ws(p, len);
 		}
 
 		if (s->mode->is_reverse)
@@ -673,6 +693,8 @@ static void render_hunk(struct add_p_state *s, struct hunk *hunk,
 			strbuf_addf(out, ",%lu", header->new_count);
 		strbuf_addstr(out, " @@");
 
+		if (needs_extra_space)
+			strbuf_addch(out, ' ');
 		if (len)
 			strbuf_add(out, p, len);
 		else if (colored)

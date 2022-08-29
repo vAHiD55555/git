@@ -772,7 +772,15 @@ test_expect_success 'handle iffy colored hunk headers' '
 	echo content >test &&
 	printf n >n &&
 	force_color git -c interactive.diffFilter="sed s/@@/XX/g" \
-		add -p <n
+		add -p <n &&
+	force_color git -c interactive.diffFilter="sed \"s/\(.*@@\).*/\1FN/\"" \
+		add -p >output 2>&1 <n &&
+	if test_have_prereq ADD_I_USE_BUILTIN
+	then
+		grep "@ FN\$" output
+	else
+		grep "@FN\$" output
+	fi
 '
 
 test_expect_success 'handle very large filtered diff' '
