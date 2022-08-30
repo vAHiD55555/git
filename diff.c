@@ -5854,6 +5854,7 @@ static void diff_flush_patch(struct diff_filepair *p, struct diff_options *o)
 {
 	int include_conflict_headers =
 	    (additional_headers(o, p->one->path) &&
+	     !o->pickaxe_opts &&
 	     (!o->filter || filter_bit_tst(DIFF_STATUS_UNMERGED, o)));
 
 	/*
@@ -5909,6 +5910,7 @@ int diff_queue_is_empty(struct diff_options *o)
 	int i;
 	int include_conflict_headers =
 	    (o->additional_path_headers &&
+	     !o->pickaxe_opts &&
 	     (!o->filter || filter_bit_tst(DIFF_STATUS_UNMERGED, o)));
 
 	if (include_conflict_headers)
