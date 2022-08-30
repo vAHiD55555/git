@@ -3398,6 +3398,12 @@ static void add_formatted_headers(struct strbuf *msg,
 				     line_prefix, meta, reset);
 }
 
+static int diff_filepair_is_phoney(struct diff_filespec *one,
+				   struct diff_filespec *two)
+{
+	return !DIFF_FILE_VALID(one) && !DIFF_FILE_VALID(two);
+}
+
 static void builtin_diff(const char *name_a,
 			 const char *name_b,
 			 struct diff_filespec *one,
@@ -3429,14 +3435,16 @@ static void builtin_diff(const char *name_a,
 
 	if (o->submodule_format == DIFF_SUBMODULE_LOG &&
 	    (!one->mode || S_ISGITLINK(one->mode)) &&
-	    (!two->mode || S_ISGITLINK(two->mode))) {
+	    (!two->mode || S_ISGITLINK(two->mode)) &&
+	    (!diff_filepair_is_phoney(one, two))) {
 		show_submodule_diff_summary(o, one->path ? one->path : two->path,
 				&one->oid, &two->oid,
 				two->dirty_submodule);
 		return;
 	} else if (o->submodule_format == DIFF_SUBMODULE_INLINE_DIFF &&
 		   (!one->mode || S_ISGITLINK(one->mode)) &&
-		   (!two->mode || S_ISGITLINK(two->mode))) {
+		   (!two->mode || S_ISGITLINK(two->mode)) &&
+		   (!diff_filepair_is_phoney(one, two))) {
 		show_submodule_inline_diff(o, one->path ? one->path : two->path,
 				&one->oid, &two->oid,
 				two->dirty_submodule);
@@ -3456,7 +3464,7 @@ static void builtin_diff(const char *name_a,
 	b_two = quote_two(b_prefix, name_b + (*name_b == '/'));
 	lbl[0] = DIFF_FILE_VALID(one) ? a_one : "/dev/null";
 	lbl[1] = DIFF_FILE_VALID(two) ? b_two : "/dev/null";
-	if (!DIFF_FILE_VALID(one) && !DIFF_FILE_VALID(two)) {
+	if (diff_filepair_is_phoney(one, two)) {
 		/*
 		 * We should only reach this point for pairs from
 		 * create_filepairs_for_header_only_notifications().  For
