@@ -56,8 +56,10 @@ static int download_https_uri_to_file(const char *file, const char *uri)
 	while (!strbuf_getline(&line, child_out)) {
 		if (!line.len)
 			break;
-		if (!strcmp(line.buf, "get"))
+		if (!strcmp(line.buf, "get")) {
 			found_get = 1;
+			break;
+		}
 	}
 	strbuf_release(&line);
 
