@@ -112,6 +112,7 @@ static enum list_objects_filter_result filter_blobs_none(
 }
 
 static void filter_blobs_none__init(
+	struct traversal_context *ctx,
 	struct list_objects_filter_options *filter_options,
 	struct filter *filter)
 {
@@ -249,6 +250,7 @@ static void filter_trees_free(void *filter_data) {
 }
 
 static void filter_trees_depth__init(
+	struct traversal_context *ctx,
 	struct list_objects_filter_options *filter_options,
 	struct filter *filter)
 {
@@ -336,6 +338,7 @@ include_it:
 }
 
 static void filter_blobs_limit__init(
+	struct traversal_context *ctx,
 	struct list_objects_filter_options *filter_options,
 	struct filter *filter)
 {
@@ -519,6 +522,7 @@ static void filter_sparse_free(void *filter_data)
 }
 
 static void filter_sparse_oid__init(
+	struct traversal_context *ctx,
 	struct list_objects_filter_options *filter_options,
 	struct filter *filter)
 {
@@ -609,6 +613,7 @@ static enum list_objects_filter_result filter_object_type(
 }
 
 static void filter_object_type__init(
+	struct traversal_context *ctx,
 	struct list_objects_filter_options *filter_options,
 	struct filter *filter)
 {
@@ -734,6 +739,7 @@ static void filter_combine__finalize_omits(
 }
 
 static void filter_combine__init(
+	struct traversal_context *ctx,
 	struct list_objects_filter_options *filter_options,
 	struct filter* filter)
 {
@@ -744,7 +750,7 @@ static void filter_combine__init(
 	CALLOC_ARRAY(d->sub, d->nr);
 	for (sub = 0; sub < d->nr; sub++)
 		d->sub[sub].filter = list_objects_filter__init(
-			filter->omits ? &d->sub[sub].omits : NULL,
+			ctx, filter->omits ? &d->sub[sub].omits : NULL,
 			&filter_options->sub[sub]);
 
 	filter->filter_data = d;
@@ -754,6 +760,7 @@ static void filter_combine__init(
 }
 
 typedef void (*filter_init_fn)(
+	struct traversal_context *ctx,
 	struct list_objects_filter_options *filter_options,
 	struct filter *filter);
 
@@ -771,6 +778,7 @@ static filter_init_fn s_filters[] = {
 };
 
 struct filter *list_objects_filter__init(
+	struct traversal_context *ctx,
 	struct oidset *omitted,
 	struct list_objects_filter_options *filter_options)
 {
@@ -792,7 +800,7 @@ struct filter *list_objects_filter__init(
 
 	CALLOC_ARRAY(filter, 1);
 	filter->omits = omitted;
-	init_fn(filter_options, filter);
+	init_fn(ctx, filter_options, filter);
 	return filter;
 }
 
