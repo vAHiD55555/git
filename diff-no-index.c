@@ -208,6 +208,14 @@ static void append_basename(struct strbuf *path, const char *dir, const char *fi
 	strbuf_addstr(path, tail ? tail + 1 : file);
 }
 
+static void free_allocated_path(const char *path)
+{
+	if (!path ||
+	    (path == file_from_standard_input))
+		return;
+	free((char *)path);
+}
+
 /*
  * DWIM "diff D F" into "diff D/F F" and "diff F D" into "diff F D/F"
  * Note that we append the basename of F to D/, so "diff a/b/file D"
@@ -226,9 +234,11 @@ static void fixup_paths(const char **path, struct strbuf *replacement)
 		return;
 	if (isdir0) {
 		append_basename(replacement, path[0], path[1]);
+		free_allocated_path(path[0]);
 		path[0] = replacement->buf;
 	} else {
 		append_basename(replacement, path[1], path[0]);
+		free_allocated_path(path[1]);
 		path[1] = replacement->buf;
 	}
 }
@@ -274,6 +284,8 @@ int diff_no_index(struct rev_info *revs,
 			p = file_from_standard_input;
 		else if (prefix)
 			p = prefix_filename(prefix, p);
+		else
+			p = xstrdup(p);
 		paths[i] = p;
 	}
 
@@ -294,13 +306,21 @@ int diff_no_index(struct rev_info *revs,
 	setup_diff_pager(&revs->diffopt);
 	revs->diffopt.flags.exit_with_status = 1;
 
-	if (queue_diff(&revs->diffopt, paths[0], paths[1]))
+	if (queue_diff(&revs->diffopt, paths[0], paths[1])) {
+		free_allocated_path(paths[0]);
+		free_allocated_path(paths[1]);
 		return 1;
+	}
 	diff_set_mnemonic_prefix(&revs->diffopt, "1/", "2/");
 	diffcore_std(&revs->diffopt);
 	diff_flush(&revs->diffopt);
 
-	strbuf_release(&replacement);
+	/*
+	 * do not strbuf_release(&replacement), as it is in paths[]
+	 * when replacement was actually used.
+	 */
+	free_allocated_path(paths[0]);
+	free_allocated_path(paths[1]);
 
 	/*
 	 * The return code for --no-index imitates diff(1):
