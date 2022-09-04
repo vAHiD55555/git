@@ -228,7 +228,7 @@ static enum {
 	WRITE_BITMAP_QUIET,
 	WRITE_BITMAP_TRUE,
 } write_bitmap_index;
-static uint16_t write_bitmap_options = BITMAP_OPT_HASH_CACHE;
+static uint16_t write_bitmap_options = BITMAP_OPT_HASH_CACHE | BITMAP_SET_EWAH_BITMAP;
 
 static int exclude_promisor_objects;
 
@@ -1258,6 +1258,7 @@ static void write_pack_file(void)
 				    hash_to_hex(hash));
 
 			if (write_bitmap_index) {
+				bitmap_writer_init_bm_type(write_bitmap_options);
 				bitmap_writer_set_checksum(hash);
 				bitmap_writer_build_type_index(
 					&to_pack, written_list, nr_written);
@@ -3142,6 +3143,10 @@ static int git_pack_config(const char *k, const char *v, void *cb)
 	if (!strcmp(k, "pack.deltacachelimit")) {
 		cache_max_small_delta_size = git_config_int(k, v);
 		return 0;
+	}
+	if (!strcmp(k, "pack.useroaringbitmap")) {
+		if (git_config_bool(k, v))
+			write_bitmap_options |= BITMAP_SET_ROARING_BITMAP;
 	}
 	if (!strcmp(k, "pack.writebitmaphashcache")) {
 		if (git_config_bool(k, v))

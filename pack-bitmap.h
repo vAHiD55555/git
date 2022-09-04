@@ -30,9 +30,6 @@ struct bitmap_disk_header {
 
 #define NEEDS_BITMAP (1u<<22)
 
-#define BITMAP_SET_EWAH_BITMAP 0x1
-#define BITMAP_SET_ROARING_BITMAP (1 << 1)
-
 /*
  * The width in bytes of a single triplet in the lookup table
  * extension:
@@ -44,7 +41,9 @@ struct bitmap_disk_header {
 
 enum pack_bitmap_opts {
 	BITMAP_OPT_FULL_DAG = 0x1,
-	BITMAP_OPT_HASH_CACHE = 0x4,
+	BITMAP_SET_EWAH_BITMAP = 0x2,
+	BITMAP_SET_ROARING_BITMAP = 0x4,
+	BITMAP_OPT_HASH_CACHE = 0x8,
 	BITMAP_OPT_LOOKUP_TABLE = 0x10,
 };
 
