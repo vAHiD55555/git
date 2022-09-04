@@ -133,4 +133,40 @@ test_expect_success 'checkout does not treat remote @{upstream} as a branch' '
 	expect_branch HEAD one
 '
 
+test_expect_success 'edit-description via @{-1}' '
+	git checkout main &&
+	git checkout - &&
+	write_script editor <<-\EOF &&
+		echo "Branch description" >"$1"
+	EOF
+	EDITOR=./editor git branch --edit-description @{-1} &&
+		write_script editor <<-\EOF &&
+		git stripspace -s <"$1" >"EDITOR_OUTPUT"
+	EOF
+	EDITOR=./editor git branch --edit-description @{-1} &&
+	echo "Branch description" >expect &&
+	test_cmp expect EDITOR_OUTPUT
+'
+
+test_expect_success 'modify branch upstream via "@{-1}@{upstream}"' "
+	cat >expect <<-\EOF &&
+	warning: not setting branch 'upstream-branch' as its own upstream
+	EOF
+	git branch upstream-branch &&
+	git checkout -b upstream-other -t upstream-branch &&
+	git checkout - &&
+	git branch --set-upstream-to upstream-branch @{-1}@{upstream} 2>actual &&
+	test_cmp expect actual
+"
+
+test_expect_success 'unset branch upstream via "@{-1}"' "
+	test "$(git config branch.upstream-other.remote)" = "." &&
+	test "$(git config branch.upstream-other.merge)" = "refs/heads/upstream-branch" &&
+	git checkout upstream-other &&
+	git checkout - &&
+	git branch --unset-upstream @{-1} &&
+	test_must_fail git config branch.upstream-other.remote &&
+	test_must_fail git config branch.upstream-other.merge
+"
+
 test_done
