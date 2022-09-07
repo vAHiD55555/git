@@ -156,6 +156,16 @@ test_expect_success 'diff --no-index normalizes mode: no changes' '
 	test_must_be_empty out
 '
 
+test_expect_success 'diff --no-index with standard input' '
+	echo foo >x &&
+	echo bar >z &&
+	git diff --no-index - x <x &&
+	git diff --no-index x - <x &&
+	test_must_fail git diff --no-index - x <z &&
+	test_must_fail git diff --no-index x - <z &&
+	git diff --no-index - - <x
+'
+
 test_expect_success POSIXPERM 'diff --no-index normalizes mode: chmod +x' '
 	chmod +x y &&
 	cat >expected <<-\EOF &&
@@ -180,6 +190,7 @@ test_expect_success POSIXPERM 'diff --no-index normalizes: mode not like git mod
 '
 
 test_expect_success POSIXPERM,SYMLINKS 'diff --no-index normalizes: mode not like git mode (symlink)' '
+	rm -f z &&
 	ln -s y z &&
 	X_OID=$(git hash-object --stdin <x) &&
 	Z_OID=$(printf y | git hash-object --stdin) &&

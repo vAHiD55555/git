@@ -278,6 +278,17 @@ int diff_no_index(struct rev_info *revs,
 			p = to_free[i] = prefix_filename(prefix, p);
 		paths[i] = p;
 	}
+	if (paths[0] == file_from_standard_input &&
+	    paths[1] == file_from_standard_input) {
+		/*
+		 * "git diff --no-index - -".  We are asked to compare
+		 * what came from the standard input with itself; we
+		 * know they are the same without even reading a
+		 * single byte.
+		 */
+		ret = 0;
+		goto out;
+	}
 
 	fixup_paths(paths, &replacement);
 
