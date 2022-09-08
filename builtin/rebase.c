@@ -431,7 +431,7 @@ static int read_basic_state(struct rebase_options *opts)
 	opts->head_name = starts_with(head_name.buf, "refs/") ?
 		xstrdup(head_name.buf) : NULL;
 	strbuf_release(&head_name);
-	if (get_oid(buf.buf, &oid))
+	if (get_oid_hex(buf.buf, &oid))
 		return error(_("could not get 'onto': '%s'"), buf.buf);
 	opts->onto = lookup_commit_or_die(&oid, buf.buf);
 
@@ -448,7 +448,7 @@ static int read_basic_state(struct rebase_options *opts)
 	} else if (!read_oneliner(&buf, state_dir_path("head", opts),
 				  READ_ONELINER_WARN_MISSING))
 		return -1;
-	if (get_oid(buf.buf, &opts->orig_head))
+	if (get_oid_hex(buf.buf, &opts->orig_head))
 		return error(_("invalid orig-head: '%s'"), buf.buf);
 
 	if (file_exists(state_dir_path("quiet", opts)))
