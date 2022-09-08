@@ -1398,7 +1398,7 @@ test_expect_success 'git --config-env with missing value' '
 	grep "invalid config format: config" error
 '
 
-test_expect_success 'git --config-env fails with invalid parameters' '
+test_expect_success !SANITIZE_LEAK 'git --config-env fails with invalid parameters' '
 	test_must_fail git --config-env=foo.flag config --bool foo.flag 2>error &&
 	test_i18ngrep "invalid config format: foo.flag" error &&
 	test_must_fail git --config-env=foo.flag= config --bool foo.flag 2>error &&
