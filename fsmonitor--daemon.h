@@ -170,5 +170,8 @@ void fsmonitor_publish(struct fsmonitor_daemon_state *state,
  */
 void fsmonitor_force_resync(struct fsmonitor_daemon_state *state);
 
+char *fsmonitor_resolve_alias(const char *path,
+	struct alias_info *alias);
+
 #endif /* HAVE_FSMONITOR_DAEMON_BACKEND */
 #endif /* FSMONITOR_DAEMON_H */
