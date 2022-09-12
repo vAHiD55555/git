@@ -70,6 +70,41 @@ the change (as happening against the super repo).  However, the client
 will properly ignore these extra events, so performance may be affected
 but it will not cause an incorrect result.
 
+By default, the fsmonitor daemon refuses to work against network-mounted
+repositories; this my be overridden by setting `fsmonitor.allowRemote` to
+`true`. Note, however, that the fsmonitor daemon is not guaranteed to work
+correctly with all network-mounted repositores and such use is considered
+experimental.
+
+On Mac OS, the inter-process communication (IPC) between various Git
+commands and the fsmonitor daemon is done via a Unix domain socket (UDS).
+Usage of UDS requires the creation of a file which, by default, is created
+in the .git directory.  If the fsmonitor daemon detects that the .git directory
+is on a network-mounted file system, it will create the UDS file in $HOME.  If
+$HOME itself is on a network-mounted file system or if $HOME is not the desired
+location for the UDS file, 'fsmonitor.socketDir' may be set to any valid, local
+directory on a file system with proper support.  Mac OS native file systems have
+the required support.  File systems known to lack support include FAT32 and
+NTFS.  Other file systems may or many not have the needed support; the fsmonitor
+daemon is not guaranteed to work with these file systems and such use is
+considered experimental.
+
+CONFIGURATION
+-------------
+When `core.fsmonitor` is set to `true` (see linkgit:git-config[1])
+the fsmonitor daemon will pay attention to the following configuration
+variables:
+
+fsmonitor.allowRemote::
+	By default, the daemon refuses to work against network-mounted
+	repositories. Setting `fsmonitor.allowRemote` to `true` overrides
+	this behavior.
+
+fsmonitor.socketDir::
+	This option is only used by the Mac OS implementation of the fsmonitor
+	daemon.	If set, 'fsmonitor.socketDir' must be set to a valid, local
+	directory on a file system that can support Unix domain sockets (UDS).
+
 GIT
 ---
 Part of the linkgit:git[1] suite
