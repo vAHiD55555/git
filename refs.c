@@ -722,7 +722,7 @@ int dwim_log(const char *str, int len, struct object_id *oid, char **log)
 	return repo_dwim_log(the_repository, str, len, oid, log);
 }
 
-static int is_per_worktree_ref(const char *refname)
+int is_per_worktree_ref(const char *refname)
 {
 	return starts_with(refname, "refs/worktree/") ||
 	       starts_with(refname, "refs/bisect/") ||
@@ -738,37 +738,60 @@ static int is_pseudoref_syntax(const char *refname)
 			return 0;
 	}
 
+	/* HEAD is not a pseudoref, but it certainly uses the
+	 * pseudoref syntax. */
 	return 1;
 }
 
-static int is_main_pseudoref_syntax(const char *refname)
+enum ref_worktree_type parse_worktree_ref(const char *worktree_ref,
+					  const char **name, int *name_length,
+					  const char **ref)
 {
-	return skip_prefix(refname, "main-worktree/", &refname) &&
-		*refname &&
-		is_pseudoref_syntax(refname);
-}
+	const char *name_dummy;
+	int name_length_dummy;
+	const char *ref_dummy;
+	if (!name)
+		name = &name_dummy;
+	if (!name_length)
+		name_length = &name_length_dummy;
+	if (!ref)
+		ref = &ref_dummy;
 
-static int is_other_pseudoref_syntax(const char *refname)
-{
-	if (!skip_prefix(refname, "worktrees/", &refname))
-		return 0;
-	refname = strchr(refname, '/');
-	if (!refname || !refname[1])
-		return 0;
-	return is_pseudoref_syntax(refname + 1);
-}
+	*ref = worktree_ref;
+	if (is_pseudoref_syntax(worktree_ref)) {
+		return REF_WORKTREE_CURRENT;
+	}
 
-enum ref_type ref_type(const char *refname)
-{
-	if (is_per_worktree_ref(refname))
-		return REF_TYPE_PER_WORKTREE;
-	if (is_pseudoref_syntax(refname))
-		return REF_TYPE_PSEUDOREF;
-	if (is_main_pseudoref_syntax(refname))
-		return REF_TYPE_MAIN_PSEUDOREF;
-	if (is_other_pseudoref_syntax(refname))
-		return REF_TYPE_OTHER_PSEUDOREF;
-	return REF_TYPE_NORMAL;
+	if (is_per_worktree_ref(worktree_ref)) {
+		return REF_WORKTREE_CURRENT;
+	}
+
+	if (skip_prefix(worktree_ref, "main-worktree/", &worktree_ref)) {
+		if (!*worktree_ref)
+			return -1;
+		*name = NULL;
+		*name_length = 0;
+		*ref = worktree_ref;
+
+		if (parse_worktree_ref(*ref, NULL, NULL, NULL) ==
+		    REF_WORKTREE_CURRENT)
+			return REF_WORKTREE_MAIN;
+	}
+	if (skip_prefix(worktree_ref, "worktrees/", &worktree_ref)) {
+		const char *slash = strchr(worktree_ref, '/');
+
+		if (!slash || slash == worktree_ref || !slash[1])
+			return -1;
+		*name = worktree_ref;
+		*name_length = slash - worktree_ref;
+		*ref = slash + 1;
+
+		if (parse_worktree_ref(*ref, NULL, NULL, NULL) ==
+		    REF_WORKTREE_CURRENT)
+			return REF_WORKTREE_OTHER;
+	}
+
+	return REF_WORKTREE_SHARED;
 }
 
 long get_files_ref_lock_timeout_ms(void)
