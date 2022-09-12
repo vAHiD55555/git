@@ -475,4 +475,21 @@ test_expect_success 'truncated bitmap fails gracefully (lookup table)' '
 	test_i18ngrep corrupted.bitmap.index stderr
 '
 
+test_expect_success 'setup test repository (roaring)' '
+	rm -fr * .git &&
+	git init
+'
+setup_bitmap_history
+
+test_expect_success 'setup writing roaring bitmaps during repack' '
+	git config repack.writeBitmaps true &&
+	git config pack.useRoaringBitmap true
+'
+
+test_expect_success 'full repack creates roaring bitmaps' '
+	GIT_TRACE2_EVENT="$(pwd)/trace6" \
+		git repack -ad &&
+	grep "\"label\":\"write-roaring-bitmap\"" trace6
+'
+
 test_done
