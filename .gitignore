@@ -2,6 +2,8 @@
 /fuzz_corpora
 /fuzz-pack-headers
 /fuzz-pack-idx
+/fuzz-cmd-base
+/fuzz-cmd-status
 /GIT-BUILD-OPTIONS
 /GIT-CFLAGS
 /GIT-LDFLAGS
