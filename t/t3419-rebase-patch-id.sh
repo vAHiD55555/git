@@ -46,10 +46,6 @@ test_expect_success 'setup: 500 lines' '
 	git cherry-pick main >/dev/null 2>&1
 '
 
-test_expect_success 'setup attributes' '
-	echo "file binary" >.gitattributes
-'
-
 test_expect_success 'detect upstream patch' '
 	git checkout -q main &&
 	scramble file &&
@@ -58,7 +54,13 @@ test_expect_success 'detect upstream patch' '
 	git checkout -q other^{} &&
 	git rebase main &&
 	git rev-list main...HEAD~ >revs &&
-	test_must_be_empty revs
+	test_must_be_empty revs &&
+	echo "file binary" >.gitattributes &&
+	git checkout -q other^{} &&
+	git rebase main &&
+	git rev-list main...HEAD~ >revs &&
+	test_must_be_empty revs &&
+	rm .gitattributes
 '
 
 test_expect_success 'do not drop patch' '
@@ -68,7 +70,12 @@ test_expect_success 'do not drop patch' '
 	git commit -q -m squashed &&
 	git checkout -q other^{} &&
 	test_must_fail git rebase squashed &&
-	git rebase --quit
+	git rebase --abort &&
+	echo "file binary" >.gitattributes &&
+	git checkout -q other^{} &&
+	test_must_fail git rebase squashed &&
+	git rebase --abort &&
+	rm .gitattributes
 '
 
 test_done
