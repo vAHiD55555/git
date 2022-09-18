@@ -247,6 +247,8 @@ char *fsm_settings__get_incompatible_msg(const struct repository *r,
 {
 	struct strbuf msg = STRBUF_INIT;
 
+	strbuf_add(&msg, "fsmonitor: ", strlen("fsmonitor: "));
+
 	switch (reason) {
 	case FSMONITOR_REASON_UNTESTED:
 	case FSMONITOR_REASON_OK:
