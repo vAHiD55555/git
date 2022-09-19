@@ -1519,18 +1519,25 @@ done:
 }
 
 static char const * const builtin_maintenance_unregister_usage[] = {
-	"git maintenance unregister",
+	"git maintenance unregister [--force]",
 	NULL
 };
 
 static int maintenance_unregister(int argc, const char **argv, const char *prefix)
 {
+	int force = 0;
 	struct option options[] = {
+		OPT_BOOL(0, "force", &force,
+			 N_("return success even if repository was not registered")),
 		OPT_END(),
 	};
-	int rc;
+	const char *key = "maintenance.repo";
+	int rc = 0;
 	struct child_process config_unset = CHILD_PROCESS_INIT;
 	char *maintpath = get_maintpath();
+	int found = 0;
+	struct string_list_item *item;
+	const struct string_list *list = git_config_get_value_multi(key);
 
 	argc = parse_options(argc, argv, prefix, options,
 			     builtin_maintenance_unregister_usage, 0);
@@ -1538,11 +1545,23 @@ static int maintenance_unregister(int argc, const char **argv, const char *prefi
 		usage_with_options(builtin_maintenance_unregister_usage,
 				   options);
 
-	config_unset.git_cmd = 1;
-	strvec_pushl(&config_unset.args, "config", "--global", "--unset",
-		     "--fixed-value", "maintenance.repo", maintpath, NULL);
+	for_each_string_list_item(item, list) {
+		if (!strcmp(maintpath, item->string)) {
+			found = 1;
+			break;
+		}
+	}
 
-	rc = run_command(&config_unset);
+	if (found) {
+		config_unset.git_cmd = 1;
+		strvec_pushl(&config_unset.args, "config", "--global", "--unset",
+			     "--fixed-value", key, maintpath, NULL);
+
+		rc = run_command(&config_unset);
+	} else if (!force) {
+		die(_("repository '%s' is not registered"), maintpath);
+	}
+
 	free(maintpath);
 	return rc;
 }

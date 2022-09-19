@@ -493,7 +493,11 @@ test_expect_success 'register and unregister' '
 
 	git maintenance unregister &&
 	git config --global --get-all maintenance.repo >actual &&
-	test_cmp before actual
+	test_cmp before actual &&
+
+	test_must_fail git maintenance unregister 2>err &&
+	grep "is not registered" err &&
+	git maintenance unregister --force
 '
 
 test_expect_success !MINGW 'register and unregister with regex metacharacters' '
