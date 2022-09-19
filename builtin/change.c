@@ -3,11 +3,13 @@
 #include "parse-options.h"
 #include "metacommit.h"
 #include "config.h"
+#include "refs.h"
 
 static const char * const builtin_change_usage[] = {
 	N_("git change list [<pattern>...]"),
 	N_("git change update [--force] [--replace <treeish>...] "
 	   "[--origin <treeish>...] [--content <newtreeish>]"),
+	N_("git change delete <change-name>..."),
 	NULL
 };
 
@@ -19,6 +21,11 @@ static const char * const builtin_list_usage[] = {
 static const char * const builtin_update_usage[] = {
 	N_("git change update [--force] [--replace <treeish>...] "
 	"[--origin <treeish>...] [--content <newtreeish>]"),
+	NULL
+};
+
+static const char * const builtin_delete_usage[] = {
+	N_("git change delete <change-name>..."),
 	NULL
 };
 
@@ -228,6 +235,75 @@ static int change_update(int argc, const char **argv, const char* prefix)
 	return result;
 }
 
+typedef int (*each_change_name_fn)(const char *name, const char *ref,
+				   const struct object_id *oid, void *cb_data);
+
+static int for_each_change_name(const char **argv, each_change_name_fn fn,
+				void *cb_data)
+{
+	const char **p;
+	struct strbuf ref = STRBUF_INIT;
+	int had_error = 0;
+	struct object_id oid;
+
+	for (p = argv; *p; p++) {
+		strbuf_reset(&ref);
+		/* Convenience functionality to avoid having to type `metas/` */
+		if (strncmp("metas/", *p, 5)) {
+			strbuf_addf(&ref, "refs/metas/%s", *p);
+		} else {
+			strbuf_addf(&ref, "refs/%s", *p);
+		}
+		if (read_ref(ref.buf, &oid)) {
+			error(_("change '%s' not found."), *p);
+			had_error = 1;
+			continue;
+		}
+		if (fn(*p, ref.buf, &oid, cb_data))
+			had_error = 1;
+	}
+	strbuf_release(&ref);
+	return had_error;
+}
+
+static int collect_changes(const char *name, const char *ref,
+			   const struct object_id *oid, void *cb_data)
+{
+	struct string_list *ref_list = cb_data;
+
+	string_list_append(ref_list, ref);
+	ref_list->items[ref_list->nr - 1].util = oiddup(oid);
+	return 0;
+}
+
+static int change_delete(int argc, const char **argv, const char* prefix) {
+	int result = 0;
+	struct string_list refs_to_delete = STRING_LIST_INIT_DUP;
+	struct string_list_item *item;
+	struct option options[] = {
+		OPT_END()
+	};
+
+	argc = parse_options(argc, argv, prefix, options, builtin_delete_usage, 0);
+
+	result = for_each_change_name(argv, collect_changes, (void *)&refs_to_delete);
+	if (delete_refs(NULL, &refs_to_delete, REF_NO_DEREF))
+		result = 1;
+
+	for_each_string_list_item(item, &refs_to_delete) {
+		const char *name = item->string;
+		struct object_id *oid = item->util;
+		if (!ref_exists(name))
+			printf(_("Deleted change '%s' (was %s)\n"),
+				item->string + 5,
+				find_unique_abbrev(oid, DEFAULT_ABBREV));
+
+		free(oid);
+	}
+	string_list_clear(&refs_to_delete, 0);
+	return result;
+}
+
 int cmd_change(int argc, const char **argv, const char *prefix)
 {
 	parse_opt_subcommand_fn *fn = NULL;
@@ -235,6 +311,7 @@ int cmd_change(int argc, const char **argv, const char *prefix)
 	struct option options[] = {
 		OPT_SUBCOMMAND("list", &fn, change_list),
 		OPT_SUBCOMMAND("update", &fn, change_update),
+		OPT_SUBCOMMAND("delete", &fn, change_delete),
 		OPT_END()
 	};
 
