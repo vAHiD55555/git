@@ -1905,31 +1905,15 @@ static int fill_included_packs_all(struct repository *r,
 
 static int fill_included_packs_batch(struct repository *r,
 				     struct multi_pack_index *m,
+				     struct repack_info *pack_info,
 				     unsigned char *include_pack,
 				     size_t batch_size)
 {
 	uint32_t i, packs_to_repack;
 	size_t total_size;
-	struct repack_info *pack_info = xcalloc(m->num_packs, sizeof(struct repack_info));
 	int pack_kept_objects = 0;
 
 	repo_config_get_bool(r, "repack.packkeptobjects", &pack_kept_objects);
-
-	for (i = 0; i < m->num_packs; i++) {
-		pack_info[i].pack_int_id = i;
-
-		if (prepare_midx_pack(r, m, i))
-			continue;
-
-		pack_info[i].mtime = m->packs[i]->mtime;
-	}
-
-	for (i = 0; batch_size && i < m->num_objects; i++) {
-		uint32_t pack_int_id = nth_midxed_pack_int_id(m, i);
-		pack_info[pack_int_id].referenced_objects++;
-	}
-
-	QSORT(pack_info, m->num_packs, compare_by_mtime);
 
 	total_size = 0;
 	packs_to_repack = 0;
@@ -1957,8 +1941,6 @@ static int fill_included_packs_batch(struct repository *r,
 		include_pack[pack_int_id] = 1;
 	}
 
-	free(pack_info);
-
 	if (packs_to_repack < 2)
 		return 1;
 
@@ -1974,6 +1956,7 @@ int midx_repack(struct repository *r, const char *object_dir, size_t batch_size,
 	FILE *cmd_in;
 	struct strbuf base_name = STRBUF_INIT;
 	struct multi_pack_index *m = lookup_multi_pack_index(r, object_dir);
+	struct repack_info *pack_info = NULL;
 
 	/*
 	 * When updating the default for these configuration
@@ -1987,9 +1970,25 @@ int midx_repack(struct repository *r, const char *object_dir, size_t batch_size,
 		return 0;
 
 	CALLOC_ARRAY(include_pack, m->num_packs);
+	CALLOC_ARRAY(pack_info, m->num_packs);
+
+	for (i = 0; i < m->num_packs; i++) {
+		pack_info[i].pack_int_id = i;
+
+		if (prepare_midx_pack(r, m, i))
+			continue;
+
+		pack_info[i].mtime = m->packs[i]->mtime;
+	}
+
+	for (i = 0; batch_size && i < m->num_objects; i++)
+		pack_info[nth_midxed_pack_int_id(m, i)].referenced_objects++;
+
+	QSORT(pack_info, m->num_packs, compare_by_mtime);
 
 	if (batch_size) {
-		if (fill_included_packs_batch(r, m, include_pack, batch_size))
+		if (fill_included_packs_batch(r, m, pack_info, include_pack,
+					      batch_size))
 			goto cleanup;
 	} else if (fill_included_packs_all(r, m, include_pack))
 		goto cleanup;
@@ -2047,6 +2046,7 @@ int midx_repack(struct repository *r, const char *object_dir, size_t batch_size,
 	result = write_midx_internal(object_dir, NULL, NULL, NULL, NULL, flags);
 
 cleanup:
+	free(pack_info);
 	free(include_pack);
 	return result;
 }
