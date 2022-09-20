@@ -1955,6 +1955,7 @@ int midx_repack(struct repository *r, const char *object_dir, size_t batch_size,
 	struct child_process cmd = CHILD_PROCESS_INIT;
 	FILE *cmd_in;
 	struct strbuf base_name = STRBUF_INIT;
+	struct strbuf scratch = STRBUF_INIT;
 	struct multi_pack_index *m = lookup_multi_pack_index(r, object_dir);
 	struct repack_info *pack_info = NULL;
 
@@ -1996,7 +1997,7 @@ int midx_repack(struct repository *r, const char *object_dir, size_t batch_size,
 	repo_config_get_bool(r, "repack.usedeltabaseoffset", &delta_base_offset);
 	repo_config_get_bool(r, "repack.usedeltaislands", &use_delta_islands);
 
-	strvec_push(&cmd.args, "pack-objects");
+	strvec_pushl(&cmd.args, "pack-objects", "--stdin-packs", NULL);
 
 	strbuf_addstr(&base_name, object_dir);
 	strbuf_addstr(&base_name, "/pack/pack");
@@ -2025,17 +2026,19 @@ int midx_repack(struct repository *r, const char *object_dir, size_t batch_size,
 
 	cmd_in = xfdopen(cmd.in, "w");
 
-	for (i = 0; i < m->num_objects; i++) {
-		struct object_id oid;
-		uint32_t pack_int_id = nth_midxed_pack_int_id(m, i);
+	for (i = 0; i < m->num_packs; i++) {
+		struct repack_info *info = &pack_info[i];
 
-		if (!include_pack[pack_int_id])
-			continue;
+		strbuf_reset(&scratch);
 
-		nth_midxed_object_oid(&oid, m, i);
-		fprintf(cmd_in, "%s\n", oid_to_hex(&oid));
+		strbuf_addstr(&scratch, m->pack_names[info->pack_int_id]);
+		strbuf_strip_suffix(&scratch, ".idx");
+		strbuf_addstr(&scratch, ".pack");
+
+		fprintf(cmd_in, "%s%s\n", include_pack[info->pack_int_id] ? "" : "^", scratch.buf);
 	}
 	fclose(cmd_in);
+	strbuf_release(&scratch);
 
 	if (finish_command(&cmd)) {
 		error(_("could not finish pack-objects"));
