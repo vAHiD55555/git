@@ -412,6 +412,7 @@ static int real_merge(struct merge_tree_options *o,
 	struct commit_list *merge_bases = NULL;
 	struct merge_options opt;
 	struct merge_result result = { 0 };
+	const struct object_id *tree_oid;
 
 	parent1 = get_merge_parent(branch1);
 	if (!parent1)
@@ -446,7 +447,8 @@ static int real_merge(struct merge_tree_options *o,
 	if (o->show_messages == -1)
 		o->show_messages = !result.clean;
 
-	printf("%s%c", oid_to_hex(&result.tree->object.oid), line_termination);
+	tree_oid = result.tree ? &result.tree->object.oid : null_oid();
+	printf("%s%c", oid_to_hex(tree_oid), line_termination);
 	if (!result.clean) {
 		struct string_list conflicted_files = STRING_LIST_INIT_NODUP;
 		const char *last = NULL;
@@ -473,7 +475,7 @@ static int real_merge(struct merge_tree_options *o,
 					      &result);
 	}
 	merge_finalize(&opt, &result);
-	return !result.clean; /* result.clean < 0 handled above */
+	return !result.tree || !result.clean; /* result.clean < 0 handled above */
 }
 
 int cmd_merge_tree(int argc, const char **argv, const char *prefix)
