@@ -498,6 +498,9 @@ int get_sparse_checkout_patterns(struct pattern_list *pl);
 /* Remove the_original_cwd too */
 #define REMOVE_DIR_PURGE_ORIGINAL_CWD 0x08
 
+/* Indicates a signal is being handled */
+#define REMOVE_DIR_SIGNAL 0x16
+
 /*
  * Remove path and its contents, recursively. flags is a combination
  * of the above REMOVE_DIR_* constants. Return 0 on success.

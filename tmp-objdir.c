@@ -34,6 +34,7 @@ static void tmp_objdir_free(struct tmp_objdir *t)
 static int tmp_objdir_destroy_1(struct tmp_objdir *t, int on_signal)
 {
 	int err;
+	int flags = 0;
 
 	if (!t)
 		return 0;
@@ -49,7 +50,11 @@ static int tmp_objdir_destroy_1(struct tmp_objdir *t, int on_signal)
 	 * have pre-grown t->path sufficiently so that this
 	 * doesn't happen in practice.
 	 */
-	err = remove_dir_recursively(&t->path, 0);
+
+	if (on_signal)
+		flags = flags | REMOVE_DIR_SIGNAL;
+
+	err = remove_dir_recursively(&t->path, flags);
 
 	/*
 	 * When we are cleaning up due to a signal, we won't bother

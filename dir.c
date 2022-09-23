@@ -3244,7 +3244,7 @@ void strip_dir_trailing_slashes(char *dir)
 
 static int remove_dir_recurse(struct strbuf *path, int flag, int *kept_up)
 {
-	DIR *dir;
+	DIR *dir = NULL;
 	struct dirent *e;
 	int ret = 0, original_len = path->len, len, kept_down = 0;
 	int only_empty = (flag & REMOVE_DIR_EMPTY_ONLY);
@@ -3261,7 +3261,10 @@ static int remove_dir_recurse(struct strbuf *path, int flag, int *kept_up)
 	}
 
 	flag &= ~REMOVE_DIR_KEEP_TOPLEVEL;
-	dir = opendir(path->buf);
+
+	if ((flag & REMOVE_DIR_SIGNAL) == 0)
+		dir = opendir(path->buf);
+
 	if (!dir) {
 		if (errno == ENOENT)
 			return keep_toplevel ? -1 : 0;
