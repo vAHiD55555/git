@@ -26,9 +26,9 @@ static int label_cb(const struct option *opt, const char *arg, int unset)
 int cmd_merge_file(int argc, const char **argv, const char *prefix)
 {
 	const char *names[3] = { 0 };
-	mmfile_t mmfs[3] = { 0 };
+	mmfile_t mmfs[3] = { { 0 } };
 	mmbuffer_t result = { 0 };
-	xmparam_t xmp = { 0 };
+	xmparam_t xmp = { { 0 } };
 	int ret = 0, i = 0, to_stdout = 0;
 	int quiet = 0;
 	struct option options[] = {
