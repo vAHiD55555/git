@@ -3982,9 +3982,6 @@ static void mark_bitmap_preferred_tips(void)
 	const struct string_list *preferred_tips;
 
 	preferred_tips = bitmap_preferred_tips(the_repository);
-	if (!preferred_tips)
-		return;
-
 	for_each_string_list_item(item, preferred_tips) {
 		for_each_ref_in(item->string, mark_bitmap_preferred_tip, NULL);
 	}

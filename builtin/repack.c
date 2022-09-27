@@ -539,6 +539,7 @@ static int midx_snapshot_ref_one(const char *refname UNUSED,
 static void midx_snapshot_refs(struct tempfile *f)
 {
 	struct midx_snapshot_ref_data data;
+	struct string_list_item *item;
 	const struct string_list *preferred = bitmap_preferred_tips(the_repository);
 
 	data.f = f;
@@ -549,14 +550,10 @@ static void midx_snapshot_refs(struct tempfile *f)
 		 die(_("could not open tempfile %s for writing"),
 		     get_tempfile_path(f));
 
-	if (preferred) {
-		struct string_list_item *item;
-
-		data.preferred = 1;
-		for_each_string_list_item(item, preferred)
-			for_each_ref_in(item->string, midx_snapshot_ref_one, &data);
-		data.preferred = 0;
-	}
+	data.preferred = 1;
+	for_each_string_list_item(item, preferred)
+		for_each_ref_in(item->string, midx_snapshot_ref_one, &data);
+	data.preferred = 0;
 
 	for_each_ref(midx_snapshot_ref_one, &data);
 

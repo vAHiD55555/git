@@ -182,15 +182,13 @@ static void set_default_decoration_filter(struct decoration_filter *decoration_f
 	int i;
 	char *value = NULL;
 	struct string_list *include = decoration_filter->include_ref_pattern;
+	struct string_list_item *item;
 	const struct string_list *config_exclude =
 			git_config_get_value_multi("log.excludeDecoration");
 
-	if (config_exclude) {
-		struct string_list_item *item;
-		for_each_string_list_item(item, config_exclude)
-			string_list_append(decoration_filter->exclude_ref_config_pattern,
-					   item->string);
-	}
+	for_each_string_list_item(item, config_exclude)
+		string_list_append(decoration_filter->exclude_ref_config_pattern,
+				   item->string);
 
 	/*
 	 * By default, decorate_all is disabled. Enable it if

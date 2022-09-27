@@ -96,7 +96,7 @@ int cmd__config(int argc, const char **argv)
 		}
 	} else if (argc == 3 && !strcmp(argv[1], "get_value_multi")) {
 		strptr = git_config_get_value_multi(argv[2]);
-		if (strptr && strptr->nr) {
+		if (strptr->nr) {
 			for (i = 0; i < strptr->nr; i++) {
 				v = strptr->items[i].string;
 				if (!v)

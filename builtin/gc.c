@@ -1493,12 +1493,10 @@ static int maintenance_register(int argc, const char **argv, const char *prefix)
 		git_config_set("maintenance.strategy", "incremental");
 
 	list = git_config_get_value_multi(key);
-	if (list) {
-		for_each_string_list_item(item, list) {
-			if (!strcmp(maintpath, item->string)) {
-				found = 1;
-				break;
-			}
+	for_each_string_list_item(item, list) {
+		if (!strcmp(maintpath, item->string)) {
+			found = 1;
+			break;
 		}
 	}
 
@@ -1550,12 +1548,10 @@ static int maintenance_unregister(int argc, const char **argv, const char *prefi
 				   options);
 
 	list = git_config_get_value_multi(key);
-	if (list) {
-		for_each_string_list_item(item, list) {
-			if (!strcmp(maintpath, item->string)) {
-				found = 1;
-				break;
-			}
+	for_each_string_list_item(item, list) {
+		if (!strcmp(maintpath, item->string)) {
+			found = 1;
+			break;
 		}
 	}
 

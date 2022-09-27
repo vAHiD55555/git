@@ -2407,7 +2407,7 @@ int git_configset_get_value(struct config_set *cs, const char *key, const char *
 	 */
 	values = git_configset_get_value_multi(cs, key);
 
-	if (!values || !values->nr)
+	if (!values->nr)
 		return 1;
 	*value = values->items[values->nr - 1].string;
 	return 0;
