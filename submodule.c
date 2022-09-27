@@ -275,7 +275,7 @@ int is_tree_submodule_active(struct repository *repo,
 
 	/* submodule.active is set */
 	sl = repo_config_get_value_multi(repo, "submodule.active");
-	if (sl) {
+	if (sl && sl->nr) {
 		struct pathspec ps;
 		struct strvec args = STRVEC_INIT;
 		const struct string_list_item *item;

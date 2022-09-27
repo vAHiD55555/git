@@ -531,6 +531,7 @@ static int module_init(int argc, const char **argv, const char *prefix)
 	struct init_cb info = INIT_CB_INIT;
 	struct pathspec pathspec = { 0 };
 	struct module_list list = MODULE_LIST_INIT;
+	const struct string_list *active_modules;
 	int quiet = 0;
 	struct option module_init_options[] = {
 		OPT__QUIET(&quiet, N_("suppress output for initializing a submodule")),
@@ -552,7 +553,9 @@ static int module_init(int argc, const char **argv, const char *prefix)
 	 * If there are no path args and submodule.active is set then,
 	 * by default, only initialize 'active' modules.
 	 */
-	if (!argc && git_config_get_value_multi("submodule.active"))
+	if (!argc &&
+	    (active_modules = git_config_get_value_multi("submodule.active")) &&
+	    active_modules->nr)
 		module_list_active(&list);
 
 	info.prefix = prefix;
@@ -2706,6 +2709,7 @@ static int module_update(int argc, const char **argv, const char *prefix)
 		opt.warn_if_uninitialized = 1;
 
 	if (opt.init) {
+		const struct string_list *active_modules;
 		struct module_list list = MODULE_LIST_INIT;
 		struct init_cb info = INIT_CB_INIT;
 
@@ -2720,7 +2724,9 @@ static int module_update(int argc, const char **argv, const char *prefix)
 		 * If there are no path args and submodule.active is set then,
 		 * by default, only initialize 'active' modules.
 		 */
-		if (!argc && git_config_get_value_multi("submodule.active"))
+		if (!argc &&
+		    (active_modules = git_config_get_value_multi("submodule.active")) &&
+		    active_modules->nr)
 			module_list_active(&list);
 
 		info.prefix = opt.prefix;
