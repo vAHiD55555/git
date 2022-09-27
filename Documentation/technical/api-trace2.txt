@@ -209,7 +209,7 @@ e.g: `void trace2_child_start(struct child_process *cmd)`.
 
 These messages are concerned with Git thread usage.
 
-e.g: `void trace2_thread_start(const char *thread_name)`.
+e.g: `void trace2_thread_start(const char *name_hint)`.
 
 === Region and Data Messages
 
