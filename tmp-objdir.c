@@ -31,7 +31,7 @@ static void tmp_objdir_free(struct tmp_objdir *t)
 	free(t);
 }
 
-static int tmp_objdir_destroy_1(struct tmp_objdir *t, int on_signal)
+static int tmp_objdir_destroy_1(struct tmp_objdir *t)
 {
 	int err;
 
@@ -41,7 +41,7 @@ static int tmp_objdir_destroy_1(struct tmp_objdir *t, int on_signal)
 	if (t == the_tmp_objdir)
 		the_tmp_objdir = NULL;
 
-	if (!on_signal && t->prev_odb)
+	if (t->prev_odb)
 		restore_primary_odb(t->prev_odb, t->path.buf);
 
 	/*
@@ -51,32 +51,19 @@ static int tmp_objdir_destroy_1(struct tmp_objdir *t, int on_signal)
 	 */
 	err = remove_dir_recursively(&t->path, 0);
 
-	/*
-	 * When we are cleaning up due to a signal, we won't bother
-	 * freeing memory; it may cause a deadlock if the signal
-	 * arrived while libc's allocator lock is held.
-	 */
-	if (!on_signal)
-		tmp_objdir_free(t);
+	tmp_objdir_free(t);
 
 	return err;
 }
 
 int tmp_objdir_destroy(struct tmp_objdir *t)
 {
-	return tmp_objdir_destroy_1(t, 0);
+	return tmp_objdir_destroy_1(t);
 }
 
 static void remove_tmp_objdir(void)
 {
 	tmp_objdir_destroy(the_tmp_objdir);
-}
-
-static void remove_tmp_objdir_on_signal(int signo)
-{
-	tmp_objdir_destroy_1(the_tmp_objdir, 1);
-	sigchain_pop(signo);
-	raise(signo);
 }
 
 void tmp_objdir_discard_objects(struct tmp_objdir *t)
@@ -169,7 +156,6 @@ struct tmp_objdir *tmp_objdir_create(const char *prefix)
 	the_tmp_objdir = t;
 	if (!installed_handlers) {
 		atexit(remove_tmp_objdir);
-		sigchain_push_common(remove_tmp_objdir_on_signal);
 		installed_handlers++;
 	}
 
