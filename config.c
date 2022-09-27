@@ -2833,8 +2833,13 @@ void git_die_config(const char *key, const char *err, ...)
 		va_end(params);
 	}
 	values = git_config_get_value_multi(key);
-	kv_info = values->items[values->nr - 1].util;
-	git_die_config_linenr(key, kv_info->filename, kv_info->linenr);
+
+	if (values && values->nr) {
+		kv_info = values->items[values->nr - 1].util;
+		git_die_config_linenr(key, kv_info->filename, kv_info->linenr);
+	} else {
+		BUG("expected a non-empty list of values");
+	}
 }
 
 /*
