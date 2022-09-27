@@ -9,17 +9,12 @@
  * There is NO relation to "transport layer security".
  */
 
-/*
- * Arbitry limit for thread names for column alignment.
- */
-#define TR2_MAX_THREAD_NAME (24)
-
 struct tr2tls_thread_ctx {
-	struct strbuf thread_name;
 	uint64_t *array_us_start;
 	size_t alloc;
 	size_t nr_open_regions; /* plays role of "nr" in ALLOC_GROW */
 	int thread_id;
+	char thread_name[FLEX_ARRAY];
 };
 
 /*
@@ -32,8 +27,6 @@ struct tr2tls_thread_ctx {
  * upon the name of the thread-proc function).  For example:
  *     { .thread_id=10, .thread_name="th10fsm-listen" }
  * This helps to identify and distinguish messages from concurrent threads.
- * The ctx.thread_name field is truncated if necessary to help with column
- * alignment in printf-style messages.
  *
  * In this and all following functions the term "self" refers to the
  * current thread.
