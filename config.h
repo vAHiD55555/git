@@ -458,7 +458,7 @@ int git_configset_add_parameters(struct config_set *cs);
 /**
  * Finds and returns the value list, sorted in order of increasing priority
  * for the configuration variable `key` and config set `cs`. When the
- * configuration variable `key` is not found, returns NULL. The caller
+ * configuration variable `key` is not found, returns an empty list. The caller
  * should not free or modify the returned pointer, as it is owned by the cache.
  */
 const struct string_list *git_configset_get_value_multi(struct config_set *cs, const char *key);
@@ -543,8 +543,8 @@ int git_config_get_value(const char *key, const char **value);
 /**
  * Finds and returns the value list, sorted in order of increasing priority
  * for the configuration variable `key`. When the configuration variable
- * `key` is not found, returns NULL. The caller should not free or modify
- * the returned pointer, as it is owned by the cache.
+ * `key` is not found, returns an empty list. The caller should not free or
+ * modify the returned pointer, as it is owned by the cache.
  */
 const struct string_list *git_config_get_value_multi(const char *key);
 

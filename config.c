@@ -2415,8 +2415,9 @@ int git_configset_get_value(struct config_set *cs, const char *key, const char *
 
 const struct string_list *git_configset_get_value_multi(struct config_set *cs, const char *key)
 {
+	static struct string_list empty_list = STRING_LIST_INIT_NODUP;
 	struct config_set_element *e = configset_find_element(cs, key);
-	return e ? &e->value_list : NULL;
+	return e ? &e->value_list : &empty_list;
 }
 
 int git_configset_get_string(struct config_set *cs, const char *key, char **dest)
