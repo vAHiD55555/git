@@ -2,6 +2,7 @@
 #define TR2_TLS_H
 
 #include "strbuf.h"
+#include "trace2/tr2_tmr.h"
 
 /*
  * Notice: the term "TLS" refers to "thread-local storage" in the
@@ -14,6 +15,9 @@ struct tr2tls_thread_ctx {
 	size_t alloc;
 	size_t nr_open_regions; /* plays role of "nr" in ALLOC_GROW */
 	int thread_id;
+	struct tr2_timer_block timer_block;
+	unsigned int used_any_timer:1;
+	unsigned int used_any_per_thread_timer:1;
 	char thread_name[FLEX_ARRAY];
 };
 
@@ -99,5 +103,11 @@ int tr2tls_locked_increment(int *p);
  * Capture the process start time and do nothing else.
  */
 void tr2tls_start_process_clock(void);
+
+/*
+ * Explicitly lock/unlock our mutex.
+ */
+void tr2tls_lock(void);
+void tr2tls_unlock(void);
 
 #endif /* TR2_TLS_H */
