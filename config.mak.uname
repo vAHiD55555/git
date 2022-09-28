@@ -165,6 +165,7 @@ ifeq ($(uname_S),Darwin)
 	ifndef NO_UNIX_SOCKETS
 	FSMONITOR_DAEMON_BACKEND = darwin
 	FSMONITOR_OS_SETTINGS = darwin
+	FSMONITOR_DAEMON_COMMON = unix
 	endif
 	endif
 
