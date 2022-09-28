@@ -1890,11 +1890,14 @@ static struct cache_entry *create_from_disk(struct mem_pool *ce_mem_pool,
 					    unsigned long *ent_size,
 					    const struct cache_entry *previous_ce)
 {
+	struct stat_data sd;
+	unsigned int mode;
+	struct object_id oid;
 	struct cache_entry *ce;
 	size_t len;
 	const char *name;
 	const unsigned hashsz = the_hash_algo->rawsz;
-	const char *flagsp = ondisk + offsetof(struct ondisk_cache_entry, data) + hashsz;
+	const char *flagsp;
 	unsigned int flags;
 	size_t copy_len = 0;
 	/*
@@ -1905,6 +1908,24 @@ static struct cache_entry *create_from_disk(struct mem_pool *ce_mem_pool,
 	 * and the bytes to append to the result, to come up with its name.
 	 */
 	int expand_name_field = version == 4;
+
+	sd.sd_ctime.sec = get_be32(ondisk + offsetof(struct ondisk_cache_entry, ctime)
+							+ offsetof(struct cache_time, sec));
+	sd.sd_ctime.nsec = get_be32(ondisk + offsetof(struct ondisk_cache_entry, ctime)
+							 + offsetof(struct cache_time, nsec));
+	sd.sd_mtime.sec = get_be32(ondisk + offsetof(struct ondisk_cache_entry, mtime)
+							+ offsetof(struct cache_time, sec));
+	sd.sd_mtime.nsec = get_be32(ondisk + offsetof(struct ondisk_cache_entry, mtime)
+							 + offsetof(struct cache_time, nsec));
+	sd.sd_dev   = get_be32(ondisk + offsetof(struct ondisk_cache_entry, dev));
+	sd.sd_ino   = get_be32(ondisk + offsetof(struct ondisk_cache_entry, ino));
+	mode        = get_be32(ondisk + offsetof(struct ondisk_cache_entry, mode));
+	sd.sd_uid   = get_be32(ondisk + offsetof(struct ondisk_cache_entry, uid));
+	sd.sd_gid   = get_be32(ondisk + offsetof(struct ondisk_cache_entry, gid));
+	sd.sd_size  = get_be32(ondisk + offsetof(struct ondisk_cache_entry, size));
+
+	oidread(&oid, (const unsigned char *)ondisk + offsetof(struct ondisk_cache_entry, data));
+	flagsp = ondisk + offsetof(struct ondisk_cache_entry, data) + hashsz;
 
 	/* On-disk flags are just 16 bits */
 	flags = get_be16(flagsp);
@@ -1945,33 +1966,12 @@ static struct cache_entry *create_from_disk(struct mem_pool *ce_mem_pool,
 	}
 
 	ce = mem_pool__ce_alloc(ce_mem_pool, len);
-
-	/*
-	 * NEEDSWORK: using 'offsetof()' is cumbersome and should be replaced
-	 * with something more akin to 'load_bitmap_entries_v1()'s use of
-	 * 'read_be16'/'read_be32'. For consistency with the corresponding
-	 * ondisk entry write function ('copy_cache_entry_to_ondisk()'), this
-	 * should be done at the same time as removing references to
-	 * 'ondisk_cache_entry' there.
-	 */
-	ce->ce_stat_data.sd_ctime.sec = get_be32(ondisk + offsetof(struct ondisk_cache_entry, ctime)
-							+ offsetof(struct cache_time, sec));
-	ce->ce_stat_data.sd_mtime.sec = get_be32(ondisk + offsetof(struct ondisk_cache_entry, mtime)
-							+ offsetof(struct cache_time, sec));
-	ce->ce_stat_data.sd_ctime.nsec = get_be32(ondisk + offsetof(struct ondisk_cache_entry, ctime)
-							 + offsetof(struct cache_time, nsec));
-	ce->ce_stat_data.sd_mtime.nsec = get_be32(ondisk + offsetof(struct ondisk_cache_entry, mtime)
-							 + offsetof(struct cache_time, nsec));
-	ce->ce_stat_data.sd_dev   = get_be32(ondisk + offsetof(struct ondisk_cache_entry, dev));
-	ce->ce_stat_data.sd_ino   = get_be32(ondisk + offsetof(struct ondisk_cache_entry, ino));
-	ce->ce_mode  = get_be32(ondisk + offsetof(struct ondisk_cache_entry, mode));
-	ce->ce_stat_data.sd_uid   = get_be32(ondisk + offsetof(struct ondisk_cache_entry, uid));
-	ce->ce_stat_data.sd_gid   = get_be32(ondisk + offsetof(struct ondisk_cache_entry, gid));
-	ce->ce_stat_data.sd_size  = get_be32(ondisk + offsetof(struct ondisk_cache_entry, size));
+	ce->ce_stat_data = sd;
+	ce->ce_mode = mode;
 	ce->ce_flags = flags & ~CE_NAMEMASK;
 	ce->ce_namelen = len;
 	ce->index = 0;
-	oidread(&ce->oid, (const unsigned char *)ondisk + offsetof(struct ondisk_cache_entry, data));
+	oidcpy(&ce->oid, &oid);
 
 	if (expand_name_field) {
 		if (copy_len)
