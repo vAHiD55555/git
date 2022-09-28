@@ -223,18 +223,6 @@ static struct stored_bitmap *store_bitmap(struct bitmap_index *index,
 	return stored;
 }
 
-static inline uint32_t read_be32(const unsigned char *buffer, size_t *pos)
-{
-	uint32_t result = get_be32(buffer + *pos);
-	(*pos) += sizeof(result);
-	return result;
-}
-
-static inline uint8_t read_u8(const unsigned char *buffer, size_t *pos)
-{
-	return buffer[(*pos)++];
-}
-
 #define MAX_XOR_OFFSET 160
 
 static int nth_bitmap_object_oid(struct bitmap_index *index,

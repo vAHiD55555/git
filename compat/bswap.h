@@ -190,4 +190,26 @@ static inline void put_be64(void *ptr, uint64_t value)
 	p[7] = value >>  0;
 }
 
+static inline uint32_t read_be32(const void *vbuffer, size_t *pos)
+{
+	const unsigned char *buffer = vbuffer;
+	uint32_t result = get_be32(buffer + *pos);
+	(*pos) += sizeof(result);
+	return result;
+}
+
+static inline uint16_t read_be16(const void *vbuffer, size_t *pos)
+{
+	const unsigned char *buffer = vbuffer;
+	uint16_t result = get_be16(buffer + *pos);
+	(*pos) += sizeof(result);
+	return result;
+}
+
+static inline uint8_t read_u8(const void *vbuffer, size_t *pos)
+{
+	const unsigned char *buffer = vbuffer;
+	return buffer[(*pos)++];
+}
+
 #endif /* COMPAT_BSWAP_H */
