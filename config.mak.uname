@@ -68,6 +68,7 @@ ifeq ($(uname_S),Linux)
 	ifneq ($(findstring .el7.,$(uname_R)),)
 		BASIC_CFLAGS += -std=c99
 	endif
+
 endif
 ifeq ($(uname_S),GNU/kFreeBSD)
 	HAVE_ALLOCA_H = YesPlease
@@ -165,6 +166,7 @@ ifeq ($(uname_S),Darwin)
 	ifndef NO_UNIX_SOCKETS
 	FSMONITOR_DAEMON_BACKEND = darwin
 	FSMONITOR_OS_SETTINGS = darwin
+	FSMONITOR_DAEMON_COMMON = unix
 	endif
 	endif
 
@@ -453,6 +455,7 @@ ifeq ($(uname_S),Windows)
 	# support it.
 	FSMONITOR_DAEMON_BACKEND = win32
 	FSMONITOR_OS_SETTINGS = win32
+	FSMONITOR_DAEMON_COMMON = win32
 
 	NO_SVN_TESTS = YesPlease
 	RUNTIME_PREFIX = YesPlease
@@ -645,6 +648,7 @@ ifeq ($(uname_S),MINGW)
 	# support it.
 	FSMONITOR_DAEMON_BACKEND = win32
 	FSMONITOR_OS_SETTINGS = win32
+	FSMONITOR_DAEMON_COMMON = win32
 
 	RUNTIME_PREFIX = YesPlease
 	HAVE_WPGMPTR = YesWeDo
