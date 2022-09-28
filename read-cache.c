@@ -1895,11 +1895,9 @@ static struct cache_entry *create_from_disk(struct mem_pool *ce_mem_pool,
 	struct object_id oid;
 	struct cache_entry *ce;
 	size_t len;
-	const char *name;
-	const unsigned hashsz = the_hash_algo->rawsz;
-	const char *flagsp;
 	unsigned int flags;
 	size_t copy_len = 0;
+	size_t pos = 0;
 	/*
 	 * Adjacent cache entries tend to share the leading paths, so it makes
 	 * sense to only store the differences in later entries.  In the v4
@@ -1909,42 +1907,35 @@ static struct cache_entry *create_from_disk(struct mem_pool *ce_mem_pool,
 	 */
 	int expand_name_field = version == 4;
 
-	sd.sd_ctime.sec = get_be32(ondisk + offsetof(struct ondisk_cache_entry, ctime)
-							+ offsetof(struct cache_time, sec));
-	sd.sd_ctime.nsec = get_be32(ondisk + offsetof(struct ondisk_cache_entry, ctime)
-							 + offsetof(struct cache_time, nsec));
-	sd.sd_mtime.sec = get_be32(ondisk + offsetof(struct ondisk_cache_entry, mtime)
-							+ offsetof(struct cache_time, sec));
-	sd.sd_mtime.nsec = get_be32(ondisk + offsetof(struct ondisk_cache_entry, mtime)
-							 + offsetof(struct cache_time, nsec));
-	sd.sd_dev   = get_be32(ondisk + offsetof(struct ondisk_cache_entry, dev));
-	sd.sd_ino   = get_be32(ondisk + offsetof(struct ondisk_cache_entry, ino));
-	mode        = get_be32(ondisk + offsetof(struct ondisk_cache_entry, mode));
-	sd.sd_uid   = get_be32(ondisk + offsetof(struct ondisk_cache_entry, uid));
-	sd.sd_gid   = get_be32(ondisk + offsetof(struct ondisk_cache_entry, gid));
-	sd.sd_size  = get_be32(ondisk + offsetof(struct ondisk_cache_entry, size));
+	sd.sd_ctime.sec = read_be32(ondisk, &pos);
+	sd.sd_ctime.nsec = read_be32(ondisk, &pos);
+	sd.sd_mtime.sec = read_be32(ondisk, &pos);
+	sd.sd_mtime.nsec = read_be32(ondisk, &pos);
+	sd.sd_dev   = read_be32(ondisk, &pos);
+	sd.sd_ino   = read_be32(ondisk, &pos);
+	mode        = read_be32(ondisk, &pos);
+	sd.sd_uid   = read_be32(ondisk, &pos);
+	sd.sd_gid   = read_be32(ondisk, &pos);
+	sd.sd_size  = read_be32(ondisk, &pos);
 
-	oidread(&oid, (const unsigned char *)ondisk + offsetof(struct ondisk_cache_entry, data));
-	flagsp = ondisk + offsetof(struct ondisk_cache_entry, data) + hashsz;
+	oidread(&oid, (const unsigned char *)ondisk + pos);
+	pos += the_hash_algo->rawsz;
 
 	/* On-disk flags are just 16 bits */
-	flags = get_be16(flagsp);
+	flags = read_be16(ondisk, &pos);
 	len = flags & CE_NAMEMASK;
 
 	if (flags & CE_EXTENDED) {
 		int extended_flags;
-		extended_flags = get_be16(flagsp + sizeof(uint16_t)) << 16;
+		extended_flags = read_be16(ondisk, &pos) << 16;
 		/* We do not yet understand any bit out of CE_EXTENDED_FLAGS */
 		if (extended_flags & ~CE_EXTENDED_FLAGS)
 			die(_("unknown index entry format 0x%08x"), extended_flags);
 		flags |= extended_flags;
-		name = (const char *)(flagsp + 2 * sizeof(uint16_t));
 	}
-	else
-		name = (const char *)(flagsp + sizeof(uint16_t));
 
 	if (expand_name_field) {
-		const unsigned char *cp = (const unsigned char *)name;
+		const unsigned char *cp = (const unsigned char *)ondisk + pos;
 		size_t strip_len, previous_len;
 
 		/* If we're at the beginning of a block, ignore the previous name */
@@ -1956,11 +1947,11 @@ static struct cache_entry *create_from_disk(struct mem_pool *ce_mem_pool,
 					previous_ce->name);
 			copy_len = previous_len - strip_len;
 		}
-		name = (const char *)cp;
+		pos = (const char *)cp - ondisk;
 	}
 
 	if (len == CE_NAMEMASK) {
-		len = strlen(name);
+		len = strlen(ondisk + pos);
 		if (expand_name_field)
 			len += copy_len;
 	}
@@ -1976,10 +1967,10 @@ static struct cache_entry *create_from_disk(struct mem_pool *ce_mem_pool,
 	if (expand_name_field) {
 		if (copy_len)
 			memcpy(ce->name, previous_ce->name, copy_len);
-		memcpy(ce->name + copy_len, name, len + 1 - copy_len);
-		*ent_size = (name - ((char *)ondisk)) + len + 1 - copy_len;
+		memcpy(ce->name + copy_len, ondisk + pos, len + 1 - copy_len);
+		*ent_size = pos + len + 1 - copy_len;
 	} else {
-		memcpy(ce->name, name, len + 1);
+		memcpy(ce->name, ondisk + pos, len + 1);
 		*ent_size = ondisk_ce_size(ce);
 	}
 	return ce;
