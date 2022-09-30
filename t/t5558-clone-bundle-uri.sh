@@ -122,7 +122,11 @@ test_expect_success 'clone bundle list (file, any mode)' '
 		uri = $HTTPD_URL/bundle-5.bundle
 	EOF
 
-	git clone --bundle-uri="file://$(pwd)/bundle-list" clone-from clone-any-file &&
+	git clone --bundle-uri="file://$(pwd)/bundle-list" \
+		clone-from clone-any-file 2>err &&
+	! grep "fatal" err &&
+	grep "warning: failed to download bundle from URI" err &&
+
 	git -C clone-from for-each-ref --format="%(objectname)" >oids &&
 	git -C clone-any-file cat-file --batch-check <oids
 '
@@ -205,7 +209,11 @@ test_expect_success 'clone bundle list (HTTP, any mode)' '
 		uri = $HTTPD_URL/bundle-5.bundle
 	EOF
 
-	git clone --bundle-uri="$HTTPD_URL/bundle-list" clone-from clone-any-http &&
+	git clone --bundle-uri="$HTTPD_URL/bundle-list" \
+		clone-from clone-any-http 2>err &&
+	! grep "fatal" err &&
+	grep "warning: failed to download bundle from URI" err &&
+
 	git -C clone-from for-each-ref --format="%(objectname)" >oids &&
 	git -C clone-any-http cat-file --batch-check <oids
 '
