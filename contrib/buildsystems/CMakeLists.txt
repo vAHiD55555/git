@@ -741,6 +741,20 @@ endif()
 #git
 parse_makefile_for_sources(git_SOURCES "BUILTIN_OBJS")
 
+
+# makeheaders
+add_executable(makeheaders ${CMAKE_SOURCE_DIR}/tools/makeheaders.c)
+
+add_custom_target(abspath.h
+	DEPENDS
+		"${CMAKE_SOURCE_DIR}/abspath.c" "makeheaders"
+	COMMAND
+		makeheaders ${CMAKE_SOURCE_DIR}/abspath.c
+)
+
+add_dependencies(libgit makeheaders abspath.h)
+
+
 list(TRANSFORM git_SOURCES PREPEND "${CMAKE_SOURCE_DIR}/")
 add_executable(git ${CMAKE_SOURCE_DIR}/git.c ${git_SOURCES})
 target_link_libraries(git common-main)

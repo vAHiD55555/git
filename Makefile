@@ -1,5 +1,21 @@
 # The default target of this Makefile is...
-all::
+all:: hdr
+
+
+# In parallel mode things goes up and down.
+.NOTPARALLEL:
+
+# compile header
+.PHONY: hdr
+hdr:: makeheaders
+hdr:: abspath.h
+
+makeheaders: tools/makeheaders.c
+	$(CC) -o $@ $<
+
+abspath.h: abspath.c
+	./makeheaders $<
+
 
 # Import tree-wide shared Makefile behavior and libraries
 include shared.mak
@@ -3098,7 +3114,7 @@ $(SP_OBJ): %.sp: %.c %.o
 	>$@
 
 .PHONY: sparse
-sparse: $(SP_OBJ)
+sparse: hdr $(SP_OBJ)
 
 EXCEPT_HDRS := $(GENERATED_H) unicode-width.h compat/% xdiff/%
 ifndef NETTLE_SHA256
@@ -3174,7 +3190,7 @@ $(COCCI_TEST_RES_GEN): .build/contrib/coccinelle/tests/%.res : contrib/coccinell
 .PHONY: coccicheck-test
 coccicheck-test: $(COCCI_TEST_RES_GEN)
 
-coccicheck: coccicheck-test
+coccicheck: hdr coccicheck-test
 coccicheck: $(addsuffix .patch,$(filter-out %.pending.cocci,$(wildcard contrib/coccinelle/*.cocci)))
 
 # See contrib/coccinelle/README
@@ -3394,6 +3410,7 @@ ifneq ($(INCLUDE_DLLS_IN_ARTIFACTS),)
 OTHER_PROGRAMS += $(shell echo *.dll t/helper/*.dll)
 endif
 
+artifacts-tar:: hdr
 artifacts-tar:: $(ALL_COMMANDS_TO_INSTALL) $(SCRIPT_LIB) $(OTHER_PROGRAMS) \
 		GIT-BUILD-OPTIONS $(TEST_PROGRAMS) $(test_bindir_programs) \
 		$(MOFILES)
@@ -3450,6 +3467,8 @@ cocciclean:
 	$(RM) contrib/coccinelle/*.cocci.patch*
 
 clean: profile-clean coverage-clean cocciclean
+	$(RM) -r makeheaders
+	$(RM) -r abspath.h
 	$(RM) -r .build
 	$(RM) po/git.pot po/git-core.pot
 	$(RM) git.res
