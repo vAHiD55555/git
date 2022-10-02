@@ -1010,8 +1010,9 @@ list_contains () {
 # with env, the env and its corresponding variable settings will be
 # stripped before we we test the command being run.
 #
-# test_todo() allows any of the assertions beginning test_ such as
-# test_cmp in addition the commands allowed by test_must_fail().
+# test_todo() allows "grep" or any of the assertions beginning test_
+# such as test_cmp in addition the commands allowed by
+# test_must_fail().
 
 test_must_fail_acceptable () {
 	local name
@@ -1050,9 +1051,21 @@ test_must_fail_acceptable () {
 		fi
 		return 1
 		;;
-	test_*)
-		test "$name" = "todo"
-		return $?
+	grep|test_*)
+		if test "$name" = "todo"
+		then
+			test_todo_command_="$1"
+			return 0
+		fi
+		return 1
+		;;
+	'!')
+		if test "$name" = "todo" && test "$2" = "grep"
+		then
+			test_todo_command_=grep
+			return 0
+		fi
+		return 1
 		;;
 	*)
 		return 1
@@ -1061,6 +1074,7 @@ test_must_fail_acceptable () {
 }
 
 test_must_fail_helper () {
+	test_todo_command_=
 	test_must_fail_name_="$1"
 	shift
 	case "$1" in
@@ -1077,8 +1091,27 @@ test_must_fail_helper () {
 		echo >&7 "test_$test_must_fail_name_: only 'git' is allowed: $*"
 		return 1
 	fi
+	test_invert_exit_code_=
+	if test "$1" = "!"
+	then
+		test_invert_exit_code_=1
+		shift
+	fi
 	"$@" 2>&7
 	exit_code=$?
+	if test -n "$test_invert_exit_code_"
+	# We only invert the exit code of grep. An exit code greater
+	# than 1 indicates an error rather than a failed match so
+	# we only want to swap zero and one.
+	then
+		if test $exit_code -eq 0
+		then
+			exit_code=1
+		elif test $exit_code -eq 1
+		then
+			exit_code=0
+		fi
+	fi
 	if test $exit_code -eq 0 && ! list_contains "$_test_ok" success
 	then
 		echo >&4 "test_$test_must_fail_name_: command succeeded: $*"
@@ -1098,6 +1131,15 @@ test_must_fail_helper () {
 	then
 		echo >&4 "test_$test_must_fail_name_: valgrind error: $*"
 		return 1
+	else
+		case "$test_todo_command_" in
+		grep)
+			if test $exit_code -ne 1
+			then
+			       echo >&4 "test_todo: $test_todo_command_ error: $*"
+			       return 1
+			fi;;
+		esac
 	fi
 
 	return 0
@@ -1116,8 +1158,8 @@ test_must_fail_helper () {
 #	'
 #
 # This test will fail if "git foo" fails or err is unexpectedly empty.
-# test_todo can be used with "git" or any of the "test_*" assertions
-# such as test_cmp().
+# test_todo can be used with "git", "grep" or any of the "test_*"
+# assertions such as test_cmp().
 
 test_todo () {
 	if test "$test_todo_" = "test_expect_failure"
