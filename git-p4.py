@@ -368,10 +368,9 @@ def read_pipe(c, ignore_error=False, raw=False, *k, **kw):
        """
     retcode, out, err = read_pipe_full(c, *k, **kw)
     if retcode != 0:
-        if ignore_error:
-            out = ""
-        else:
+        if not ignore_error:
             die('Command failed: {}\nError: {}'.format(' '.join(c), err))
+        out = ""
     if not raw:
         out = decode_text_stream(out)
     return out
@@ -400,10 +399,10 @@ def read_pipe_lines(c, raw=False, *k, **kw):
     p = subprocess.Popen(c, stdout=subprocess.PIPE, *k, **kw)
     pipe = p.stdout
     lines = pipe.readlines()
-    if not raw:
-        lines = [decode_text_stream(line) for line in lines]
     if pipe.close() or p.wait():
         die('Command failed: {}'.format(' '.join(c)))
+    if not raw:
+        lines = [decode_text_stream(line) for line in lines]
     return lines
 
 
