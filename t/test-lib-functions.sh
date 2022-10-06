@@ -1010,14 +1010,19 @@ list_contains () {
 # with env, the env and its corresponding variable settings will be
 # stripped before we we test the command being run.
 #
-# test_todo() allows "grep" or any of the assertions beginning test_
-# such as test_cmp in addition the commands allowed by
+# test_todo() allows "grep", "test" or any of the assertions beginning
+# test_ such as test_cmp in addition the commands allowed by
 # test_must_fail().
 
 test_must_fail_acceptable () {
 	local name
 	name="$1"
 	shift
+
+	if test "$name" = "todo" && test "$1" = "verbose"
+	then
+		shift
+	fi
 
 	if test "$1" = "env"
 	then
@@ -1051,7 +1056,7 @@ test_must_fail_acceptable () {
 		fi
 		return 1
 		;;
-	grep|test_*)
+	grep|test|test_*)
 		if test "$name" = "todo"
 		then
 			test_todo_command_="$1"
@@ -1133,7 +1138,7 @@ test_must_fail_helper () {
 		return 1
 	else
 		case "$test_todo_command_" in
-		grep)
+		grep|test)
 			if test $exit_code -ne 1
 			then
 			       echo >&4 "test_todo: $test_todo_command_ error: $*"
@@ -1158,8 +1163,8 @@ test_must_fail_helper () {
 #	'
 #
 # This test will fail if "git foo" fails or err is unexpectedly empty.
-# test_todo can be used with "git", "grep" or any of the "test_*"
-# assertions such as test_cmp().
+# test_todo can be used with "git", "grep", "test" or any of the
+# "test_*" assertions such as test_cmp().
 
 test_todo () {
 	if test "$test_todo_" = "test_expect_failure"
