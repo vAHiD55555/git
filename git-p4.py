@@ -399,11 +399,15 @@ def read_pipe_lines(c, raw=False, *k, **kw):
 
     p = subprocess.Popen(c, stdout=subprocess.PIPE, *k, **kw)
     pipe = p.stdout
-    lines = pipe.readlines()
-    if not raw:
-        lines = [decode_text_stream(line) for line in lines]
-    if pipe.close() or p.wait():
+
+    if p.wait():
         die('Command failed: {}'.format(' '.join(c)))
+
+    lines = pipe.readlines()
+    pipe.close()
+
+    if not raw:
+        return [decode_text_stream(line) for line in lines]
     return lines
 
 
