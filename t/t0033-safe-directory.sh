@@ -71,7 +71,7 @@ test_expect_success 'safe.directory=*, but is reset' '
 	expect_rejected_dir
 '
 
-test_expect_failure 'safe.directory in included file' '
+test_expect_success 'safe.directory in included file' '
 	cat >gitconfig-include <<-EOF &&
 	[safe]
 		directory = "$(pwd)"

@@ -51,7 +51,7 @@ test_expect_success 'safe.bareRepository on the command line' '
 		-c safe.bareRepository=all
 '
 
-test_expect_failure 'safe.bareRepository in included file' '
+test_expect_success 'safe.bareRepository in included file' '
 	cat >gitconfig-include <<-EOF &&
 	[safe]
 		bareRepository = explicit
