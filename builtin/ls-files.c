@@ -509,7 +509,7 @@ static int get_common_prefix_len(const char *common_prefix)
 	return common_prefix_len;
 }
 
-static int read_one_entry_opt(struct index_state *istate,
+static int read_one_entry_opt(struct repository *repo UNUSED, struct index_state *istate,
 			      const struct object_id *oid,
 			      struct strbuf *base,
 			      const char *pathname,
@@ -533,12 +533,12 @@ static int read_one_entry_opt(struct index_state *istate,
 	return add_index_entry(istate, ce, opt);
 }
 
-static int read_one_entry(const struct object_id *oid, struct strbuf *base,
+static int read_one_entry(struct repository *repo, const struct object_id *oid, struct strbuf *base,
 			  const char *pathname, unsigned mode,
 			  void *context)
 {
 	struct index_state *istate = context;
-	return read_one_entry_opt(istate, oid, base, pathname,
+	return read_one_entry_opt(repo, istate, oid, base, pathname,
 				  mode,
 				  ADD_CACHE_OK_TO_ADD|ADD_CACHE_SKIP_DFCHECK);
 }
@@ -547,12 +547,12 @@ static int read_one_entry(const struct object_id *oid, struct strbuf *base,
  * This is used when the caller knows there is no existing entries at
  * the stage that will conflict with the entry being added.
  */
-static int read_one_entry_quick(const struct object_id *oid, struct strbuf *base,
+static int read_one_entry_quick(struct repository *repo, const struct object_id *oid, struct strbuf *base,
 				const char *pathname, unsigned mode,
 				void *context)
 {
 	struct index_state *istate = context;
-	return read_one_entry_opt(istate, oid, base, pathname,
+	return read_one_entry_opt(repo, istate, oid, base, pathname,
 				  mode, ADD_CACHE_JUST_APPEND);
 }
 

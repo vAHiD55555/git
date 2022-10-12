@@ -10,6 +10,7 @@
 #include "unpack-trees.h"
 #include "dir.h"
 #include "quote.h"
+#include "submodule.h"
 
 static char const * const archive_usage[] = {
 	N_("git archive [<options>] <tree-ish> [<path>...]"),
@@ -69,6 +70,7 @@ static void format_subst(const struct commit *commit,
 }
 
 static void *object_file_to_archive(const struct archiver_args *args,
+				    struct repository *repo,
 				    const char *path,
 				    const struct object_id *oid,
 				    unsigned int mode,
@@ -84,13 +86,13 @@ static void *object_file_to_archive(const struct archiver_args *args,
 			       (args->tree ? &args->tree->object.oid : NULL), oid);
 
 	path += args->baselen;
-	buffer = read_object_file(oid, type, sizep);
+	buffer = repo_read_object_file(repo, oid, type, sizep);
 	if (buffer && S_ISREG(mode)) {
 		struct strbuf buf = STRBUF_INIT;
 		size_t size = 0;
 
 		strbuf_attach(&buf, buffer, *sizep, *sizep + 1);
-		convert_to_working_tree(args->repo->index, path, buf.buf, buf.len, &buf, &meta);
+		convert_to_working_tree(repo->index, path, buf.buf, buf.len, &buf, &meta);
 		if (commit)
 			format_subst(commit, buf.buf, buf.len, &buf, args->pretty_ctx);
 		buffer = strbuf_detach(&buf, &size);
@@ -134,7 +136,7 @@ static int check_attr_export_subst(const struct attr_check *check)
 	return check && ATTR_TRUE(check->items[1].value);
 }
 
-static int write_archive_entry(const struct object_id *oid, const char *base,
+static int write_archive_entry(struct repository *repo, const struct object_id *oid, const char *base,
 		int baselen, const char *filename, unsigned mode,
 		void *context)
 {
@@ -160,7 +162,7 @@ static int write_archive_entry(const struct object_id *oid, const char *base,
 
 	if (!S_ISDIR(mode)) {
 		const struct attr_check *check;
-		check = get_archive_attrs(args->repo->index, path_without_prefix);
+		check = get_archive_attrs(repo->index, path_without_prefix);
 		if (check_attr_export_ignore(check))
 			return 0;
 		args->convert = check_attr_export_subst(check);
@@ -169,10 +171,10 @@ static int write_archive_entry(const struct object_id *oid, const char *base,
 	if (S_ISDIR(mode) || S_ISGITLINK(mode)) {
 		if (args->verbose)
 			fprintf(stderr, "%.*s\n", (int)path.len, path.buf);
-		err = write_entry(args, oid, path.buf, path.len, mode, NULL, 0);
+		err = write_entry(repo, args, oid, path.buf, path.len, mode, NULL, 0);
 		if (err)
 			return err;
-		return (S_ISDIR(mode) ? READ_TREE_RECURSIVE : 0);
+		return READ_TREE_RECURSIVE;
 	}
 
 	if (args->verbose)
@@ -180,14 +182,19 @@ static int write_archive_entry(const struct object_id *oid, const char *base,
 
 	/* Stream it? */
 	if (S_ISREG(mode) && !args->convert &&
-	    oid_object_info(args->repo, oid, &size) == OBJ_BLOB &&
-	    size > big_file_threshold)
-		return write_entry(args, oid, path.buf, path.len, mode, NULL, size);
+	    oid_object_info(repo, oid, &size) == OBJ_BLOB &&
+	    size > big_file_threshold) {
+			err = write_entry(repo, args, oid, path.buf, path.len, mode, NULL, size);
+			if (err) {
+				die("Failed to write file %.*s", (int)path.len, path.buf);
+			}
+			return err;
+		}
 
-	buffer = object_file_to_archive(args, path.buf, oid, mode, &type, &size);
+	buffer = object_file_to_archive(args, repo, path.buf, oid, mode, &type, &size);
 	if (!buffer)
 		return error(_("cannot read '%s'"), oid_to_hex(oid));
-	err = write_entry(args, oid, path.buf, path.len, mode, buffer, size);
+	err = write_entry(repo, args, oid, path.buf, path.len, mode, buffer, size);
 	free(buffer);
 	return err;
 }
@@ -207,7 +214,25 @@ static void queue_directory(const struct object_id *oid,
 	oidcpy(&d->oid, oid);
 }
 
-static int write_directory(struct archiver_context *c)
+static void queue_submodule(struct repository *superproject,
+		const struct object_id *oid,
+		struct strbuf *base, const char *filename,
+		unsigned mode, struct archiver_context *c)
+{
+	struct repository subrepo;
+
+	if (repo_submodule_init(&subrepo, superproject, filename, null_oid()))
+		return;
+
+	if (repo_read_index(&subrepo) < 0)
+		die("index file corrupt");
+
+    queue_directory(oid, base, filename, mode, c);
+
+	repo_clear(&subrepo);
+}
+
+static int write_directory(struct repository *repo, struct archiver_context *c)
 {
 	struct directory *d = c->bottom;
 	int ret;
@@ -217,15 +242,18 @@ static int write_directory(struct archiver_context *c)
 	c->bottom = d->up;
 	d->path[d->len - 1] = '\0'; /* no trailing slash */
 	ret =
-		write_directory(c) ||
-		write_archive_entry(&d->oid, d->path, d->baselen,
+		write_directory(repo, c) ||
+		write_archive_entry(repo, &d->oid, d->path, d->baselen,
 				    d->path + d->baselen, d->mode,
-				    c) != READ_TREE_RECURSIVE;
+				    c);
 	free(d);
-	return ret ? -1 : 0;
+	if (ret == READ_TREE_RECURSIVE)
+		return 0;
+	return ret;
 }
 
-static int queue_or_write_archive_entry(const struct object_id *oid,
+static int queue_or_write_archive_entry(
+		struct repository *repo, const struct object_id *oid,
 		struct strbuf *base, const char *filename,
 		unsigned mode, void *context)
 {
@@ -246,18 +274,23 @@ static int queue_or_write_archive_entry(const struct object_id *oid,
 		/* Borrow base, but restore its original value when done. */
 		strbuf_addstr(base, filename);
 		strbuf_addch(base, '/');
-		check = get_archive_attrs(c->args->repo->index, base->buf);
+		check = get_archive_attrs(repo->index, base->buf);
 		strbuf_setlen(base, baselen);
 
 		if (check_attr_export_ignore(check))
 			return 0;
 		queue_directory(oid, base, filename, mode, c);
 		return READ_TREE_RECURSIVE;
+	} else if (c->args->recurse_submodules && S_ISGITLINK(mode)) {
+		if (is_submodule_active(repo, filename)) {
+			queue_submodule(repo, oid, base, filename, mode, c);
+			return READ_TREE_RECURSIVE;
+		}
 	}
 
-	if (write_directory(c))
+	if (write_directory(repo, c))
 		return -1;
-	return write_archive_entry(oid, base->buf, base->len, filename, mode,
+	return write_archive_entry(repo, oid, base->buf, base->len, filename, mode,
 				   context);
 }
 
@@ -267,7 +300,8 @@ struct extra_file_info {
 	void *content;
 };
 
-int write_archive_entries(struct archiver_args *args,
+int write_archive_entries(struct repository *repo,
+		struct archiver_args *args,
 		write_archive_entry_fn_t write_entry)
 {
 	struct archiver_context context;
@@ -288,7 +322,7 @@ int write_archive_entries(struct archiver_args *args,
 			len--;
 		if (args->verbose)
 			fprintf(stderr, "%.*s\n", (int)len, args->base);
-		err = write_entry(args, &args->tree->object.oid, args->base,
+		err = write_entry(repo, args, &args->tree->object.oid, args->base,
 				  len, 040777, NULL, 0);
 		if (err)
 			return err;
@@ -305,8 +339,8 @@ int write_archive_entries(struct archiver_args *args,
 		memset(&opts, 0, sizeof(opts));
 		opts.index_only = 1;
 		opts.head_idx = -1;
-		opts.src_index = args->repo->index;
-		opts.dst_index = args->repo->index;
+		opts.src_index = repo->index;
+		opts.dst_index = repo->index;
 		opts.fn = oneway_merge;
 		init_tree_desc(&t, args->tree->buffer, args->tree->size);
 		if (unpack_trees(1, &t, &opts))
@@ -314,7 +348,7 @@ int write_archive_entries(struct archiver_args *args,
 		git_attr_set_direction(GIT_ATTR_INDEX);
 	}
 
-	err = read_tree(args->repo, args->tree,
+	err = read_tree(repo, args->tree,
 			&args->pathspec,
 			queue_or_write_archive_entry,
 			&context);
@@ -343,12 +377,12 @@ int write_archive_entries(struct archiver_args *args,
 			if (strbuf_read_file(&content, path, info->stat.st_size) < 0)
 				err = error_errno(_("cannot read '%s'"), path);
 			else
-				err = write_entry(args, &fake_oid, path_in_archive.buf,
+				err = write_entry(repo, args, &fake_oid, path_in_archive.buf,
 						  path_in_archive.len,
 						  canon_mode(info->stat.st_mode),
 						  content.buf, content.len);
 		} else {
-			err = write_entry(args, &fake_oid,
+			err = write_entry(repo, args, &fake_oid,
 					  path, strlen(path),
 					  canon_mode(info->stat.st_mode),
 					  info->content, info->stat.st_size);
@@ -382,7 +416,7 @@ struct path_exists_context {
 	struct archiver_args *args;
 };
 
-static int reject_entry(const struct object_id *oid UNUSED,
+static int reject_entry(struct repository *repo, const struct object_id *oid UNUSED,
 			struct strbuf *base,
 			const char *filename, unsigned mode,
 			void *context)
@@ -394,7 +428,7 @@ static int reject_entry(const struct object_id *oid UNUSED,
 		struct strbuf sb = STRBUF_INIT;
 		strbuf_addbuf(&sb, base);
 		strbuf_addstr(&sb, filename);
-		if (!match_pathspec(ctx->args->repo->index,
+		if (!match_pathspec(repo->index,
 				    &ctx->pathspec,
 				    sb.buf, sb.len, 0, NULL, 1))
 			ret = READ_TREE_RECURSIVE;
@@ -431,6 +465,7 @@ static void parse_pathspec_arg(const char **pathspec,
 		       PATHSPEC_PREFER_FULL,
 		       "", pathspec);
 	ar_args->pathspec.recursive = 1;
+	ar_args->pathspec.recurse_submodules = ar_args->recurse_submodules;
 	if (pathspec) {
 		while (*pathspec) {
 			if (**pathspec && !path_exists(ar_args, *pathspec))
@@ -592,6 +627,7 @@ static int parse_archive_args(int argc, const char **argv,
 	int verbose = 0;
 	int i;
 	int list = 0;
+	int recurse_submodules = 0;
 	int worktree_attributes = 0;
 	struct option opts[] = {
 		OPT_GROUP(""),
@@ -606,6 +642,8 @@ static int parse_archive_args(int argc, const char **argv,
 		  add_file_cb, (intptr_t)&base },
 		OPT_STRING('o', "output", &output, N_("file"),
 			N_("write the archive to this file")),
+		OPT_BOOL(0, "recurse-submodules", &recurse_submodules,
+			N_("include submodules in archive")),
 		OPT_BOOL(0, "worktree-attributes", &worktree_attributes,
 			N_("read .gitattributes in working directory")),
 		OPT__VERBOSE(&verbose, N_("report archived files on stderr")),
@@ -670,6 +708,7 @@ static int parse_archive_args(int argc, const char **argv,
 	args->base = base;
 	args->baselen = strlen(base);
 	args->worktree_attributes = worktree_attributes;
+	args->recurse_submodules = recurse_submodules;
 
 	return argc;
 }
@@ -708,7 +747,7 @@ int write_archive(int argc, const char **argv, const char *prefix,
 	parse_treeish_arg(argv, &args, prefix, remote);
 	parse_pathspec_arg(argv + 1, &args);
 
-	rc = ar->write_archive(ar, &args);
+	rc = ar->write_archive(ar, repo, &args);
 
 	string_list_clear_func(&args.extra_files, extra_file_info_clear);
 	free(args.refname);

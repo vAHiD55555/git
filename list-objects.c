@@ -185,7 +185,7 @@ static void process_tree(struct traversal_context *ctx,
 	    !revs->include_check_obj(&tree->object, revs->include_check_data))
 		return;
 
-	failed_parse = parse_tree_gently(tree, 1);
+	failed_parse = parse_tree_gently(revs->repo, tree, 1);
 	if (failed_parse) {
 		if (revs->ignore_missing_links)
 			return;

@@ -141,7 +141,7 @@ static int show_recursive(const char *base, size_t baselen, const char *pathname
 	return 0;
 }
 
-static int show_tree_fmt(const struct object_id *oid, struct strbuf *base,
+static int show_tree_fmt(struct repository *repo UNUSED, const struct object_id *oid, struct strbuf *base,
 			 const char *pathname, unsigned mode, void *context UNUSED)
 {
 	size_t baselen;
@@ -211,7 +211,7 @@ static void show_tree_common_default_long(struct strbuf *base,
 	strbuf_setlen(base, baselen);
 }
 
-static int show_tree_default(const struct object_id *oid, struct strbuf *base,
+static int show_tree_default(struct repository *repo UNUSED, const struct object_id *oid, struct strbuf *base,
 			     const char *pathname, unsigned mode,
 			     void *context UNUSED)
 {
@@ -229,7 +229,7 @@ static int show_tree_default(const struct object_id *oid, struct strbuf *base,
 	return recurse;
 }
 
-static int show_tree_long(const struct object_id *oid, struct strbuf *base,
+static int show_tree_long(struct repository *repo, const struct object_id *oid, struct strbuf *base,
 			  const char *pathname, unsigned mode,
 			  void *context UNUSED)
 {
@@ -244,7 +244,7 @@ static int show_tree_long(const struct object_id *oid, struct strbuf *base,
 
 	if (data.type == OBJ_BLOB) {
 		unsigned long size;
-		if (oid_object_info(the_repository, data.oid, &size) == OBJ_BAD)
+		if (oid_object_info(repo, data.oid, &size) == OBJ_BAD)
 			xsnprintf(size_text, sizeof(size_text), "BAD");
 		else
 			xsnprintf(size_text, sizeof(size_text),
@@ -254,12 +254,12 @@ static int show_tree_long(const struct object_id *oid, struct strbuf *base,
 	}
 
 	printf("%06o %s %s %7s\t", data.mode, type_name(data.type),
-	       find_unique_abbrev(data.oid, abbrev), size_text);
+	       repo_find_unique_abbrev(repo, data.oid, abbrev), size_text);
 	show_tree_common_default_long(base, pathname, data.base->len);
 	return recurse;
 }
 
-static int show_tree_name_only(const struct object_id *oid, struct strbuf *base,
+static int show_tree_name_only(struct repository *repo UNUSED, const struct object_id *oid, struct strbuf *base,
 			       const char *pathname, unsigned mode,
 			       void *context UNUSED)
 {
@@ -280,7 +280,7 @@ static int show_tree_name_only(const struct object_id *oid, struct strbuf *base,
 	return recurse;
 }
 
-static int show_tree_object(const struct object_id *oid, struct strbuf *base,
+static int show_tree_object(struct repository *repo, const struct object_id *oid, struct strbuf *base,
 			    const char *pathname, unsigned mode,
 			    void *context UNUSED)
 {
@@ -292,7 +292,7 @@ static int show_tree_object(const struct object_id *oid, struct strbuf *base,
 	if (early >= 0)
 		return early;
 
-	printf("%s%c", find_unique_abbrev(oid, abbrev), line_termination);
+	printf("%s%c", repo_find_unique_abbrev(repo, oid, abbrev), line_termination);
 	return recurse;
 }
 

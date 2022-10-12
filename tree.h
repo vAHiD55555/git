@@ -18,11 +18,14 @@ struct tree *lookup_tree(struct repository *r, const struct object_id *oid);
 
 int parse_tree_buffer(struct tree *item, void *buffer, unsigned long size);
 
-int parse_tree_gently(struct tree *tree, int quiet_on_missing);
-static inline int parse_tree(struct tree *tree)
+int parse_tree_gently(struct repository *r, struct tree *tree, int quiet_on_missing);
+static inline int repo_parse_tree(struct repository *r, struct tree *tree)
 {
-	return parse_tree_gently(tree, 0);
+	return parse_tree_gently(r, tree, 0);
 }
+#ifndef NO_THE_REPOSITORY_COMPATIBILITY_MACROS
+#define parse_tree(tree) repo_parse_tree(the_repository, tree)
+#endif
 void free_tree_buffer(struct tree *tree);
 
 /* Parses and returns the tree in the given ent, chasing tags and commits. */
@@ -31,7 +34,7 @@ struct tree *parse_tree_indirect(const struct object_id *oid);
 int cmp_cache_name_compare(const void *a_, const void *b_);
 
 #define READ_TREE_RECURSIVE 1
-typedef int (*read_tree_fn_t)(const struct object_id *, struct strbuf *, const char *, unsigned int, void *);
+typedef int (*read_tree_fn_t)(struct repository *, const struct object_id *, struct strbuf *, const char *, unsigned int, void *);
 
 int read_tree_at(struct repository *r,
 		 struct tree *tree, struct strbuf *base,
