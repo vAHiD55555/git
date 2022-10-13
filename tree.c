@@ -64,35 +64,52 @@ int read_tree_at(struct repository *r,
 			struct repository subrepo;
 			struct repository* subrepo_p = &subrepo;
 			struct tree* submodule_tree;
+			char *submodule_rel_path;
+			int name_base_len = 0;
 
-			if (repo_submodule_init(subrepo_p, r, entry.path, null_oid()))
-				die("couldn't init submodule %s%s", base->buf, entry.path);
+			len = tree_entry_len(&entry);
+			strbuf_add(base, entry.path, len);
+			submodule_rel_path = base->buf;
+			// repo_submodule_init expects a path relative to submodule_prefix
+			if (r->submodule_prefix) {
+				name_base_len = strlen(r->submodule_prefix);
+				// we should always expect to start with submodule_prefix
+				assert(!strncmp(submodule_rel_path, r->submodule_prefix, name_base_len));
+				// strip the prefix
+				submodule_rel_path += name_base_len;
+				// if submodule_prefix doesn't end with a /, we want to get rid of that too
+				if (is_dir_sep(submodule_rel_path[0])) {
+					submodule_rel_path++;
+				}
+			}
+
+			if (repo_submodule_init(subrepo_p, r, submodule_rel_path, null_oid()))
+				die("couldn't init submodule %s", base->buf);
 
 			if (repo_read_index(subrepo_p) < 0)
 				die("index file corrupt");
 
 			commit = lookup_commit(subrepo_p, &entry.oid);
 			if (!commit)
-				die("Commit %s in submodule path %s%s not found",
+				die("Commit %s in submodule path %s not found",
 				    oid_to_hex(&entry.oid),
-				    base->buf, entry.path);
+				    base->buf);
 
 			if (repo_parse_commit(subrepo_p, commit))
-				die("Invalid commit %s in submodule path %s%s",
+				die("Invalid commit %s in submodule path %s",
 				    oid_to_hex(&entry.oid),
-				    base->buf, entry.path);
+				    base->buf);
 
 			submodule_tree = repo_get_commit_tree(subrepo_p, commit);
 			oidcpy(&oid, submodule_tree ? &submodule_tree->object.oid : NULL);
 
-			len = tree_entry_len(&entry);
-			strbuf_add(base, entry.path, len);
 			strbuf_addch(base, '/');
+
 			retval = read_tree_at(subrepo_p, lookup_tree(subrepo_p, &oid),
 						base, pathspec,
 						fn, context);
 			if (retval) {
-			    die("failed to read tree for %s%s", base->buf, entry.path);
+			    die("failed to read tree for %s", base->buf);
 			    return -1;
 			}
 			strbuf_setlen(base, oldlen);
