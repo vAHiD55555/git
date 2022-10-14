@@ -8,13 +8,13 @@ export GIT_TEST_DEFAULT_INITIAL_BRANCH_NAME
 . ./test-lib.sh
 
 test_expect_success 'setup' '
-	as="a a a a a a a a" && # eight a
-	test_write_lines $as >foo &&
-	test_write_lines $as >bar &&
+	str="ab cd ef gh ij kl mn op" &&
+	test_write_lines $str >foo &&
+	test_write_lines $str >bar &&
 	git add foo bar &&
 	git commit -a -m initial &&
-	test_write_lines $as b >foo &&
-	test_write_lines $as b >bar &&
+	test_write_lines $str b >foo &&
+	test_write_lines $str b >bar &&
 	git commit -a -m first &&
 	git checkout -b same main &&
 	git commit --amend -m same-msg &&
@@ -22,8 +22,23 @@ test_expect_success 'setup' '
 	echo c >foo &&
 	echo c >bar &&
 	git commit --amend -a -m notsame-msg &&
+	git checkout -b with_space main~ &&
+	cat >foo <<-\EOF &&
+	a  b
+	c d
+	e    f
+	  g   h
+	    i   j
+	k l
+	m   n
+	op
+	EOF
+	cp foo bar &&
+	git add foo bar &&
+	git commit --amend -m "with spaces" &&
 	test_write_lines bar foo >bar-then-foo &&
 	test_write_lines foo bar >foo-then-bar
+
 '
 
 test_expect_success 'patch-id output is well-formed' '
@@ -128,8 +143,20 @@ test_patch_id_file_order () {
 	git format-patch -1 --stdout -O foo-then-bar >format-patch.output &&
 	calc_patch_id <format-patch.output "ordered-$name" "$@" &&
 	cmp_patch_id $relevant "$name" "ordered-$name"
-
 }
+
+test_patch_id_whitespace () {
+	relevant="$1"
+	shift
+	name="ws-${1}-$relevant"
+	shift
+	get_top_diff "main~" >top-diff.output &&
+	calc_patch_id <top-diff.output "$name" "$@" &&
+	get_top_diff "with_space" >top-diff.output &&
+	calc_patch_id <top-diff.output "ws-$name" "$@" &&
+	cmp_patch_id $relevant "$name" "ws-$name"
+}
+
 
 # combined test for options: add more tests here to make them
 # run with all options
@@ -144,6 +171,14 @@ test_expect_success 'file order is irrelevant with --stable' '
 
 test_expect_success 'file order is relevant with --unstable' '
 	test_patch_id_file_order relevant --unstable --unstable
+'
+
+test_expect_success 'whitespace is relevant with --include-whitespace' '
+	test_patch_id_whitespace relevant --include-whitespace --include-whitespace
+'
+
+test_expect_success 'whitespace is irrelevant without --include-whitespace' '
+	test_patch_id_whitespace irrelevant --stable --stable
 '
 
 #Now test various option combinations.
@@ -161,6 +196,17 @@ test_expect_success 'patchid.stable = false is unstable' '
 	test_patch_id relevant patchid.stable=false
 '
 
+test_expect_success 'patchid.includeWhitespace = true is correct and stable' '
+	test_config patchid.includeWhitespace true &&
+	test_patch_id_whitespace relevant patchid.includeWhitespace=true &&
+	test_patch_id irrelevant patchid.includeWhitespace=true
+'
+
+test_expect_success 'patchid.includeWhitespace = false is unstable' '
+	test_config patchid.includeWhitespace false &&
+	test_patch_id relevant patchid.includeWhitespace=false
+'
+
 test_expect_success '--unstable overrides patchid.stable = true' '
 	test_config patchid.stable true &&
 	test_patch_id relevant patchid.stable=true--unstable --unstable
@@ -169,6 +215,11 @@ test_expect_success '--unstable overrides patchid.stable = true' '
 test_expect_success '--stable overrides patchid.stable = false' '
 	test_config patchid.stable false &&
 	test_patch_id irrelevant patchid.stable=false--stable --stable
+'
+
+test_expect_success '--include-whitespace overrides patchid.stable = false' '
+	test_config patchid.stable false &&
+	test_patch_id_whitespace relevant stable=false--include-whitespace --include-whitespace
 '
 
 test_expect_success 'patch-id supports git-format-patch MIME output' '
@@ -225,7 +276,10 @@ test_expect_success 'patch-id handles no-nl-at-eof markers' '
 	EOF
 	calc_patch_id nonl <nonl &&
 	calc_patch_id withnl <withnl &&
-	test_cmp patch-id_nonl patch-id_withnl
+	test_cmp patch-id_nonl patch-id_withnl &&
+	calc_patch_id nonl-inc-ws --include-whitespace <nonl &&
+	calc_patch_id withnl-inc-ws --include-whitespace <withnl &&
+	! test_cmp patch-id_nonl-inc-ws patch-id_withnl-inc-ws
 '
 
 test_expect_success 'patch-id handles diffs with one line of before/after' '
