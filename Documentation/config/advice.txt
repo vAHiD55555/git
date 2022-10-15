@@ -57,6 +57,9 @@ advice.*::
 		and that calculation takes longer than expected. Will not
 		appear if `status.aheadBehind` is false or the option
 		`--no-ahead-behind` is given.
+	statusFsmonitor::
+		Shown when the linkgit:git-status[1] command takes more than
+		2 seconds to enumerate untracked files, and fsmonitor is enabled.
 	statusHints::
 		Show directions on how to proceed from the current
 		state in the output of linkgit:git-status[1], in
