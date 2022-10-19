@@ -32,7 +32,8 @@ test_expect_success 'read_tree basic' '
 '
 
 test_expect_success 'read_tree submodules' '
-	rm -rf walk_tree_submodules &&
+	git config --global protocol.file.allow always &&
+	rm -rf submodule1 &&
 	git init submodule1 &&
 	(
 		cd submodule1 &&
@@ -42,6 +43,7 @@ test_expect_success 'read_tree submodules' '
 		git add file1.txt dir1/dirA/file1.txt &&
 		git commit -m "initial commit"
 	) &&
+	rm -rf walk_tree_submodules &&
 	git init walk_tree_submodules &&
 	(
 		cd walk_tree_submodules &&

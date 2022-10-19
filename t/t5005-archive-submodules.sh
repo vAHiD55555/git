@@ -4,7 +4,7 @@ test_description='git archive --recurse-submodules test'
 
 . ./test-lib.sh
 
-check_tar() {
+check_tar () {
 	tarfile=$1.tar
 	listfile=$1.lst
 	dir=$1
@@ -15,7 +15,7 @@ check_tar() {
 	'
 }
 
-check_added() {
+check_added () {
 	dir=$1
 	path_in_fs=$2
 	path_in_archive=$3
@@ -26,7 +26,7 @@ check_added() {
 	'
 }
 
-check_not_added() {
+check_not_added () {
 	dir=$1
 	path_in_archive=$2
 
@@ -37,6 +37,7 @@ check_not_added() {
 }
 
 test_expect_success 'setup' '
+	git config --global protocol.file.allow always &&
 	rm -rf repo_with_submodules submodule1 uninited_repo_with_submodules &&
 	git init repo_with_submodules &&
 	git init submodule1 &&
