@@ -1,0 +1,133 @@
+--
+`badDate`;;
+	Invalid date format in an author/committer line.
+
+`badEmail`;;
+	Invalid email format in an author/committer line.
+
+`badFilemode`;;
+	A tree contains a bad filemode entry.
+
+`badName`;;
+	An author/committer name is empty.
+
+`badObjectSha1`;;
+	An object has a bad sha1.
+
+`badParentSha1`;;
+	A commit object has a bad parent sha1.
+
+`badTagName`;;
+	A tag has an invalid format.
+
+`badTimezone`;;
+	Found an invalid time zone in an author/committer line.
+
+`badTree`;;
+	A tree cannot be parsed.
+
+`badTreeSha1`;;
+	A tree has an invalid format.
+
+`badType`;;
+	Found an invalid object type.
+
+`duplicateEntries`;;
+	A tree contains duplicate file entries.
+
+`emptyName`;;
+	A path contains an empty name.
+
+`fullPathName`;;
+	A path contains the full path starting with "/".
+
+`gitAttributesSymlink`;;
+	`.gitattributes` is a symlink.
+
+`gitignoreSymlink`;;
+	`.gitignore` is a symlink.
+
+`gitmodulesBlob`;;
+	A non-blob found at `.gitmodules`.
+
+`gitmodulesMissing`;;
+	Unable to read `.gitmodules` blob.
+
+`gitmodulesName`;;
+	A submodule name is invalid.
+
+`gitmodulesParse`;;
+	Could not parse `.gitmodules` blob.
+
+`gitmodulesLarge`;
+	`.gitmodules` blob is too large to parse.
+
+`gitmodulesPath`;;
+	`.gitmodules` path is invalid.
+
+`gitmodulesSymlink`;;
+	`.gitmodules` is a symlink.
+
+`gitmodulesUpdate`;;
+	Found an invalid submodule update setting.
+
+`gitmodulesUrl`;;
+	Found an invalid submodule url.
+
+`hasDot`;;
+	A tree contains an entry named `.`.
+
+`hasDotdot`;;
+	A tree contains an entry named `..`.
+
+`hasDotgit`;;
+	A tree contains an entry named `.git`.
+
+`mailmapSymlink`;;
+	`.mailmap` is a symlink.
+
+`missingAuthor`;;
+	Author is missing.
+
+`missingCommitter`;;
+	Committer is missing.
+
+`missingEmail`;;
+	Email is missing in an author/committer line.
+
+`missingNameBeforeEmail`;;
+	Missing space before an email in an author/committer line.
+
+`missingObject`;;
+	Missing `object` line in tag object.
+
+`missingSpaceBeforeDate`;;
+	Missing space before date in an author/committer line.
+
+`missingSpaceBeforeEmail`;;
+	Missing space before the email in author/committer line.
+
+`missingTag`;;
+	Unexpected end after `type` line in a tag object.
+
+`missingTypeEntry`;;
+	Missing `type` line in a tag object.
+
+`multipleAuthors`;;`
+	Multiple author lines found in a commit.
+
+`nulInCommit`;;
+	Found a NUL byte in the commit object body.
+
+`treeNotSorted`;;
+	A tree is not properly sorted.
+
+`unknownType`;;
+	Found an unknown object type.
+
+`zeroPaddingDate`;;
+	Found a zero padded date in an author/commiter line.
+
+`zeroPaddedFilemode`;;
+	Found a zero padded filemode in a tree.
+--

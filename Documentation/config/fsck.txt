@@ -35,6 +35,11 @@ allow new instances of the same breakages go unnoticed.
 Setting an unknown `fsck.<msg-id>` value will cause fsck to die, but
 doing the same for `receive.fsck.<msg-id>` and `fetch.fsck.<msg-id>`
 will only cause git to warn.
++
+The following `<msg-id>` are supported:
++
+
+include::../fsck-msgids.txt[]
 
 fsck.skipList::
 	The path to a list of object names (i.e. one unabbreviated SHA-1 per
