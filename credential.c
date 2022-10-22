@@ -7,6 +7,7 @@
 #include "prompt.h"
 #include "sigchain.h"
 #include "urlmatch.h"
+#include "git-compat-util.h"
 
 void credential_init(struct credential *c)
 {
@@ -195,14 +196,19 @@ static void credential_getpass(struct credential *c)
 	if (!c->username)
 		c->username = credential_ask_one("Username", c,
 						 PROMPT_ASKPASS|PROMPT_ECHO);
-	if (!c->password)
+	if (!c->password || c->password_expiry_utc < time(NULL)) {
+		c->password_expiry_utc = TIME_MAX;
 		c->password = credential_ask_one("Password", c,
 						 PROMPT_ASKPASS);
+	}
 }
 
 int credential_read(struct credential *c, FILE *fp)
 {
 	struct strbuf line = STRBUF_INIT;
+
+	int password_updated = 0;
+	timestamp_t this_password_expiry = TIME_MAX;
 
 	while (strbuf_getline(&line, fp) != EOF) {
 		char *key = line.buf;
@@ -225,6 +231,7 @@ int credential_read(struct credential *c, FILE *fp)
 		} else if (!strcmp(key, "password")) {
 			free(c->password);
 			c->password = xstrdup(value);
+			password_updated = 1;
 		} else if (!strcmp(key, "protocol")) {
 			free(c->protocol);
 			c->protocol = xstrdup(value);
@@ -234,6 +241,11 @@ int credential_read(struct credential *c, FILE *fp)
 		} else if (!strcmp(key, "path")) {
 			free(c->path);
 			c->path = xstrdup(value);
+		} else if (!strcmp(key, "password_expiry_utc")) {
+			this_password_expiry = parse_timestamp(value, NULL, 10);
+			if (this_password_expiry == 0 || errno) {
+				this_password_expiry = TIME_MAX;
+			}
 		} else if (!strcmp(key, "url")) {
 			credential_from_url(c, value);
 		} else if (!strcmp(key, "quit")) {
@@ -245,6 +257,9 @@ int credential_read(struct credential *c, FILE *fp)
 		 * learn new lines, and the helpers are updated to match.
 		 */
 	}
+
+	if (password_updated)
+		c->password_expiry_utc = this_password_expiry;
 
 	strbuf_release(&line);
 	return 0;
@@ -269,6 +284,11 @@ void credential_write(const struct credential *c, FILE *fp)
 	credential_write_item(fp, "path", c->path, 0);
 	credential_write_item(fp, "username", c->username, 0);
 	credential_write_item(fp, "password", c->password, 0);
+	if (c->password_expiry_utc != TIME_MAX) {
+		char *s = xstrfmt("%"PRItime, c->password_expiry_utc);
+		credential_write_item(fp, "password_expiry_utc", s, 0);
+		free(s);
+	}
 }
 
 static int run_credential_helper(struct credential *c,
@@ -342,7 +362,7 @@ void credential_fill(struct credential *c)
 
 	for (i = 0; i < c->helpers.nr; i++) {
 		credential_do(c, c->helpers.items[i].string, "get");
-		if (c->username && c->password)
+		if (c->username && c->password && time(NULL) < c->password_expiry_utc)
 			return;
 		if (c->quit)
 			die("credential helper '%s' told us to quit",
