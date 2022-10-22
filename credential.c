@@ -7,6 +7,7 @@
 #include "prompt.h"
 #include "sigchain.h"
 #include "urlmatch.h"
+#include <time.h>
 
 void credential_init(struct credential *c)
 {
@@ -21,6 +22,7 @@ void credential_clear(struct credential *c)
 	free(c->path);
 	free(c->username);
 	free(c->password);
+	c->password_expiry_utc = 0;
 	string_list_clear(&c->helpers, 0);
 
 	credential_init(c);
@@ -234,11 +236,23 @@ int credential_read(struct credential *c, FILE *fp)
 		} else if (!strcmp(key, "path")) {
 			free(c->path);
 			c->path = xstrdup(value);
+		} else if (!strcmp(key, "password_expiry_utc")) {
+			// TODO: ignore if can't parse integer
+			c->password_expiry_utc = atoi(value);
 		} else if (!strcmp(key, "url")) {
 			credential_from_url(c, value);
 		} else if (!strcmp(key, "quit")) {
 			c->quit = !!git_config_bool("quit", value);
 		}
+
+		// if expiry date has passed, ignore password and expiry fields
+		if (c->password_expiry_utc != 0 && time(NULL) > c->password_expiry_utc) {
+			trace_printf(_("Password has expired.\n"));
+			FREE_AND_NULL(c->username);
+			FREE_AND_NULL(c->password);
+			c->password_expiry_utc = 0;
+		}
+
 		/*
 		 * Ignore other lines; we don't know what they mean, but
 		 * this future-proofs us when later versions of git do
@@ -269,6 +283,13 @@ void credential_write(const struct credential *c, FILE *fp)
 	credential_write_item(fp, "path", c->path, 0);
 	credential_write_item(fp, "username", c->username, 0);
 	credential_write_item(fp, "password", c->password, 0);
+	if (c->password_expiry_utc != 0) {
+		int length = snprintf( NULL, 0, "%ld", c->password_expiry_utc);
+		char* str = malloc( length + 1 );
+		snprintf( str, length + 1, "%ld", c->password_expiry_utc );
+		credential_write_item(fp, "password_expiry_utc", str, 0);
+		free(str);
+	}
 }
 
 static int run_credential_helper(struct credential *c,

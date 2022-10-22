@@ -126,6 +126,7 @@ struct credential {
 	char *protocol;
 	char *host;
 	char *path;
+	time_t password_expiry_utc;
 };
 
 #define CREDENTIAL_INIT { \
