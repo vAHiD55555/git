@@ -1104,6 +1104,13 @@ static inline void move_array(void *dst, const void *src, size_t n, size_t size)
 }
 
 /*
+ * Like CALLOC_ARRAY, but pointers to a single struct.
+ *
+ * Preferable over xcalloc(1, sizeof(...)).
+ */
+#define CALLOC(x) (x) = CALLOC_ARRAY((x), 1)
+
+/*
  * These functions help you allocate structs with flex arrays, and copy
  * the data directly into the array. For example, if you had:
  *
