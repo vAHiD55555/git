@@ -257,6 +257,15 @@ test_expect_success 'format.from with address' '
 	grep "^From: F R Om <from@example.com>\$" hdrs
 '
 
+test_expect_success 'format.<branch>.from with address' '
+	test_config format.from "F R Om <from@config.com>" &&
+	test_config format.side.from "F R Om <from@side.com>" &&
+	git format-patch --stdout main..side >patch &&
+	sed -e "/^\$/q" patch >hdrs &&
+	check_patch hdrs &&
+	grep "^From: F R Om <from@side.com>\$" hdrs
+'
+
 test_expect_success '--no-from overrides format.from' '
 	git -c format.from="F R Om <from@example.com>" format-patch --no-from --stdout main..side >patch &&
 	sed -e "/^\$/q" patch >hdrs &&

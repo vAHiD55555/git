@@ -1,4 +1,5 @@
 format.attach::
+format.<branch>.attach::
 	Enable multipart/mixed attachments as the default for
 	'format-patch'.  The value can also be a double quoted string
 	which will enable attachments as the default and set the
@@ -6,6 +7,7 @@ format.attach::
 	linkgit:git-format-patch[1].
 
 format.from::
+format.<branch>.from::
 	Provides the default value for the `--from` option to format-patch.
 	Accepts a boolean value, or a name and email address.  If false,
 	format-patch defaults to `--no-from`, using commit authors directly in
@@ -16,10 +18,12 @@ format.from::
 	value instead of your committer identity.  Defaults to false.
 
 format.forceInBodyFrom::
+format.<from>.forceInBodyFrom::
 	Provides the default value for the `--[no-]force-in-body-from`
 	option to format-patch.  Defaults to false.
 
 format.numbered::
+format.<branch>.numbered::
 	A boolean which can enable or disable sequence numbers in patch
 	subjects.  It defaults to "auto" which enables it only if there
 	is more than one patch.  It can be enabled or disabled for all
@@ -27,11 +31,14 @@ format.numbered::
 	option in linkgit:git-format-patch[1].
 
 format.headers::
+format.<branch>.headers::
 	Additional email headers to include in a patch to be submitted
 	by mail.  See linkgit:git-format-patch[1].
 
 format.to::
+format.<branch>.to::
 format.cc::
+format.<branch>.cc::
 	Additional recipients to include in a patch to be submitted
 	by mail.  See the --to and --cc options in
 	linkgit:git-format-patch[1].
@@ -41,22 +48,26 @@ format.subjectPrefix::
 	subject prefix. Use this variable to change that prefix.
 
 format.coverFromDescription::
+format.<branch>.coverFromDescription::
 	The default mode for format-patch to determine which parts of
 	the cover letter will be populated using the branch's
 	description. See the `--cover-from-description` option in
 	linkgit:git-format-patch[1].
 
 format.signature::
+format.<branch>.signature::
 	The default for format-patch is to output a signature containing
 	the Git version number. Use this variable to change that default.
 	Set this variable to the empty string ("") to suppress
 	signature generation.
 
 format.signatureFile::
+format.<branch>.signatureFile::
 	Works just like format.signature except the contents of the
 	file specified by this variable will be used as the signature.
 
 format.suffix::
+format.<branch>.suffix::
 	The default for format-patch is to output files with the suffix
 	`.patch`. Use this variable to change that suffix (make sure to
 	include the dot if you want it).
@@ -72,6 +83,7 @@ format.pretty::
 	linkgit:git-whatchanged[1].
 
 format.thread::
+format.<branch>.thread::
 	The default threading style for 'git format-patch'.  Can be
 	a boolean value, or `shallow` or `deep`.  `shallow` threading
 	makes every mail a reply to the head of the series,
@@ -82,6 +94,7 @@ format.thread::
 	value disables threading.
 
 format.signOff::
+format.<branch>.signOff::
 	A boolean value which lets you enable the `-s/--signoff` option of
 	format-patch by default. *Note:* Adding the `Signed-off-by` trailer to a
 	patch should be a conscious act and means that you certify you have
@@ -89,12 +102,14 @@ format.signOff::
 	Please see the 'SubmittingPatches' document for further discussion.
 
 format.coverLetter::
+format.<branch>.coverLetter::
 	A boolean that controls whether to generate a cover-letter when
 	format-patch is invoked, but in addition can be set to "auto", to
 	generate a cover-letter only when there's more than one patch.
 	Default is false.
 
 format.outputDirectory::
+format.<branch>.outputDirectory::
 	Set a custom directory to store the resulting files instead of the
 	current working directory. All directory components will be created.
 
@@ -104,12 +119,14 @@ format.filenameMaxLength::
 	by the `--filename-max-length=<n>` command line option.
 
 format.useAutoBase::
+format.<branch>.useAutoBase::
 	A boolean value which lets you enable the `--base=auto` option of
 	format-patch by default. Can also be set to "whenAble" to allow
 	enabling `--base=auto` if a suitable base is available, but to skip
 	adding base info otherwise without the format dying.
 
 format.notes::
+format.<branch>.notes::
 	Provides the default value for the `--notes` option to
 	format-patch. Accepts a boolean value, or a ref which specifies
 	where to get notes. If false, format-patch defaults to

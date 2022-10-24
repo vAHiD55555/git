@@ -981,6 +981,9 @@ static int git_format_config(const char *var, const char *value, void *cb)
 	if (parse_config_key(var, "format", &branch, &branch_len, &key) < 0)
 		goto done;
 
+	if (cb && strncmp((const char *)cb, branch, branch_len))
+		return 0;
+
 	if (!strcmp(key, "headers")) {
 		if (!value)
 			die(_("format.headers without value"));
@@ -1996,6 +1999,11 @@ int cmd_format_patch(int argc, const char **argv, const char *prefix)
 		rev.mime_boundary = default_attach;
 		rev.no_inline = 1;
 	}
+
+	if (!branch_name)
+		branch_name = find_branch_name(&rev);
+	if (branch_name)
+		git_config(git_format_config, branch_name);
 
 	/*
 	 * Parse the arguments before setup_revisions(), or something
