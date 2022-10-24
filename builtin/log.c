@@ -971,31 +971,37 @@ static enum cover_from_description parse_cover_from_description(const char *arg)
 
 static int git_format_config(const char *var, const char *value, void *cb)
 {
+	const char *branch, *key;
+	size_t branch_len;
+
 	if (!strcmp(var, "diff.color") || !strcmp(var, "color.diff") ||
 	    !strcmp(var, "color.ui") || !strcmp(var, "diff.submodule"))
 		return 0;
 
-	if (!strcmp(var, "format.headers")) {
+	if (parse_config_key(var, "format", &branch, &branch_len, &key) < 0)
+		goto done;
+
+	if (!strcmp(key, "headers")) {
 		if (!value)
 			die(_("format.headers without value"));
 		add_header(value);
 		return 0;
 	}
-	if (!strcmp(var, "format.suffix"))
+	if (!strcmp(key, "suffix"))
 		return git_config_string(&fmt_patch_suffix, var, value);
-	if (!strcmp(var, "format.to")) {
+	if (!strcmp(key, "to")) {
 		if (!value)
 			return config_error_nonbool(var);
 		string_list_append(&extra_to, value);
 		return 0;
 	}
-	if (!strcmp(var, "format.cc")) {
+	if (!strcmp(key, "cc")) {
 		if (!value)
 			return config_error_nonbool(var);
 		string_list_append(&extra_cc, value);
 		return 0;
 	}
-	if (!strcmp(var, "format.numbered")) {
+	if (!strcmp(key, "numbered")) {
 		if (value && !strcasecmp(value, "auto")) {
 			auto_number = 1;
 			return 0;
@@ -1004,14 +1010,14 @@ static int git_format_config(const char *var, const char *value, void *cb)
 		auto_number = auto_number && numbered;
 		return 0;
 	}
-	if (!strcmp(var, "format.attach")) {
+	if (!strcmp(key, "attach")) {
 		if (value && *value)
 			default_attach = xstrdup(value);
 		else
 			default_attach = xstrdup(git_version_string);
 		return 0;
 	}
-	if (!strcmp(var, "format.thread")) {
+	if (!strcmp(key, "thread")) {
 		if (value && !strcasecmp(value, "deep")) {
 			thread = THREAD_DEEP;
 			return 0;
@@ -1023,15 +1029,15 @@ static int git_format_config(const char *var, const char *value, void *cb)
 		thread = git_config_bool(var, value) ? THREAD_SHALLOW : THREAD_UNSET;
 		return 0;
 	}
-	if (!strcmp(var, "format.signoff")) {
+	if (!strcmp(key, "signoff")) {
 		do_signoff = git_config_bool(var, value);
 		return 0;
 	}
-	if (!strcmp(var, "format.signature"))
+	if (!strcmp(key, "signature"))
 		return git_config_string(&signature, var, value);
-	if (!strcmp(var, "format.signaturefile"))
+	if (!strcmp(key, "signaturefile"))
 		return git_config_pathname(&signature_file, var, value);
-	if (!strcmp(var, "format.coverletter")) {
+	if (!strcmp(key, "coverletter")) {
 		if (value && !strcasecmp(value, "auto")) {
 			config_cover_letter = COVER_AUTO;
 			return 0;
@@ -1039,9 +1045,9 @@ static int git_format_config(const char *var, const char *value, void *cb)
 		config_cover_letter = git_config_bool(var, value) ? COVER_ON : COVER_OFF;
 		return 0;
 	}
-	if (!strcmp(var, "format.outputdirectory"))
+	if (!strcmp(key, "outputdirectory"))
 		return git_config_string(&config_output_directory, var, value);
-	if (!strcmp(var, "format.useautobase")) {
+	if (!strcmp(key, "useautobase")) {
 		if (value && !strcasecmp(value, "whenAble")) {
 			auto_base = AUTO_BASE_WHEN_ABLE;
 			return 0;
@@ -1049,7 +1055,7 @@ static int git_format_config(const char *var, const char *value, void *cb)
 		auto_base = git_config_bool(var, value) ? AUTO_BASE_ALWAYS : AUTO_BASE_NEVER;
 		return 0;
 	}
-	if (!strcmp(var, "format.from")) {
+	if (!strcmp(key, "from")) {
 		int b = git_parse_maybe_bool(value);
 		free(from);
 		if (b < 0)
@@ -1060,11 +1066,11 @@ static int git_format_config(const char *var, const char *value, void *cb)
 			from = NULL;
 		return 0;
 	}
-	if (!strcmp(var, "format.forceinbodyfrom")) {
+	if (!strcmp(key, "forceinbodyfrom")) {
 		force_in_body_from = git_config_bool(var, value);
 		return 0;
 	}
-	if (!strcmp(var, "format.notes")) {
+	if (!strcmp(key, "notes")) {
 		int b = git_parse_maybe_bool(value);
 		if (b < 0)
 			enable_ref_display_notes(&notes_opt, &show_notes, value);
@@ -1074,11 +1080,12 @@ static int git_format_config(const char *var, const char *value, void *cb)
 			disable_display_notes(&notes_opt, &show_notes);
 		return 0;
 	}
-	if (!strcmp(var, "format.coverfromdescription")) {
+	if (!strcmp(key, "coverfromdescription")) {
 		cover_from_description_mode = parse_cover_from_description(value);
 		return 0;
 	}
 
+done:
 	return git_log_config(var, value, cb);
 }
 
