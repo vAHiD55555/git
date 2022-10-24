@@ -971,6 +971,10 @@ static enum cover_from_description parse_cover_from_description(const char *arg)
 
 static int git_format_config(const char *var, const char *value, void *cb)
 {
+	if (!strcmp(var, "diff.color") || !strcmp(var, "color.diff") ||
+	    !strcmp(var, "color.ui") || !strcmp(var, "diff.submodule"))
+		return 0;
+
 	if (!strcmp(var, "format.headers")) {
 		if (!value)
 			die(_("format.headers without value"));
@@ -989,10 +993,6 @@ static int git_format_config(const char *var, const char *value, void *cb)
 		if (!value)
 			return config_error_nonbool(var);
 		string_list_append(&extra_cc, value);
-		return 0;
-	}
-	if (!strcmp(var, "diff.color") || !strcmp(var, "color.diff") ||
-	    !strcmp(var, "color.ui") || !strcmp(var, "diff.submodule")) {
 		return 0;
 	}
 	if (!strcmp(var, "format.numbered")) {
