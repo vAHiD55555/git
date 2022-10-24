@@ -65,6 +65,14 @@ test_expect_success 'out of bounds index.version issues warning' '
 	)
 '
 
+test_expect_success 'index.skipHash config option' '
+	(
+		rm -f .git/index &&
+		git -c index.skipHash=true add a &&
+		git fsck
+	)
+'
+
 test_index_version () {
 	INDEX_VERSION_CONFIG=$1 &&
 	FEATURE_MANY_FILES=$2 &&
