@@ -555,6 +555,13 @@ static int cmd_log_walk(struct rev_info *rev)
 static int git_log_config(const char *var, const char *value, void *cb)
 {
 	const char *slot_name;
+	const char *branch = NULL, *key = NULL;
+	size_t branch_len = 0;
+
+	parse_config_key(var, "format", &branch, &branch_len, &key);
+
+	if (cb && strncmp((const char *)cb, branch, branch_len))
+		return 0;
 
 	if (!strcmp(var, "format.pretty"))
 		return git_config_string(&fmt_pretty, var, value);

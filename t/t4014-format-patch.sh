@@ -348,16 +348,19 @@ test_expect_success 'filename length limit from config' '
 	rm -rf 000[1-9]-*.patch &&
 	for len in 15 25 35
 	do
-		git -c format.filenameMaxLength=$len format-patch -3 side &&
-		max=$(
-			for patch in 000[1-9]-*.patch
-			do
-				echo "$patch" | wc -c || exit 1
-			done |
-			sort -nr |
-			head -n 1
-		) &&
-		test $max -le $len || return 1
+		for key in format.filenameMaxLength format.side.filenameMaxLength
+		do
+			git -c $key=$len format-patch -3 side &&
+			max=$(
+				for patch in 000[1-9]-*.patch
+				do
+					echo "$patch" | wc -c || exit 1
+				done |
+				sort -nr |
+				head -n 1
+			) &&
+			test $max -le $len || return 1
+		done
 	done
 '
 
