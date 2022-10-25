@@ -1547,11 +1547,11 @@ void clear_midx_file(struct repository *r)
 		r->objects->multi_pack_index = NULL;
 	}
 
-	if (remove_path(midx.buf))
-		die(_("failed to clear multi-pack-index at %s"), midx.buf);
-
 	clear_midx_files_ext(r->objects->odb->path, ".bitmap", NULL);
 	clear_midx_files_ext(r->objects->odb->path, ".rev", NULL);
+
+	if (remove_path(midx.buf))
+		die(_("failed to clear multi-pack-index at %s"), midx.buf);
 
 	strbuf_release(&midx);
 }
