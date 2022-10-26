@@ -222,7 +222,7 @@ no)
 
 			annotate_merge "$branch" || exit
 			test -z "$edit" ||
-			git commit --amend || exit
+			git commit --amend </dev/tty || exit
 
 			this=$(git rev-parse --verify HEAD)
 			if test "$this" = "$save"
