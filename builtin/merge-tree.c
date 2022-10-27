@@ -3,6 +3,7 @@
 #include "tree-walk.h"
 #include "xdiff-interface.h"
 #include "help.h"
+#include "commit.h"
 #include "commit-reach.h"
 #include "merge-ort.h"
 #include "object-store.h"
@@ -402,6 +403,7 @@ struct merge_tree_options {
 	int allow_unrelated_histories;
 	int show_messages;
 	int name_only;
+	char* merge_base;
 };
 
 static int real_merge(struct merge_tree_options *o,
@@ -430,11 +432,18 @@ static int real_merge(struct merge_tree_options *o,
 	opt.branch1 = branch1;
 	opt.branch2 = branch2;
 
-	/*
-	 * Get the merge bases, in reverse order; see comment above
-	 * merge_incore_recursive in merge-ort.h
-	 */
-	merge_bases = get_merge_bases(parent1, parent2);
+	if (o->merge_base) {
+		struct commit *c = lookup_commit_reference_by_name(o->merge_base);
+		if (!c)
+			die(_("could not lookup commit %s"), o->merge_base);
+		commit_list_insert(c, &merge_bases);
+	} else {
+		/*
+		 * Get the merge bases, in reverse order; see comment above
+		 * merge_incore_recursive in merge-ort.h
+		 */
+		merge_bases = get_merge_bases(parent1, parent2);
+	}
 	if (!merge_bases && !o->allow_unrelated_histories)
 		die(_("refusing to merge unrelated histories"));
 	merge_bases = reverse_commit_list(merge_bases);
@@ -505,6 +514,10 @@ int cmd_merge_tree(int argc, const char **argv, const char *prefix)
 			   &o.allow_unrelated_histories,
 			   N_("allow merging unrelated histories"),
 			   PARSE_OPT_NONEG),
+		OPT_STRING(0, "merge-base",
+			 &o.merge_base,
+			 N_("commit"),
+			 N_("specify a merge-base commit for the merge")),
 		OPT_END()
 	};
 
