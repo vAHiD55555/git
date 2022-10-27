@@ -819,4 +819,27 @@ test_expect_success SANITY 'merge-ort fails gracefully in a read-only repository
 	test_must_fail git -C read-only merge-tree side1 side2
 '
 
+test_expect_success 'specify merge-base as parent of branch2' '
+	# Setup
+	git init base-b2-p && (
+		cd base-b2-p &&
+		test_commit c1 file1 &&
+		test_commit c2 file2 &&
+		test_commit c3 file3
+	) &&
+	# Testing
+	(
+		cd base-b2-p &&
+		TREE_OID=$(git merge-tree --write-tree --merge-base=c2 c1 c3) &&
+
+		q_to_tab <<-EOF >expect &&
+		100644 blob $(git rev-parse c1:file1)Qfile1
+		100644 blob $(git rev-parse c3:file3)Qfile3
+		EOF
+
+		git ls-tree $TREE_OID >actual &&
+		test_cmp expect actual
+	)
+'
+
 test_done
