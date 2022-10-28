@@ -457,6 +457,33 @@ during the write may conflict with other simultaneous processes, causing
 them to fail. Scripts running `status` in the background should consider
 using `git --no-optional-locks status` (see linkgit:git[1] for details).
 
+UNTRACKED FILES AND STATUS SPEED
+--------------------------------
+
+If your untracked files take an unusual amount of time to enumerate, your
+repository certainly has a lot of them, and an advice message will display
+about it. Here are some configurations to consider in order to improve the
+situation:
+
+* Setting the `core.untrackedCache` configuration as `true` will allow for
+`git status` to keep track of the mtime of folders, in order to cache past
+`status` results and be sure to only browse folders that changed on subsequent
+runs, for filesystems that can support it (see linkgit:git-update-index[1]
+for details).
+* Used in conjonction with `core.untrackedCache`, setting the `core.fsmonitor`
+configuration as `true` will allow for `git status` to keep track of what
+files recently changed, in order to cache past `status` results and be sure
+to only focus on those files on subsequent runs (see linkgit:git-update-index[1]
+for details).
+* If none of the above options are satisfactory, setting the
+`status.showUntrackedFiles` configuration as `no` will cause `git status`
+to not attempt to list untracked files anymore, in which case you have to be
+careful not to forget to add new files yourself.
+
+If none of the above solutions are satisfactory, and you are bothered with
+the advice message, you can disable it by setting the `advice.statusUoption`
+configuration to `false`.
+
 SEE ALSO
 --------
 linkgit:gitignore[5]
