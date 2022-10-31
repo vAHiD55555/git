@@ -129,8 +129,11 @@ test_expect_success "test bundle-uri with $BUNDLE_URI_PROTOCOL:// using protocol
 	[bundle]
 		version = 1
 		mode = all
+	[bundle "only"]
+		uri = $BUNDLE_URI_BUNDLE_URI_ESCAPED
 	EOF
 
+	GIT_TEST_BUNDLE_URI=1 \
 	test-tool bundle-uri \
 		ls-remote \
 		"$BUNDLE_URI_REPO_URI" \
@@ -150,8 +153,40 @@ test_expect_success "test bundle-uri with $BUNDLE_URI_PROTOCOL:// using protocol
 	[bundle]
 		version = 1
 		mode = all
+	[bundle "only"]
+		uri = $BUNDLE_URI_BUNDLE_URI_ESCAPED
 	EOF
 
+	GIT_TEST_BUNDLE_URI=1 \
+	test-tool bundle-uri \
+		ls-remote \
+		"$BUNDLE_URI_REPO_URI" \
+		>actual &&
+	test_cmp_config_output expect actual
+'
+
+test_expect_success "test bundle-uri with $BUNDLE_URI_PROTOCOL:// using protocol v2 with list" '
+	test_config -C "$BUNDLE_URI_PARENT" \
+		bundle.bundle1.uri "$BUNDLE_URI_BUNDLE_URI_ESCAPED-1.bdl" &&
+	test_config -C "$BUNDLE_URI_PARENT" \
+		bundle.bundle2.uri "$BUNDLE_URI_BUNDLE_URI_ESCAPED-2.bdl" &&
+	test_config -C "$BUNDLE_URI_PARENT" \
+		bundle.bundle3.uri "$BUNDLE_URI_BUNDLE_URI_ESCAPED-3.bdl" &&
+
+	# All data about bundle URIs
+	cat >expect <<-EOF &&
+	[bundle]
+		version = 1
+		mode = all
+	[bundle "bundle1"]
+		uri = $BUNDLE_URI_BUNDLE_URI_ESCAPED-1.bdl
+	[bundle "bundle2"]
+		uri = $BUNDLE_URI_BUNDLE_URI_ESCAPED-2.bdl
+	[bundle "bundle3"]
+		uri = $BUNDLE_URI_BUNDLE_URI_ESCAPED-3.bdl
+	EOF
+
+	GIT_TEST_BUNDLE_URI=1 \
 	test-tool bundle-uri \
 		ls-remote \
 		"$BUNDLE_URI_REPO_URI" \
