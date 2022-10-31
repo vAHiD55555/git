@@ -72,19 +72,19 @@ test_expect_success 'clone respects GIT_WORK_TREE' '
 '
 
 test_expect_success LIBCURL 'clone warns or fails when using username:password' '
-	message="URL '\''https://username:<redacted>@localhost/'\'' uses plaintext credentials" &&
-	test_must_fail git -c transfer.credentialsInUrl=allow clone https://username:password@localhost attempt1 2>err &&
+	message="URL '\''https://username:<redacted>@224.0.0.1/'\'' uses plaintext credentials" &&
+	test_must_fail git -c transfer.credentialsInUrl=allow clone https://username:password@224.0.0.1 attempt1 2>err &&
 	! grep "$message" err &&
 
-	test_must_fail git -c transfer.credentialsInUrl=warn clone https://username:password@localhost attempt2 2>err &&
+	test_must_fail git -c transfer.credentialsInUrl=warn clone https://username:password@224.0.0.1 attempt2 2>err &&
 	grep "warning: $message" err >warnings &&
 	test_line_count = 2 warnings &&
 
-	test_must_fail git -c transfer.credentialsInUrl=die clone https://username:password@localhost attempt3 2>err &&
+	test_must_fail git -c transfer.credentialsInUrl=die clone https://username:password@224.0.0.1 attempt3 2>err &&
 	grep "fatal: $message" err >warnings &&
 	test_line_count = 1 warnings &&
 
-	test_must_fail git -c transfer.credentialsInUrl=die clone https://username:@localhost attempt3 2>err &&
+	test_must_fail git -c transfer.credentialsInUrl=die clone https://username:@224.0.0.1 attempt3 2>err &&
 	grep "fatal: $message" err >warnings &&
 	test_line_count = 1 warnings
 '
