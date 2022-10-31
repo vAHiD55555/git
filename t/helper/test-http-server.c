@@ -18,6 +18,8 @@ static const char test_http_auth_usage[] =
 "           [--timeout=<n>] [--init-timeout=<n>] [--max-connections=<n>]\n"
 "           [--reuseaddr] [--pid-file=<file>]\n"
 "           [--listen=<host_or_ipaddr>]* [--port=<n>]\n"
+"           [--anonymous-allowed]\n"
+"           [--auth=<scheme>[:<params>] [--auth-token=<scheme>:<token>]]*\n"
 ;
 
 /* Timeout, and initial timeout */
@@ -358,10 +360,136 @@ static enum worker_result do__git(struct req *req, const char *user)
 	return !!res;
 }
 
+enum auth_result {
+	/* No auth module matches the request. */
+	AUTH_UNKNOWN = 0,
+
+	/* Auth module denied the request. */
+	AUTH_DENY = 1,
+
+	/* Auth module successfully validated the request. */
+	AUTH_ALLOW = 2,
+};
+
+struct auth_module {
+	char *scheme;
+	char *challenge_params;
+	struct string_list *tokens;
+};
+
+static int allow_anonymous;
+static struct auth_module **auth_modules = NULL;
+static size_t auth_modules_nr = 0;
+static size_t auth_modules_alloc = 0;
+
+static struct auth_module *get_auth_module(const char *scheme)
+{
+	int i;
+	struct auth_module *mod;
+	for (i = 0; i < auth_modules_nr; i++) {
+		mod = auth_modules[i];
+		if (!strcasecmp(mod->scheme, scheme))
+			return mod;
+	}
+
+	return NULL;
+}
+
+static void add_auth_module(struct auth_module *mod)
+{
+	ALLOC_GROW(auth_modules, auth_modules_nr + 1, auth_modules_alloc);
+	auth_modules[auth_modules_nr++] = mod;
+}
+
+static int is_authed(struct req *req, const char **user, enum worker_result *wr)
+{
+	enum auth_result result = AUTH_UNKNOWN;
+	struct string_list hdrs = STRING_LIST_INIT_NODUP;
+	struct auth_module *mod;
+
+	struct string_list_item *hdr;
+	struct string_list_item *token;
+	const char *v;
+	struct strbuf **split = NULL;
+	int i;
+	char *challenge;
+
+	/*
+	 * Check all auth modules and try to validate the request.
+	 * The first module that matches a valid token approves the request.
+	 * If no module is found, or if there is no valid token, then 401 error.
+	 * Otherwise, only permit the request if anonymous auth is enabled.
+	 */
+	for_each_string_list_item(hdr, &req->header_list) {
+		if (skip_iprefix(hdr->string, "Authorization: ", &v)) {
+			split = strbuf_split_str(v, ' ', 2);
+			if (!split[0] || !split[1]) continue;
+
+			/* trim trailing space ' ' */
+			strbuf_setlen(split[0], split[0]->len - 1);
+
+			mod = get_auth_module(split[0]->buf);
+			if (mod) {
+				result = AUTH_DENY;
+
+				for_each_string_list_item(token, mod->tokens) {
+					if (!strcmp(split[1]->buf, token->string)) {
+						result = AUTH_ALLOW;
+						break;
+					}
+				}
+
+				goto done;
+			}
+		}
+	}
+
+done:
+	switch (result) {
+	case AUTH_ALLOW:
+		trace2_printf("%s: auth '%s' ALLOW", TR2_CAT, mod->scheme);
+		*user = "VALID_TEST_USER";
+		*wr = WR_OK;
+		break;
+
+	case AUTH_DENY:
+		trace2_printf("%s: auth '%s' DENY", TR2_CAT, mod->scheme);
+		/* fall-through */
+
+	case AUTH_UNKNOWN:
+		if (result != AUTH_DENY && allow_anonymous)
+			break;
+		for (i = 0; i < auth_modules_nr; i++) {
+			mod = auth_modules[i];
+			if (mod->challenge_params)
+				challenge = xstrfmt("WWW-Authenticate: %s %s",
+						    mod->scheme,
+						    mod->challenge_params);
+			else
+				challenge = xstrfmt("WWW-Authenticate: %s",
+						    mod->scheme);
+			string_list_append(&hdrs, challenge);
+		}
+		*wr = send_http_error(1, 401, "Unauthorized", -1, &hdrs, *wr);
+	}
+
+	strbuf_list_free(split);
+	string_list_clear(&hdrs, 0);
+
+	return result == AUTH_ALLOW ||
+	      (result == AUTH_UNKNOWN && allow_anonymous);
+}
+
 static enum worker_result dispatch(struct req *req)
 {
+	enum worker_result wr = WR_OK;
+	const char *user = NULL;
+
+	if (!is_authed(req, &user, &wr))
+		return wr;
+
 	if (is_git_request(req))
-		return do__git(req, NULL);
+		return do__git(req, user);
 
 	return send_http_error(1, 501, "Not Implemented", -1, NULL,
 			       WR_OK | WR_HANGUP);
@@ -854,6 +982,7 @@ int cmd_main(int argc, const char **argv)
 	struct string_list listen_addr = STRING_LIST_INIT_NODUP;
 	int worker_mode = 0;
 	int i;
+	struct auth_module *mod = NULL;
 
 	trace2_cmd_name("test-http-server");
 	setup_git_directory_gently(NULL);
@@ -904,6 +1033,63 @@ int cmd_main(int argc, const char **argv)
 		}
 		if (skip_prefix(arg, "--pid-file=", &v)) {
 			pid_file = v;
+			continue;
+		}
+		if (skip_prefix(arg, "--allow-anonymous", &v)) {
+			allow_anonymous = 1;
+			continue;
+		}
+		if (skip_prefix(arg, "--auth=", &v)) {
+			struct strbuf **p = strbuf_split_str(v, ':', 2);
+
+			if (!p[0]) {
+				error("invalid argument '%s'", v);
+				usage(test_http_auth_usage);
+			}
+
+			/* trim trailing ':' */
+			if (p[1])
+				strbuf_setlen(p[0], p[0]->len - 1);
+
+			if (get_auth_module(p[0]->buf)) {
+				error("duplicate auth scheme '%s'\n", p[0]->buf);
+				usage(test_http_auth_usage);
+			}
+
+			mod = xmalloc(sizeof(struct auth_module));
+			mod->scheme = xstrdup(p[0]->buf);
+			mod->challenge_params = p[1] ? xstrdup(p[1]->buf) : NULL;
+			CALLOC_ARRAY(mod->tokens, 1);
+			string_list_init_dup(mod->tokens);
+
+			add_auth_module(mod);
+
+			strbuf_list_free(p);
+			continue;
+		}
+		if (skip_prefix(arg, "--auth-token=", &v)) {
+			struct strbuf **p = strbuf_split_str(v, ':', 2);
+			if (!p[0]) {
+				error("invalid argument '%s'", v);
+				usage(test_http_auth_usage);
+			}
+
+			if (!p[1]) {
+				error("missing token value '%s'\n", v);
+				usage(test_http_auth_usage);
+			}
+
+			/* trim trailing ':' */
+			strbuf_setlen(p[0], p[0]->len - 1);
+
+			mod = get_auth_module(p[0]->buf);
+			if (!mod) {
+				error("auth scheme not defined '%s'\n", p[0]->buf);
+				usage(test_http_auth_usage);
+			}
+
+			string_list_append(mod->tokens, p[1]->buf);
+			strbuf_list_free(p);
 			continue;
 		}
 
