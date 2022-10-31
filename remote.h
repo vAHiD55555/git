@@ -98,6 +98,8 @@ struct remote {
 	int prune;
 	int prune_tags;
 
+	int validated_urls;
+
 	/**
 	 * The configured helper programs to run on the remote side, for
 	 * Git-native protocols.
@@ -445,4 +447,16 @@ void apply_push_cas(struct push_cas_option *, struct remote *, struct ref *);
 char *relative_url(const char *remote_url, const char *url,
 		   const char *up_path);
 
+enum credentials_in_url {
+	CRED_IN_URL_UNKNOWN,
+	CRED_IN_URL_ALLOW,
+	CRED_IN_URL_WARN,
+	CRED_IN_URL_DIE,
+};
+
+/**
+ * Get the transfer.credentialsInUrl config setting as an "enum
+ * credentials_in_url".
+ */
+enum credentials_in_url get_credentials_in_url(void);
 #endif

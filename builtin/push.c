@@ -576,7 +576,7 @@ int cmd_push(int argc, const char **argv, const char *prefix)
 	struct string_list *push_options;
 	const struct string_list_item *item;
 	struct remote *remote;
-
+	enum credentials_in_url cred_in_url_cfg = get_credentials_in_url();
 	struct option options[] = {
 		OPT__VERBOSITY(&verbosity),
 		OPT_STRING( 0 , "repo", &repo, N_("repository"), N_("repository")),
@@ -619,6 +619,10 @@ int cmd_push(int argc, const char **argv, const char *prefix)
 	};
 
 	packet_trace_identity("push");
+
+	if (cred_in_url_cfg == CRED_IN_URL_WARN)
+		git_config_push_parameter("transfer.credentialsInUrl=allow");
+
 	git_config(git_push_config, &flags);
 	argc = parse_options(argc, argv, prefix, options, push_usage, 0);
 	push_options = (push_options_cmdline.nr

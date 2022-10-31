@@ -615,24 +615,42 @@ const char *remote_ref_for_branch(struct branch *branch, int for_push)
 	return NULL;
 }
 
+static enum credentials_in_url cred_in_url = CRED_IN_URL_UNKNOWN;
+enum credentials_in_url get_credentials_in_url(void)
+{
+	enum credentials_in_url new = CRED_IN_URL_ALLOW;
+	const char *value;
+
+	if (cred_in_url != CRED_IN_URL_UNKNOWN)
+		return cred_in_url;
+
+	if (git_config_get_string_tmp("transfer.credentialsinurl", &value))
+		goto done;
+
+	if (!strcmp("warn", value))
+		new = CRED_IN_URL_WARN;
+	else if (!strcmp("die", value))
+		new = CRED_IN_URL_DIE;
+	else if (!strcmp("allow", value))
+		goto done;
+	else
+		die(_("unrecognized value transfer.credentialsInURL: '%s'"), value);
+
+done:
+	cred_in_url = new;
+	return cred_in_url;
+}
+
 static void validate_remote_url(struct remote *remote)
 {
 	int i;
-	const char *value;
 	struct strbuf redacted = STRBUF_INIT;
-	int warn_not_die;
+	enum credentials_in_url cfg = get_credentials_in_url();
 
-	if (git_config_get_string_tmp("transfer.credentialsinurl", &value))
-		return;
-
-	if (!strcmp("warn", value))
-		warn_not_die = 1;
-	else if (!strcmp("die", value))
-		warn_not_die = 0;
-	else if (!strcmp("allow", value))
-		return;
-	else
-		die(_("unrecognized value transfer.credentialsInUrl: '%s'"), value);
+	if (remote->validated_urls)
+		goto done;
+	if (cfg == CRED_IN_URL_ALLOW)
+		goto done;
 
 	for (i = 0; i < remote->url_nr; i++) {
 		struct url_info url_info = { 0 };
@@ -647,16 +665,25 @@ static void validate_remote_url(struct remote *remote)
 		strbuf_addstr(&redacted,
 			      url_info.url + url_info.passwd_off + url_info.passwd_len);
 
-		if (warn_not_die)
+		switch (cfg) {
+		case CRED_IN_URL_WARN:
 			warning(_("URL '%s' uses plaintext credentials"), redacted.buf);
-		else
+			break;
+		case CRED_IN_URL_DIE:
 			die(_("URL '%s' uses plaintext credentials"), redacted.buf);
-
-loop_cleanup:
+			break;
+		case CRED_IN_URL_ALLOW:
+		case CRED_IN_URL_UNKNOWN:
+			BUG("unreachable");
+			break;
+		}
+	loop_cleanup:
 		free(url_info.url);
 	}
 
 	strbuf_release(&redacted);
+done:
+	remote->validated_urls = 1;
 }
 
 static struct remote *

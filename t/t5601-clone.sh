@@ -78,7 +78,7 @@ test_expect_success LIBCURL 'clone warns or fails when using username:password' 
 
 	test_must_fail git -c transfer.credentialsInUrl=warn clone https://username:password@localhost attempt2 2>err &&
 	grep "warning: $message" err >warnings &&
-	test_line_count = 2 warnings &&
+	test_line_count = 1 warnings &&
 
 	test_must_fail git -c transfer.credentialsInUrl=die clone https://username:password@localhost attempt3 2>err &&
 	grep "fatal: $message" err >warnings &&

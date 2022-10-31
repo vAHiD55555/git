@@ -903,11 +903,14 @@ int cmd_clone(int argc, const char **argv, const char *prefix)
 	int err = 0, complete_refs_before_fetch = 1;
 	int submodule_progress;
 	int filter_submodules = 0;
-
+	enum credentials_in_url cred_in_url_cfg = get_credentials_in_url();
 	struct transport_ls_refs_options transport_ls_refs_options =
 		TRANSPORT_LS_REFS_OPTIONS_INIT;
 
 	packet_trace_identity("clone");
+
+	if (cred_in_url_cfg == CRED_IN_URL_WARN)
+		git_config_push_parameter("transfer.credentialsInUrl=allow");
 
 	git_config(git_clone_config, NULL);
 

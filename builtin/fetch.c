@@ -2110,8 +2110,12 @@ int cmd_fetch(int argc, const char **argv, const char *prefix)
 	struct remote *remote = NULL;
 	int result = 0;
 	int prune_tags_ok = 1;
+	enum credentials_in_url cred_in_url_cfg = get_credentials_in_url();
 
 	packet_trace_identity("fetch");
+
+	if (cred_in_url_cfg == CRED_IN_URL_WARN)
+		git_config_push_parameter("transfer.credentialsInUrl=allow");
 
 	/* Record the command line for the reflog */
 	strbuf_addstr(&default_rla, "fetch");
