@@ -195,6 +195,24 @@ For instance, if you configured the `diff.algorithm` variable to a
 non-default value and want to use the default one, then you
 have to use `--diff-algorithm=default` option.
 
+ifndef::git-format-patch[]
+ifndef::git-log[]
+
+--scope={sparse|all}::
+	Choose diff scope. The variants are as follows:
++
+--
+`--sparse`;;
+	Restrict diff paths to those matching sparse-checkout specification.
+`--all`;;
+	Without restriction, diff is performed regardless of whether the path
+	meets the sparse-checkout specification.
+--
++
+
+endif::git-log[]
+endif::git-format-patch[]
+
 --stat[=<width>[,<name-width>[,<count>]]]::
 	Generate a diffstat. By default, as much space as necessary
 	will be used for the filename part, and the rest for the graph
