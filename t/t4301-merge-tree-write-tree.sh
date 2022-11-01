@@ -860,6 +860,13 @@ test_expect_success '--stdin with both a successful and a conflicted merge' '
 	test_cmp expect actual
 '
 
+
+test_expect_success '--merge-base is incompatible with --stdin' '
+	test_must_fail git merge-tree --merge-base=side1 --stdin 2>expect &&
+
+	grep "^fatal: --merge-base is incompatible with --stdin" expect
+'
+
 # specify merge-base as parent of branch2
 # git merge-tree --write-tree --merge-base=c2 c1 c3
 #   Commit c1: add file1
@@ -888,6 +895,24 @@ test_expect_success 'specify merge-base as parent of branch2' '
 		git ls-tree $TREE_OID >actual &&
 		test_cmp expect actual
 	)
+'
+
+# Since the earlier tests have verified that individual merge-tree calls
+# are doing the right thing, this test case is only used to test whether
+# the input format is available.
+
+test_expect_success '--stdin with both a normal merge and a merge-base specified merge' '
+	cd base-b2-p &&
+	printf "c1 c3\nc2 -- c1 c3" | git merge-tree --stdin >actual &&
+
+	printf "1\0" >expect &&
+	git merge-tree --write-tree -z c1 c3 >>expect &&
+	printf "\0" >>expect &&
+
+	printf "1\0" >>expect &&
+	git merge-tree --write-tree -z --merge-base=c2 c1 c3 >>expect &&
+	printf "\0" >>expect &&
+	test_cmp expect actual
 '
 
 test_done
