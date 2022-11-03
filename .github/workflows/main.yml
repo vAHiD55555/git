@@ -2,6 +2,11 @@ name: CI
 
 on: [push, pull_request]
 
+# Avoid unnecessary builds
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   DEVELOPER: 1
 

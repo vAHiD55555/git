@@ -9,6 +9,11 @@ on:
   pull_request:
     types: [opened, synchronize]
 
+# Avoid unnecessary builds
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check-whitespace:
     runs-on: ubuntu-latest

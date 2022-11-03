@@ -2,6 +2,11 @@ name: git-l10n
 
 on: [push, pull_request_target]
 
+# Avoid unnecessary builds
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   git-po-helper:
     if: >-
