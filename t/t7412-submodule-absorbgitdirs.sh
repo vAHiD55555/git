@@ -54,15 +54,24 @@ test_expect_success 'setup nested submodule' '
 '
 
 test_expect_success 'absorb the git dir in a nested submodule' '
+	# Touch the files so that they show up in git status
+	>expect.err &&
+	>actual.err &&
 	git status >expect.1 &&
 	git -C sub1/nested rev-parse HEAD >expect.2 &&
-	git submodule absorbgitdirs &&
+	git submodule absorbgitdirs 2>actual.err &&
 	test -f sub1/nested/.git &&
 	test -d .git/modules/sub1/modules/nested &&
 	git status >actual.1 &&
 	git -C sub1/nested rev-parse HEAD >actual.2 &&
 	test_cmp expect.1 actual.1 &&
-	test_cmp expect.2 actual.2
+	test_cmp expect.2 actual.2 &&
+	cat >expect.err <<-EOF &&
+	Migrating git directory of ${SQ}sub1/nested${SQ} from
+	${SQ}/Users/chooglen/Code/git/t/trash directory.t7412-submodule-absorbgitdirs/sub1/nested/.git${SQ} to
+	${SQ}/Users/chooglen/Code/git/t/trash directory.t7412-submodule-absorbgitdirs/.git/modules/sub1/modules/nested${SQ}
+	EOF
+	test_cmp expect.err actual.err
 '
 
 test_expect_success 're-setup nested submodule' '
