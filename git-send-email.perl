@@ -787,14 +787,6 @@ if (@rev_list_opts) {
 
 @files = handle_backup_files(@files);
 
-if ($validate) {
-	foreach my $f (@files) {
-		unless (-p $f) {
-			validate_patch($f, $target_xfer_encoding);
-		}
-	}
-}
-
 if (@files) {
 	unless ($quiet) {
 		print $_,"\n" for (@files);
@@ -1495,16 +1487,7 @@ sub file_name_is_absolute {
 	return File::Spec::Functions::file_name_is_absolute($path);
 }
 
-# Prepares the email, then asks the user what to do.
-#
-# If the user chooses to send the email, it's sent and 1 is returned.
-# If the user chooses not to send the email, 0 is returned.
-# If the user decides they want to make further edits, -1 is returned and the
-# caller is expected to call send_message again after the edits are performed.
-#
-# If an error occurs sending the email, this just dies.
-
-sub send_message {
+sub gen_header {
 	my @recipients = unique_email_list(@to);
 	@cc = (grep { my $cc = extract_valid_address_or_die($_);
 		      not grep { $cc eq $_ || $_ =~ /<\Q${cc}\E>$/ } @recipients
@@ -1546,6 +1529,22 @@ Message-Id: $message_id
 	if (@xh) {
 		$header .= join("\n", @xh) . "\n";
 	}
+	return $header;
+}
+
+# Prepares the email, then asks the user what to do.
+#
+# If the user chooses to send the email, it's sent and 1 is returned.
+# If the user chooses not to send the email, 0 is returned.
+# If the user decides they want to make further edits, -1 is returned and the
+# caller is expected to call send_message again after the edits are performed.
+#
+# If an error occurs sending the email, this just dies.
+
+sub send_message {
+	my @recipients = unique_email_list(@to);
+
+        my $header = gen_header();
 
 	my @sendmail_parameters = ('-i', @recipients);
 	my $raw_from = $sender;
@@ -1955,6 +1954,15 @@ sub process_file {
 		}
 	}
 
+
+	if ($validate) {
+		foreach my $f (@files) {
+			unless (-p $f) {
+				validate_patch($f, $target_xfer_encoding);
+			}
+		}
+	}
+
 	my $message_was_sent = send_message();
 	if ($message_was_sent == -1) {
 		do_edit($t);
@@ -2088,11 +2096,20 @@ sub validate_patch {
 			chdir($repo->wc_path() or $repo->repo_path())
 				or die("chdir: $!");
 			local $ENV{"GIT_DIR"} = $repo->repo_path();
+
+			my $header = gen_header();
+
+			require File::Temp;
+			my ($header_filehandle, $header_filename) = File::Temp::tempfile(
+                            ".gitsendemail.header.XXXXXX", DIR => $repo->repo_path());
+			print $header_filehandle $header;
+
 			my @cmd = ("git", "hook", "run", "--ignore-missing",
 				    $hook_name, "--");
-			my @cmd_msg = (@cmd, "<patch>");
-			my @cmd_run = (@cmd, $target);
+			my @cmd_msg = (@cmd, "<patch>", "<header>");
+			my @cmd_run = (@cmd, $target, $header_filename);
 			$hook_error = system_or_msg(\@cmd_run, undef, "@cmd_msg");
+			unlink($header_filehandle);
 			chdir($cwd_save) or die("chdir: $!");
 		}
 		if ($hook_error) {

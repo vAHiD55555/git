@@ -583,10 +583,10 @@ processed by rebase.
 sendemail-validate
 ~~~~~~~~~~~~~~~~~~
 
-This hook is invoked by linkgit:git-send-email[1].  It takes a single parameter,
-the name of the file that holds the e-mail to be sent.  Exiting with a
-non-zero status causes `git send-email` to abort before sending any
-e-mails.
+This hook is invoked by linkgit:git-send-email[1].  It takes two parameters,
+the name of a file that holds the patch and the name of a file that holds the
+SMTP headers.  Exiting with a non-zero status causes `git send-email` to abort
+before sending any e-mails.
 
 fsmonitor-watchman
 ~~~~~~~~~~~~~~~~~~
