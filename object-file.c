@@ -455,14 +455,16 @@ static int alt_odb_usable(struct raw_object_store *o,
 			  struct strbuf *path,
 			  const char *normalized_objdir, khiter_t *pos)
 {
+	int ret = 0;
 	int r;
+	struct strbuf real_path = STRBUF_INIT;
 
 	/* Detect cases where alternate disappeared */
 	if (!is_directory(path->buf)) {
 		error(_("object directory %s does not exist; "
 			"check .git/objects/info/alternates"),
 		      path->buf);
-		return 0;
+		goto cleanup;
 	}
 
 	/*
@@ -478,11 +480,16 @@ static int alt_odb_usable(struct raw_object_store *o,
 		assert(r == 1); /* never used */
 		kh_value(o->odb_by_path, p) = o->odb;
 	}
-	if (fspatheq(path->buf, normalized_objdir))
-		return 0;
+
+	strbuf_realpath(&real_path, path->buf, 1);
+	if (fspatheq(real_path.buf, normalized_objdir))
+		goto cleanup;
 	*pos = kh_put_odb_path_map(o->odb_by_path, path->buf, &r);
 	/* r: 0 = exists, 1 = never used, 2 = deleted */
-	return r == 0 ? 0 : 1;
+	ret = r == 0 ? 0 : 1;
+ cleanup:
+	strbuf_release(&real_path);
+	return ret;
 }
 
 /*
@@ -596,7 +603,7 @@ static void link_alt_odb_entries(struct repository *r, const char *alt,
 		return;
 	}
 
-	strbuf_add_absolute_path(&objdirbuf, r->objects->odb->path);
+	strbuf_realpath(&objdirbuf, r->objects->odb->path, 1);
 	if (strbuf_normalize_path(&objdirbuf) < 0)
 		die(_("unable to normalize object directory: %s"),
 		    objdirbuf.buf);
