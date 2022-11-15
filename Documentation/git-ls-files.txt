@@ -260,6 +260,11 @@ eolattr::
 	that applies to the path.
 path::
 	The pathname of the file which is recorded in the index.
+skipworktree::
+	If the file in the index marked with SKIP_WORKTREE bit.
+	It means the file do not match the sparse specification.
+	See link:technical/sparse-checkout.txt[sparse-checkout]
+	for more information.
 
 EXCLUDE PATTERNS
 ----------------
