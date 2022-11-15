@@ -508,6 +508,7 @@ static int link_alt_odb_entry(struct repository *r, const struct strbuf *entry,
 {
 	struct object_directory *ent;
 	struct strbuf pathbuf = STRBUF_INIT;
+	struct strbuf tmp = STRBUF_INIT;
 	khiter_t pos;
 
 	if (!is_absolute_path(entry->buf) && relative_base) {
@@ -516,12 +517,14 @@ static int link_alt_odb_entry(struct repository *r, const struct strbuf *entry,
 	}
 	strbuf_addbuf(&pathbuf, entry);
 
-	if (strbuf_normalize_path(&pathbuf) < 0 && relative_base) {
+	if (!strbuf_realpath(&tmp, pathbuf.buf, 0)) {
 		error(_("unable to normalize alternate object path: %s"),
-		      pathbuf.buf);
+			pathbuf.buf);
 		strbuf_release(&pathbuf);
 		return -1;
 	}
+	strbuf_swap(&pathbuf, &tmp);
+	strbuf_release(&tmp);
 
 	/*
 	 * The trailing slash after the directory name is given by
@@ -596,10 +599,7 @@ static void link_alt_odb_entries(struct repository *r, const char *alt,
 		return;
 	}
 
-	strbuf_add_absolute_path(&objdirbuf, r->objects->odb->path);
-	if (strbuf_normalize_path(&objdirbuf) < 0)
-		die(_("unable to normalize object directory: %s"),
-		    objdirbuf.buf);
+	strbuf_realpath(&objdirbuf, r->objects->odb->path, 1);
 
 	while (*alt) {
 		alt = parse_alt_odb_entry(alt, sep, &entry);
