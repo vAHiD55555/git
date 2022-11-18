@@ -7,6 +7,18 @@ struct mofs_data {
 	const char *program;
 };
 
+static void push_arg(struct strvec *oids, struct strvec *modes,
+		     const struct object_id *oid, const unsigned int mode)
+{
+	if (oid) {
+		strvec_push(oids, oid_to_hex(oid));
+		strvec_pushf(modes, "%06o", mode);
+	} else {
+		strvec_push(oids, "");
+		strvec_push(modes, "");
+	}
+}
+
 static int merge_one_file(struct index_state *istate,
 			  const struct object_id *orig_blob,
 			  const struct object_id *our_blob,
@@ -15,27 +27,25 @@ static int merge_one_file(struct index_state *istate,
 			  unsigned int their_mode, void *data)
 {
 	struct mofs_data *d = data;
-	const char *pgm = d->program;
-	const char *arguments[] = { pgm, "", "", "", path, "", "", "", NULL };
-	char hexbuf[4][GIT_MAX_HEXSZ + 1];
-	char ownbuf[4][60];
-	int stage = 0;
+	const char *program = d->program;
+	struct strvec oids = STRVEC_INIT;
+	struct strvec modes = STRVEC_INIT;
 	struct child_process cmd = CHILD_PROCESS_INIT;
 
-#define ADD_MOF_ARG(oid, mode) \
-	if ((oid)) { \
-		stage++; \
-		oid_to_hex_r(hexbuf[stage], (oid)); \
-		xsnprintf(ownbuf[stage], sizeof(ownbuf[stage]), "%06o", (mode)); \
-		arguments[stage] = hexbuf[stage]; \
-		arguments[stage + 4] = ownbuf[stage]; \
-	}
+	strvec_push(&cmd.args, program);
 
-	ADD_MOF_ARG(orig_blob, orig_mode);
-	ADD_MOF_ARG(our_blob, our_mode);
-	ADD_MOF_ARG(their_blob, their_mode);
+	push_arg(&oids, &modes, orig_blob, orig_mode);
+	push_arg(&oids, &modes, our_blob, our_mode);
+	push_arg(&oids, &modes, their_blob, their_mode);
 
-	strvec_pushv(&cmd.args, arguments);
+	strvec_pushv(&cmd.args, oids.v);
+	strvec_clear(&oids);
+
+	strvec_push(&cmd.args, path);
+
+	strvec_pushv(&cmd.args, modes.v);
+	strvec_clear(&modes);
+
 	return run_command(&cmd);
 }
 
