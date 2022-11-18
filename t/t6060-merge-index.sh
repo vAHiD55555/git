@@ -22,9 +22,10 @@ test_expect_success 'usage: 2 arguments' '
 
 test_expect_success 'usage: -a before <program>' '
 	cat >expect <<-\EOF &&
-	fatal: git merge-index: b not in the cache
+	fatal: '\''-a'\'' option can only be provided after '\''<merge-program>'\''
 	EOF
-	test_expect_code 128 git merge-index -a b program >out 2>actual &&
+	test_expect_code 129 git merge-index -a b program >out 2>actual.raw &&
+	grep "^fatal:" actual.raw >actual &&
 	test_must_be_empty out &&
 	test_cmp expect actual
 '
@@ -33,9 +34,10 @@ for opt in -q -o
 do
 	test_expect_success "usage: $opt after -a" '
 		cat >expect <<-EOF &&
-		fatal: git merge-index: unknown option $opt
+		fatal: '\''-a'\'' option can only be provided after '\''<merge-program>'\''
 		EOF
-		test_expect_code 128 git merge-index -a $opt >out 2>actual &&
+		test_expect_code 129 git merge-index -a $opt >out 2>actual.raw &&
+		grep "^fatal:" actual.raw >actual &&
 		test_must_be_empty out &&
 		test_cmp expect actual
 	'
