@@ -5,6 +5,50 @@ test_description='basic git merge-index / git-merge-one-file tests'
 TEST_PASSES_SANITIZE_LEAK=true
 . ./test-lib.sh
 
+test_expect_success 'usage: 1 argument' '
+	test_expect_code 129 git merge-index a >out 2>err &&
+	test_must_be_empty out &&
+	grep ^usage err
+'
+
+test_expect_success 'usage: 2 arguments' '
+	cat >expect <<-\EOF &&
+	fatal: git merge-index: b not in the cache
+	EOF
+	test_expect_code 128 git merge-index a b >out 2>actual &&
+	test_must_be_empty out &&
+	test_cmp expect actual
+'
+
+test_expect_success 'usage: -a before <program>' '
+	cat >expect <<-\EOF &&
+	fatal: git merge-index: b not in the cache
+	EOF
+	test_expect_code 128 git merge-index -a b program >out 2>actual &&
+	test_must_be_empty out &&
+	test_cmp expect actual
+'
+
+for opt in -q -o
+do
+	test_expect_success "usage: $opt after -a" '
+		cat >expect <<-EOF &&
+		fatal: git merge-index: unknown option $opt
+		EOF
+		test_expect_code 128 git merge-index -a $opt >out 2>actual &&
+		test_must_be_empty out &&
+		test_cmp expect actual
+	'
+
+	test_expect_success "usage: $opt program" '
+		test_expect_code 0 git merge-index $opt program
+	'
+done
+
+test_expect_success 'usage: program' '
+	test_expect_code 129 git merge-index program
+'
+
 test_expect_success 'setup diverging branches' '
 	test_write_lines 1 2 3 4 5 6 7 8 9 10 >file &&
 	cp file file2 &&
