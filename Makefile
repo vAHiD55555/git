@@ -1430,6 +1430,7 @@ ifneq (,$(SOCKLEN_T))
 endif
 
 ifeq ($(uname_S),Darwin)
+	BASIC_CFLAGS += -mmacosx-version-min=10.13
 	ifndef NO_FINK
 		ifeq ($(shell test -d /sw/lib && echo y),y)
 			BASIC_CFLAGS += -I/sw/include
