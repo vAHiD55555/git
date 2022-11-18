@@ -59,21 +59,14 @@ int cmd_merge_index(int argc, const char **argv, const char *prefix)
 		N_("git merge-index [-o] [-q] <merge-program> (-a | ([--] <file>...))"),
 		NULL
 	};
-#define OPT__MERGE_INDEX_ALL(v) \
-	OPT_BOOL('a', NULL, (v), \
-		 N_("merge all files in the index that need merging"))
 	struct option options[] = {
 		OPT_BOOL('o', NULL, &one_shot,
 			 N_("don't stop at the first failed merge")),
 		OPT__QUIET(&quiet, N_("be quiet")),
-		OPT__MERGE_INDEX_ALL(&all), /* include "-a" to show it in "-bh" */
+		OPT_BOOL('a', NULL, &all,
+			 N_("merge all files in the index that need merging")),
 		OPT_END(),
 	};
-	struct option options_prog[] = {
-		OPT__MERGE_INDEX_ALL(&all),
-		OPT_END(),
-	};
-#undef OPT__MERGE_INDEX_ALL
 	struct mofs_data data = { 0 };
 
 	/* Without this we cannot rely on waitpid() to tell
@@ -81,20 +74,15 @@ int cmd_merge_index(int argc, const char **argv, const char *prefix)
 	 */
 	signal(SIGCHLD, SIG_DFL);
 
-	if (argc < 3)
-		usage_with_options(usage, options);
-
-	/* Option parsing without <merge-program> options */
-	argc = parse_options(argc, argv, prefix, options, usage,
-			     PARSE_OPT_STOP_AT_NON_OPTION);
-	if (all)
-		usage_msg_optf(_("'%s' option can only be provided after '<merge-program>'"),
-			      usage, options, "-a");
-	/* <merge-program> and its options */
+	argc = parse_options(argc, argv, prefix, options, usage, 0);
 	if (!argc)
 		usage_msg_opt(_("need a <merge-program> argument"), usage, options);
 	data.program = argv[0];
-	argc = parse_options(argc, argv, prefix, options_prog, usage, 0);
+	argv++;
+	argc--;
+	if (!argc && !all)
+		usage_msg_opt(_("need '-a' or '<file>...'"),
+			      usage, options);
 	if (argc && all)
 		usage_msg_opt(_("'-a' and '<file>...' are mutually exclusive"),
 			      usage, options);

@@ -22,7 +22,7 @@ test_expect_success 'usage: 2 arguments' '
 
 test_expect_success 'usage: -a before <program>' '
 	cat >expect <<-\EOF &&
-	fatal: '\''-a'\'' option can only be provided after '\''<merge-program>'\''
+	fatal: '\''-a'\'' and '\''<file>...'\'' are mutually exclusive
 	EOF
 	test_expect_code 129 git merge-index -a b program >out 2>actual.raw &&
 	grep "^fatal:" actual.raw >actual &&
@@ -34,7 +34,7 @@ for opt in -q -o
 do
 	test_expect_success "usage: $opt after -a" '
 		cat >expect <<-EOF &&
-		fatal: '\''-a'\'' option can only be provided after '\''<merge-program>'\''
+		fatal: need a <merge-program> argument
 		EOF
 		test_expect_code 129 git merge-index -a $opt >out 2>actual.raw &&
 		grep "^fatal:" actual.raw >actual &&
@@ -43,7 +43,13 @@ do
 	'
 
 	test_expect_success "usage: $opt program" '
-		test_expect_code 0 git merge-index $opt program
+		cat >expect <<-EOF &&
+		fatal: need '\''-a'\'' or '\''<file>...'\''
+		EOF
+		test_expect_code 129 git merge-index $opt program 2>actual.raw &&
+		grep "^fatal:" actual.raw >actual &&
+		test_must_be_empty out &&
+		test_cmp expect actual
 	'
 done
 
