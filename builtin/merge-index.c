@@ -1,77 +1,50 @@
 #include "builtin.h"
 #include "parse-options.h"
+#include "merge-strategies.h"
 #include "run-command.h"
 
-static const char *pgm;
-static int one_shot, quiet;
-static int err;
+struct mofs_data {
+	const char *program;
+};
 
-static int merge_entry(struct index_state *istate, int pos, const char *path)
+static int merge_one_file(struct index_state *istate,
+			  const struct object_id *orig_blob,
+			  const struct object_id *our_blob,
+			  const struct object_id *their_blob, const char *path,
+			  unsigned int orig_mode, unsigned int our_mode,
+			  unsigned int their_mode, void *data)
 {
-	int found;
+	struct mofs_data *d = data;
+	const char *pgm = d->program;
 	const char *arguments[] = { pgm, "", "", "", path, "", "", "", NULL };
 	char hexbuf[4][GIT_MAX_HEXSZ + 1];
 	char ownbuf[4][60];
+	int stage = 0;
 	struct child_process cmd = CHILD_PROCESS_INIT;
 
-	if (pos >= istate->cache_nr)
-		die(_("'%s' is not in the cache"), path);
-	found = 0;
-	do {
-		const struct cache_entry *ce = istate->cache[pos];
-		int stage = ce_stage(ce);
+#define ADD_MOF_ARG(oid, mode) \
+	if ((oid)) { \
+		stage++; \
+		oid_to_hex_r(hexbuf[stage], (oid)); \
+		xsnprintf(ownbuf[stage], sizeof(ownbuf[stage]), "%06o", (mode)); \
+		arguments[stage] = hexbuf[stage]; \
+		arguments[stage + 4] = ownbuf[stage]; \
+	}
 
-		if (strcmp(ce->name, path))
-			break;
-		found++;
-		oid_to_hex_r(hexbuf[stage], &ce->oid);
-		xsnprintf(ownbuf[stage], sizeof(ownbuf[stage]), "%o", ce->ce_mode);
-		arguments[stage] = hexbuf[stage];
-		arguments[stage + 4] = ownbuf[stage];
-	} while (++pos < istate->cache_nr);
-	if (!found)
-		die(_("'%s' is not in the cache"), path);
+	ADD_MOF_ARG(orig_blob, orig_mode);
+	ADD_MOF_ARG(our_blob, our_mode);
+	ADD_MOF_ARG(their_blob, their_mode);
 
 	strvec_pushv(&cmd.args, arguments);
-	if (run_command(&cmd)) {
-		if (one_shot)
-			err++;
-		else {
-			if (!quiet)
-				die(_("merge program failed"));
-			exit(1);
-		}
-	}
-	return found;
-}
-
-static void merge_one_path(struct index_state *istate, const char *path)
-{
-	int pos = index_name_pos(istate, path, strlen(path));
-
-	/*
-	 * If it already exists in the cache as stage0, it's
-	 * already merged and there is nothing to do.
-	 */
-	if (pos < 0)
-		merge_entry(istate, -pos-1, path);
-}
-
-static void merge_all(struct index_state *istate)
-{
-	int i;
-
-	for (i = 0; i < istate->cache_nr; i++) {
-		const struct cache_entry *ce = istate->cache[i];
-		if (!ce_stage(ce))
-			continue;
-		i += merge_entry(istate, i, ce->name)-1;
-	}
+	return run_command(&cmd);
 }
 
 int cmd_merge_index(int argc, const char **argv, const char *prefix)
 {
+	int err = 0;
 	int all = 0;
+	int one_shot = 0;
+	int quiet = 0;
 	const char * const usage[] = {
 		N_("git merge-index [-o] [-q] <merge-program> (-a | ([--] <file>...))"),
 		NULL
@@ -91,6 +64,7 @@ int cmd_merge_index(int argc, const char **argv, const char *prefix)
 		OPT_END(),
 	};
 #undef OPT__MERGE_INDEX_ALL
+	struct mofs_data data = { 0 };
 
 	/* Without this we cannot rely on waitpid() to tell
 	 * what happened to our children.
@@ -109,7 +83,7 @@ int cmd_merge_index(int argc, const char **argv, const char *prefix)
 	/* <merge-program> and its options */
 	if (!argc)
 		usage_msg_opt(_("need a <merge-program> argument"), usage, options);
-	pgm = argv[0];
+	data.program = argv[0];
 	argc = parse_options(argc, argv, prefix, options_prog, usage, 0);
 	if (argc && all)
 		usage_msg_opt(_("'-a' and '<file>...' are mutually exclusive"),
@@ -121,12 +95,13 @@ int cmd_merge_index(int argc, const char **argv, const char *prefix)
 	ensure_full_index(the_repository->index);
 
 	if (all)
-		merge_all(the_repository->index);
+		err |= merge_all_index(the_repository->index, one_shot, quiet,
+				       merge_one_file, &data);
 	else
 		for (size_t i = 0; i < argc; i++)
-			merge_one_path(the_repository->index, argv[i]);
+			err |= merge_index_path(the_repository->index,
+						one_shot, quiet, argv[i],
+						merge_one_file, &data);
 
-	if (err && !quiet)
-		die(_("merge program failed"));
 	return err;
 }
