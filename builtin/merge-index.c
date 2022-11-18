@@ -61,8 +61,7 @@ static void merge_one_path(const char *path)
 static void merge_all(void)
 {
 	int i;
-	/* TODO: audit for interaction with sparse-index. */
-	ensure_full_index(&the_index);
+
 	for (i = 0; i < active_nr; i++) {
 		const struct cache_entry *ce = active_cache[i];
 		if (!ce_stage(ce))
@@ -121,7 +120,6 @@ int cmd_merge_index(int argc, const char **argv, const char *prefix)
 
 	/* TODO: audit for interaction with sparse-index. */
 	ensure_full_index(&the_index);
-
 
 	if (all)
 		merge_all();
