@@ -13,7 +13,7 @@ test_expect_success 'usage: 1 argument' '
 
 test_expect_success 'usage: 2 arguments' '
 	cat >expect <<-\EOF &&
-	fatal: git merge-index: b not in the cache
+	fatal: '\''b'\'' is not in the cache
 	EOF
 	test_expect_code 128 git merge-index a b >out 2>actual &&
 	test_must_be_empty out &&

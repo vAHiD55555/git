@@ -16,7 +16,7 @@ static int merge_entry(int pos, const char *path)
 	struct child_process cmd = CHILD_PROCESS_INIT;
 
 	if (pos >= active_nr)
-		die("git merge-index: %s not in the cache", path);
+		die("'%s' is not in the cache", path);
 	found = 0;
 	do {
 		const struct cache_entry *ce = active_cache[pos];
@@ -31,7 +31,7 @@ static int merge_entry(int pos, const char *path)
 		arguments[stage + 4] = ownbuf[stage];
 	} while (++pos < active_nr);
 	if (!found)
-		die("git merge-index: %s not in the cache", path);
+		die("'%s' is not in the cache", path);
 
 	strvec_pushv(&cmd.args, arguments);
 	if (run_command(&cmd)) {
