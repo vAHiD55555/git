@@ -16,7 +16,7 @@ static int merge_entry(int pos, const char *path)
 	struct child_process cmd = CHILD_PROCESS_INIT;
 
 	if (pos >= active_nr)
-		die("'%s' is not in the cache", path);
+		die(_("'%s' is not in the cache"), path);
 	found = 0;
 	do {
 		const struct cache_entry *ce = active_cache[pos];
@@ -31,7 +31,7 @@ static int merge_entry(int pos, const char *path)
 		arguments[stage + 4] = ownbuf[stage];
 	} while (++pos < active_nr);
 	if (!found)
-		die("'%s' is not in the cache", path);
+		die(_("'%s' is not in the cache"), path);
 
 	strvec_pushv(&cmd.args, arguments);
 	if (run_command(&cmd)) {
@@ -39,7 +39,7 @@ static int merge_entry(int pos, const char *path)
 			err++;
 		else {
 			if (!quiet)
-				die("merge program failed");
+				die(_("merge program failed"));
 			exit(1);
 		}
 	}
@@ -130,6 +130,6 @@ int cmd_merge_index(int argc, const char **argv, const char *prefix)
 			merge_one_path(argv[i]);
 
 	if (err && !quiet)
-		die("merge program failed");
+		die(_("merge program failed"));
 	return err;
 }
