@@ -26,6 +26,11 @@ open_editor() {
 	eval "$editor -q \$1"
 }
 
+open_emacs() {
+	editor=`git var GIT_EDITOR`
+	eval "$editor --eval \"(prog1 (switch-to-buffer-other-frame (compilation-start \\\"git jump --stdout $@\\\" 'grep-mode)) (delete-other-windows) (select-frame-set-input-focus (selected-frame)))\""
+}
+
 mode_diff() {
 	git diff --no-prefix --relative "$@" |
 	perl -ne '
@@ -76,6 +81,13 @@ if test "$mode" = "--stdout"; then
 	mode=$1; shift
 	type "mode_$mode" >/dev/null 2>&1 || { usage >&2; exit 1; }
 	"mode_$mode" "$@" 2>/dev/null
+	exit 0
+fi
+
+# For emacs/emacsclient, call "git jump --stdout" from inside of them.
+if git var GIT_EDITOR | grep emacs >/dev/null; then
+	type "mode_$mode" >/dev/null 2>&1 || { usage >&2; exit 1; }
+	open_emacs "$mode" "$@"
 	exit 0
 fi
 
