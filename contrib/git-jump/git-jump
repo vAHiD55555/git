@@ -26,6 +26,17 @@ open_editor() {
 	eval "$editor -q \$1"
 }
 
+open_emacs() {
+	# Supported editor values are:
+	# - emacs
+	# - emacsclient
+	# - emacsclient -t
+	editor=`git var GIT_EDITOR`
+	# Wait for completion of the asynchronously executed process
+	# to avoid race conditions in case of "emacsclient".
+	eval "$editor --eval \"(prog1 (switch-to-buffer-other-frame (compilation-start \\\"cat $@\\\" 'grep-mode)) (delete-other-windows) (while (get-buffer-process (current-buffer)) (sleep-for 0.1)) (select-frame-set-input-focus (selected-frame)))\""
+}
+
 mode_diff() {
 	git diff --no-prefix --relative "$@" |
 	perl -ne '
@@ -98,4 +109,8 @@ tmp=`mktemp -t git-jump.XXXXXX` || exit 1
 type "mode_$mode" >/dev/null 2>&1 || { usage >&2; exit 1; }
 "mode_$mode" "$@" >"$tmp"
 test -s "$tmp" || exit 0
+if git var GIT_EDITOR | grep emacs >/dev/null; then
+	open_emacs "$tmp"
+	exit 0
+fi
 open_editor "$tmp"
