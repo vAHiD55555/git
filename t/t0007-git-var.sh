@@ -47,6 +47,75 @@ test_expect_success 'get GIT_DEFAULT_BRANCH with configuration' '
 	)
 '
 
+test_expect_success 'get GIT_EDITOR without configuration' '
+	(
+		sane_unset GIT_EDITOR &&
+		sane_unset VISUAL &&
+		sane_unset EDITOR &&
+		>expect &&
+		! git var GIT_EDITOR >actual &&
+		test_cmp expect actual
+	)
+'
+
+test_expect_success 'get GIT_EDITOR with configuration' '
+	test_config core.editor foo &&
+	(
+		sane_unset GIT_EDITOR &&
+		sane_unset VISUAL &&
+		sane_unset EDITOR &&
+		echo foo >expect &&
+		git var GIT_EDITOR >actual &&
+		test_cmp expect actual
+	)
+'
+
+test_expect_success 'get GIT_EDITOR with environment variable GIT_EDITOR' '
+	(
+		sane_unset GIT_EDITOR &&
+		sane_unset VISUAL &&
+		sane_unset EDITOR &&
+		echo bar >expect &&
+		GIT_EDITOR=bar git var GIT_EDITOR >actual &&
+		test_cmp expect actual
+	)
+'
+
+test_expect_success 'get GIT_EDITOR with environment variable EDITOR' '
+	(
+		sane_unset GIT_EDITOR &&
+		sane_unset VISUAL &&
+		sane_unset EDITOR &&
+		echo bar >expect &&
+		EDITOR=bar git var GIT_EDITOR >actual &&
+		test_cmp expect actual
+	)
+'
+
+test_expect_success 'get GIT_EDITOR with configuration and environment variable GIT_EDITOR' '
+	test_config core.editor foo &&
+	(
+		sane_unset GIT_EDITOR &&
+		sane_unset VISUAL &&
+		sane_unset EDITOR &&
+		echo bar >expect &&
+		GIT_EDITOR=bar git var GIT_EDITOR >actual &&
+		test_cmp expect actual
+	)
+'
+
+test_expect_success 'get GIT_EDITOR with configuration and environment variable EDITOR' '
+	test_config core.editor foo &&
+	(
+		sane_unset GIT_EDITOR &&
+		sane_unset VISUAL &&
+		sane_unset EDITOR &&
+		echo foo >expect &&
+		EDITOR=bar git var GIT_EDITOR >actual &&
+		test_cmp expect actual
+	)
+'
+
 # For git var -l, we check only a representative variable;
 # testing the whole output would make our test too brittle with
 # respect to unrelated changes in the test suite's environment.
