@@ -56,6 +56,17 @@ static void list_vars(void)
 			printf("%s=%s\n", ptr->name, val);
 }
 
+static const struct git_var *get_git_var(const char *var)
+{
+	struct git_var *ptr;
+	for (ptr = git_vars; ptr->read; ptr++) {
+		if (strcmp(var, ptr->name) == 0) {
+			return ptr;
+		}
+	}
+	return NULL;
+}
+
 static const char *read_var(const char *var)
 {
 	struct git_var *ptr;
@@ -81,6 +92,7 @@ static int show_config(const char *var, const char *value, void *cb)
 
 int cmd_var(int argc, const char **argv, const char *prefix)
 {
+	const struct git_var *git_var = NULL;
 	const char *val = NULL;
 	if (argc != 2)
 		usage(var_usage);
@@ -91,9 +103,14 @@ int cmd_var(int argc, const char **argv, const char *prefix)
 		return 0;
 	}
 	git_config(git_default_config, NULL);
+
+	git_var = get_git_var(argv[1]);
+	if (!git_var)
+		usage(var_usage);
+
 	val = read_var(argv[1]);
 	if (!val)
-		usage(var_usage);
+		return 1;
 
 	printf("%s\n", val);
 
