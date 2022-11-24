@@ -67,20 +67,6 @@ static const struct git_var *get_git_var(const char *var)
 	return NULL;
 }
 
-static const char *read_var(const char *var)
-{
-	struct git_var *ptr;
-	const char *val;
-	val = NULL;
-	for (ptr = git_vars; ptr->read; ptr++) {
-		if (strcmp(var, ptr->name) == 0) {
-			val = ptr->read(IDENT_STRICT);
-			break;
-		}
-	}
-	return val;
-}
-
 static int show_config(const char *var, const char *value, void *cb)
 {
 	if (value)
@@ -108,7 +94,7 @@ int cmd_var(int argc, const char **argv, const char *prefix)
 	if (!git_var)
 		usage(var_usage);
 
-	val = read_var(argv[1]);
+	val = git_var->read(IDENT_STRICT);
 	if (!val)
 		return 1;
 
