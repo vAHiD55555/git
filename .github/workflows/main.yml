@@ -291,7 +291,7 @@ jobs:
     runs-on: ubuntu-latest
     container: ${{matrix.vector.image}}
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - run: ci/install-docker-dependencies.sh
     - run: ci/run-build-and-tests.sh
     - name: print test failures
@@ -300,7 +300,7 @@ jobs:
       run: ci/print-test-failures.sh
     - name: Upload failed tests' directories
       if: failure() && env.FAILED_TEST_ARTIFACTS != ''
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v2
       with:
         name: failed-tests-${{matrix.vector.jobname}}
         path: ${{env.FAILED_TEST_ARTIFACTS}}
