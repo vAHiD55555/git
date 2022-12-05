@@ -51,7 +51,7 @@ static inline struct llist_item *llist_item_get(void)
 		new_item = free_nodes;
 		free_nodes = free_nodes->next;
 	} else {
-		int i = 1;
+		size_t i = 1;
 		ALLOC_ARRAY(new_item, BLKSIZE);
 		for (; i < BLKSIZE; i++)
 			llist_item_put(&new_item[i]);
@@ -61,9 +61,7 @@ static inline struct llist_item *llist_item_get(void)
 
 static inline void llist_init(struct llist **list)
 {
-	*list = xmalloc(sizeof(struct llist));
-	(*list)->front = (*list)->back = NULL;
-	(*list)->size = 0;
+	CALLOC_ARRAY(*list, 1);
 }
 
 static struct llist * llist_copy(struct llist *list)
