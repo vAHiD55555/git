@@ -68,6 +68,9 @@ test_expect_success 'out of bounds index.version issues warning' '
 test_expect_success 'index.skipHash config option' '
 	rm -f .git/index &&
 	git -c index.skipHash=true add a &&
+	test_trailing_hash .git/index >hash &&
+	echo $(test_oid zero) >expect &&
+	test_cmp expect hash &&
 	git fsck
 '
 
