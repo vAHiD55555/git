@@ -2923,12 +2923,13 @@ static int do_write_index(struct index_state *istate, struct tempfile *tempfile,
 	int ieot_entries = 1;
 	struct index_entry_offset_table *ieot = NULL;
 	int nr, nr_threads;
-	int skip_hash;
 
 	f = hashfd(tempfile->fd, tempfile->filename.buf);
 
-	if (!git_config_get_maybe_bool("index.skiphash", &skip_hash))
-		f->skip_hash = skip_hash;
+	if (istate->repo) {
+		prepare_repo_settings(istate->repo);
+		f->skip_hash = istate->repo->settings.index_skip_hash;
+	}
 
 	for (i = removed = extended = 0; i < entries; i++) {
 		if (cache[i]->ce_flags & CE_REMOVE)

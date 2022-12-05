@@ -72,7 +72,18 @@ test_expect_success 'index.skipHash config option' '
 		test_trailing_hash .git/index >hash &&
 		echo $(test_oid zero) >expect &&
 		test_cmp expect hash &&
-		git fsck
+		git fsck &&
+
+		rm -f .git/index &&
+		git -c feature.manyFiles=true add a &&
+		test_trailing_hash .git/index >hash &&
+		test_cmp expect hash &&
+
+		rm -f .git/index &&
+		git -c feature.manyFiles=true \
+		    -c index.skipHash=false add a &&
+		test_trailing_hash .git/index >hash &&
+		! test_cmp expect hash
 	)
 '
 
