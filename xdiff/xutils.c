@@ -98,12 +98,10 @@ void *xdl_cha_alloc(chastore_t *cha) {
 	void *data;
 
 	if (!(ancur = cha->ancur) || ancur->icurr == cha->nsize) {
-		if (!(ancur = (chanode_t *) xdl_malloc(sizeof(chanode_t) + cha->nsize))) {
+		if (!(ancur = (chanode_t *) xdl_calloc(1, sizeof(chanode_t) + cha->nsize))) {
 
 			return NULL;
 		}
-		ancur->icurr = 0;
-		ancur->next = NULL;
 		if (cha->tail)
 			cha->tail->next = ancur;
 		if (!cha->head)
