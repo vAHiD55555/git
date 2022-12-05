@@ -1464,8 +1464,7 @@ static const struct submodule *get_non_gitmodules_submodule(const char *path)
 	if (!name)
 		return NULL;
 
-	ret = xmalloc(sizeof(*ret));
-	memset(ret, 0, sizeof(*ret));
+	ret = xcalloc(1, sizeof(*ret));
 	ret->path = name;
 	ret->name = name;
 
