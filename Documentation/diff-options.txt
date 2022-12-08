@@ -22,7 +22,13 @@ ifndef::git-format-patch[]
 -p::
 -u::
 --patch::
-	Generate patch (see section on generating patches).
+	Generate patch (see section on
+ifdef::git-log[]
+<<_generating_patch_text_with_p, generating patches>>).
+endif::git-log[]
+ifndef::git-log[]
+Generate patch text with -p).
+endif::git-log[]
 ifdef::git-diff[]
 	This is the default.
 endif::git-diff[]
