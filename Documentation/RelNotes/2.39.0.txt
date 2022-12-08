@@ -194,7 +194,7 @@ Fixes since v2.38
  * Force C locale while running tests around httpd to make sure we can
    find expected error messages in the log.
 
- * Fix a logic in "mailinfo -b" that miscomputed the length of a
+ * Fix a logic in "mailinfo -b" that mis-computed the length of a
    substring, which lead to an out-of-bounds access.
 
  * The codepath to sign learned to report errors when it fails to read
@@ -214,7 +214,7 @@ Fixes since v2.38
  * Clarify that "the sentence after <area>: prefix does not begin with
    a capital letter" rule applies only to the commit title.
 
- * "git branch --edit-description" on an unborh branch misleadingly
+ * "git branch --edit-description" on an unborn branch misleadingly
    said that no such branch exists, which has been corrected.
 
  * Work around older clang that warns against C99 zero initialization
@@ -264,7 +264,7 @@ Fixes since v2.38
 
  * "git diff --stat" etc. were invented back when everything was ASCII
    and strlen() was a way to measure the display width of a string;
-   adjust them to compute the display width assuming UTF-8 pathnames.
+   adjust them to compute the display width assuming UTF-8 path names.
    (merge ce8529b2bb tb/diffstat-with-utf8-strwidth later to maint).
 
  * "git branch --edit-description" can exit with status -1 which is
@@ -289,7 +289,7 @@ Fixes since v2.38
    option now implies --reapply-cherry-picks and --no-fork-point
    options.
 
- * The way "git repack" creared temporary files when it received a
+ * The way "git repack" created temporary files when it received a
    signal was prone to deadlocking, which has been corrected.
 
  * Various tests exercising the transfer.credentialsInUrl
