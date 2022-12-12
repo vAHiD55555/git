@@ -610,7 +610,7 @@ int bundle_uri_advertise(struct repository *r, struct strbuf *value)
 		goto cached;
 
 	advertise_bundle_uri = 0;
-	git_config_get_maybe_bool("uploadpack.advertisebundleuris", &advertise_bundle_uri);
+	repo_config_get_maybe_bool(r, "uploadpack.advertisebundleuris", &advertise_bundle_uri);
 
 cached:
 	return advertise_bundle_uri;
