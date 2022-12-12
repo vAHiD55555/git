@@ -68,8 +68,8 @@ struct bundle_list {
 	 * In the case of the 'bundle-uri' protocol v2 command, the base
 	 * URI is the URI of the Git remote.
 	 *
-	 * Otherewise, the bundle list was downloaded over HTTP from some
-	 * known URI.
+	 * Otherwise, the bundle list was downloaded over HTTP from some
+	 * known URI. 'baseURI' is set to that value.
 	 *
 	 * The baseURI is used as the base for any relative URIs
 	 * advertised by the bundle list at that location.
@@ -112,10 +112,10 @@ int fetch_bundle_uri(struct repository *r, const char *uri);
  * bundle-uri protocol v2 verb) at the given uri, fetch and unbundle the
  * bundles according to the bundle strategy of that list.
  *
- * Returns non-zero if no bundle information is found at the given 'uri'.
+ * It is expected that the given 'list' is initialized, including its
+ * 'baseURI' value.
  */
 int fetch_bundle_list(struct repository *r,
-		      const char *uri,
 		      struct bundle_list *list);
 
 /**

@@ -1284,7 +1284,6 @@ int cmd_clone(int argc, const char **argv, const char *prefix)
 			if (repo_init(the_repository, git_dir, work_tree))
 				warning(_("failed to initialize the repo, skipping bundle URI"));
 			else if (fetch_bundle_list(the_repository,
-						   remote->url[0],
 						   transport->bundles))
 				warning(_("failed to fetch advertised bundles"));
 		} else {

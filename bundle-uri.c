@@ -577,7 +577,7 @@ cleanup:
 	return result;
 }
 
-int fetch_bundle_list(struct repository *r, const char *uri, struct bundle_list *list)
+int fetch_bundle_list(struct repository *r, struct bundle_list *list)
 {
 	int result;
 	struct bundle_list global_list;
