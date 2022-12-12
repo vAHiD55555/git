@@ -88,8 +88,8 @@ test_expect_success "clone with $BUNDLE_URI_PROTOCOL:// using protocol v2: reque
 	test_when_finished "rm -rf log* cloned*" &&
 
 	GIT_TRACE_PACKET="$PWD/log" \
-	GIT_TEST_BUNDLE_URI=0 \
 	git \
+		-c transfer.bundleURI=false \
 		-c protocol.version=2 \
 		clone "$BUNDLE_URI_REPO_URI" cloned \
 		>actual 2>err &&
@@ -137,6 +137,13 @@ test_expect_success "clone with $BUNDLE_URI_PROTOCOL:// using protocol v2: reque
 	! grep "> command=bundle-uri" log3
 '
 
+# The remaining tests will all assume transfer.bundleURI=true
+#
+# This test can be removed when transfer.bundleURI is enabled by default.
+test_expect_success 'enable transfer.bundleURI for remaining tests' '
+	git config --global transfer.bundleURI true
+'
+
 test_expect_success "test bundle-uri with $BUNDLE_URI_PROTOCOL:// using protocol v2" '
 	test_config -C "$BUNDLE_URI_PARENT" \
 		bundle.only.uri "$BUNDLE_URI_BUNDLE_URI_ESCAPED" &&
@@ -150,7 +157,6 @@ test_expect_success "test bundle-uri with $BUNDLE_URI_PROTOCOL:// using protocol
 		uri = $BUNDLE_URI_BUNDLE_URI_ESCAPED
 	EOF
 
-	GIT_TEST_BUNDLE_URI=1 \
 	test-tool bundle-uri \
 		ls-remote \
 		"$BUNDLE_URI_REPO_URI" \
@@ -174,7 +180,6 @@ test_expect_success "test bundle-uri with $BUNDLE_URI_PROTOCOL:// using protocol
 		uri = $BUNDLE_URI_BUNDLE_URI_ESCAPED
 	EOF
 
-	GIT_TEST_BUNDLE_URI=1 \
 	test-tool bundle-uri \
 		ls-remote \
 		"$BUNDLE_URI_REPO_URI" \
@@ -203,7 +208,6 @@ test_expect_success "test bundle-uri with $BUNDLE_URI_PROTOCOL:// using protocol
 		uri = $BUNDLE_URI_BUNDLE_URI_ESCAPED-3.bdl
 	EOF
 
-	GIT_TEST_BUNDLE_URI=1 \
 	test-tool bundle-uri \
 		ls-remote \
 		"$BUNDLE_URI_REPO_URI" \

@@ -1533,10 +1533,9 @@ int transport_get_remote_bundle_uri(struct transport *transport)
 
 	/*
 	 * Don't request bundle-uri from the server unless configured to
-	 * do so by GIT_TEST_BUNDLE_URI=1 or transfer.bundleURI=true.
+	 * do so by the transfer.bundleURI=true config option.
 	 */
-	if (!git_env_bool("GIT_TEST_BUNDLE_URI", 0) &&
-	    (git_config_get_bool("transfer.bundleuri", &value) || !value))
+	if (git_config_get_bool("transfer.bundleuri", &value) || !value)
 		return 0;
 
 	if (!transport->bundles->baseURI)

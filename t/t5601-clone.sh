@@ -786,9 +786,9 @@ test_expect_success 'auto-discover bundle URI from HTTP clone' '
 	git -C "$HTTPD_DOCUMENT_ROOT_PATH/repo2.git" config \
 		bundle.everything.uri "$HTTPD_URL/everything.bundle" &&
 
-	GIT_TEST_BUNDLE_URI=1 \
 	GIT_TRACE2_EVENT="$(pwd)/trace.txt" \
-		git -c protocol.version=2 clone \
+		git -c protocol.version=2 \
+		    -c transfer.bundleURI=true clone \
 		$HTTPD_URL/smart/repo2.git repo2 &&
 	cat >pattern <<-EOF &&
 	"event":"child_start".*"argv":\["git-remote-https","$HTTPD_URL/everything.bundle"\]
@@ -815,9 +815,9 @@ test_expect_success 'auto-discover multiple bundles from HTTP clone' '
 	git -C "$HTTPD_DOCUMENT_ROOT_PATH/repo3.git" config \
 		bundle.new.uri "$HTTPD_URL/new.bundle" &&
 
-	GIT_TEST_BUNDLE_URI=1 \
 	GIT_TRACE2_EVENT="$(pwd)/trace.txt" \
-		git -c protocol.version=2 clone \
+		git -c protocol.version=2 \
+		    -c transfer.bundleURI=true clone \
 		$HTTPD_URL/smart/repo3.git repo3 &&
 
 	# We should fetch _both_ bundles
