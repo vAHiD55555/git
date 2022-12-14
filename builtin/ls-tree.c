@@ -7,12 +7,14 @@
 #include "config.h"
 #include "object-store.h"
 #include "blob.h"
+#include "repository.h"
 #include "tree.h"
 #include "commit.h"
 #include "quote.h"
 #include "builtin.h"
 #include "parse-options.h"
 #include "pathspec.h"
+#include "dir.h"
 
 static int line_termination = '\n';
 #define LS_RECURSIVE 1
@@ -329,12 +331,79 @@ static struct ls_tree_cmdmode_to_fmt ls_tree_cmdmode_format[] = {
 	},
 };
 
+struct sparse_filter_data {
+	read_tree_fn_t fn;
+	struct pattern_list pl;
+	struct strbuf full_path_buf;
+};
+
+static void sparse_filter_data__init(
+	struct sparse_filter_data **d,
+	const char *sparse_oid_name, read_tree_fn_t fn)
+{
+	struct object_id sparse_oid;
+	struct object_context oc;
+
+	(*d) = xcalloc(1, sizeof(**d));
+	(*d)->fn = fn;
+	(*d)->pl.use_cone_patterns = core_sparse_checkout_cone;
+
+	strbuf_init(&(*d)->full_path_buf, 0);
+
+
+	if (get_oid_with_context(the_repository,
+				 sparse_oid_name,
+				 GET_OID_BLOB, &sparse_oid, &oc))
+		die(_("unable to access sparse blob in '%s'"), sparse_oid_name);
+	if (add_patterns_from_blob_to_list(&sparse_oid, "", 0, &(*d)->pl) < 0)
+		die(_("unable to parse sparse filter data in %s"),
+		    oid_to_hex(&sparse_oid));
+}
+
+static void sparse_filter_data__free(struct sparse_filter_data *d)
+{
+	clear_pattern_list(&d->pl);
+	strbuf_release(&d->full_path_buf);
+	free(d);
+}
+
+static int path_matches_sparse_checkout_patterns(struct strbuf *full_path, struct pattern_list *pl, int dtype)
+{
+	enum pattern_match_result match = recursively_match_path_with_sparse_patterns(full_path->buf, the_repository->index, dtype, pl);
+	return match > 0;
+}
+
+
+static int filter_sparse(const struct object_id *oid, struct strbuf *base,
+			 const char *pathname, unsigned mode, void *context)
+{
+
+	struct sparse_filter_data *data = context;
+
+	int do_recurse = show_recursive(base->buf, base->len, pathname);
+	if (object_type(mode) == OBJ_TREE)
+		return do_recurse;
+
+	strbuf_reset(&data->full_path_buf);
+	strbuf_addbuf(&data->full_path_buf, base);
+	strbuf_addstr(&data->full_path_buf, pathname);
+
+	if (!path_matches_sparse_checkout_patterns(&data->full_path_buf, &data->pl, DT_REG))
+		return 0;
+
+	return data->fn(oid, base, pathname, mode, context);
+}
+
+
 int cmd_ls_tree(int argc, const char **argv, const char *prefix)
 {
 	struct object_id oid;
 	struct tree *tree;
-	int i, full_tree = 0;
+	int ret, i, full_tree = 0;
 	read_tree_fn_t fn = NULL;
+	char *sparse_oid_name = NULL;
+	void *read_tree_context = NULL;
+	struct sparse_filter_data *sparse_filter_data = NULL;
 	const struct option ls_tree_options[] = {
 		OPT_BIT('d', NULL, &ls_options, N_("only show trees"),
 			LS_TREE_ONLY),
@@ -360,6 +429,9 @@ int cmd_ls_tree(int argc, const char **argv, const char *prefix)
 		OPT_STRING_F(0, "format", &format, N_("format"),
 					 N_("format to use for the output"),
 					 PARSE_OPT_NONEG),
+		OPT_STRING_F(0, "filter-sparse-oid", &sparse_oid_name, N_("filter-sparse-oid"),
+			   N_("filter output with sparse-checkout specification contained in the blob"),
+			     PARSE_OPT_NONEG),
 		OPT__ABBREV(&abbrev),
 		OPT_END()
 	};
@@ -433,5 +505,16 @@ int cmd_ls_tree(int argc, const char **argv, const char *prefix)
 		break;
 	}
 
-	return !!read_tree(the_repository, tree, &pathspec, fn, NULL);
+	if (sparse_oid_name) {
+		sparse_filter_data__init(&sparse_filter_data, sparse_oid_name, fn);
+		read_tree_context = sparse_filter_data;
+		fn = filter_sparse;
+	}
+
+	ret = !!read_tree(the_repository, tree, &pathspec, fn, read_tree_context);
+
+	if (sparse_filter_data)
+		sparse_filter_data__free(sparse_filter_data);
+
+	return ret;
 }
