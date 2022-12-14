@@ -18,7 +18,8 @@ struct patch_util {
 	struct hashmap_entry e;
 	const char *diff, *patch;
 
-	int i, shown;
+	size_t i;
+	int shown;
 	int diffsize;
 	size_t diff_offset;
 	/* the index of the matching item in the other branch, or -1 */
@@ -235,7 +236,7 @@ static int patch_util_cmp(const void *cmp_data UNUSED,
 static void find_exact_matches(struct string_list *a, struct string_list *b)
 {
 	struct hashmap map = HASHMAP_INIT((hashmap_cmp_fn)patch_util_cmp, NULL);
-	int i;
+	size_t i;
 
 	/* First, add the patches of a to a hash map */
 	for (i = 0; i < a->nr; i++) {
@@ -404,7 +405,7 @@ static void output_pair_header(struct diff_options *diffopt,
 	if (!a_util)
 		strbuf_addf(buf, "%*s:  %s ", patch_no_width, "-", dashes->buf);
 	else
-		strbuf_addf(buf, "%*d:  %s ", patch_no_width, a_util->i + 1,
+		strbuf_addf(buf, "%*lu:  %s ", patch_no_width, a_util->i + 1,
 			    find_unique_abbrev(&a_util->oid, DEFAULT_ABBREV));
 
 	if (status == '!')
@@ -416,7 +417,7 @@ static void output_pair_header(struct diff_options *diffopt,
 	if (!b_util)
 		strbuf_addf(buf, " %*s:  %s", patch_no_width, "-", dashes->buf);
 	else
-		strbuf_addf(buf, " %*d:  %s", patch_no_width, b_util->i + 1,
+		strbuf_addf(buf, " %*lu:  %s", patch_no_width, b_util->i + 1,
 			    find_unique_abbrev(&b_util->oid, DEFAULT_ABBREV));
 
 	commit = lookup_commit_reference(the_repository, oid);
@@ -578,7 +579,7 @@ int is_range_diff_range(const char *arg)
 {
 	char *copy = xstrdup(arg); /* setup_revisions() modifies it */
 	const char *argv[] = { "", copy, "--", NULL };
-	int i, positive = 0, negative = 0;
+	unsigned int i, positive = 0, negative = 0;
 	struct rev_info revs;
 
 	init_revisions(&revs, NULL);
@@ -599,5 +600,5 @@ int is_range_diff_range(const char *arg)
 
 	free(copy);
 	release_revisions(&revs);
-	return negative > 0 && positive > 0;
+	return negative != 0 && positive != 0;
 }
