@@ -2509,7 +2509,9 @@ static int parse_insn_line(struct repository *r, struct todo_item *item,
 	padding = strspn(bol, " \t");
 	bol += padding;
 
-	if (item->command == TODO_NOOP || item->command == TODO_BREAK) {
+	if (item->command == TODO_NOOP ||
+	    (item->command == TODO_BREAK &&
+	     (bol[0] != '#' || (bol[1] && !isspace (bol[1]))))) {
 		if (bol != eol)
 			return error(_("%s does not accept arguments: '%s'"),
 				     command_to_string(item->command), bol);
@@ -2524,7 +2526,8 @@ static int parse_insn_line(struct repository *r, struct todo_item *item,
 			     command_to_string(item->command));
 
 	if (item->command == TODO_EXEC || item->command == TODO_LABEL ||
-	    item->command == TODO_RESET || item->command == TODO_UPDATE_REF) {
+	    item->command == TODO_RESET || item->command == TODO_UPDATE_REF ||
+	    item->command == TODO_BREAK) {
 		item->commit = NULL;
 		item->arg_offset = bol - buf;
 		item->arg_len = (int)(eol - bol);
