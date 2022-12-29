@@ -1483,9 +1483,10 @@ static int fill_textconv_grep(struct repository *r,
 
 static int is_empty_line(const char *bol, const char *eol)
 {
-	while (bol < eol && isspace(*bol))
-		bol++;
-	return bol == eol;
+	while (bol < eol)
+		if (!isspace(*bol))
+			return 0;
+	return 1;
 }
 
 static int grep_source_1(struct grep_opt *opt, struct grep_source *gs, int collect_hits)
