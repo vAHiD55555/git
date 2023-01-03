@@ -29,7 +29,7 @@ extern const char *empty_strvec[];
  */
 struct strvec {
 	const char **v;
-	size_t nr;
+	int nr;
 	size_t alloc;
 };
 

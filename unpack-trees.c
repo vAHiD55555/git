@@ -2280,8 +2280,8 @@ static int verify_clean_subdirectory(const struct cache_entry *ce,
 	 * we are about to extract "ce->name"; we would not want to lose
 	 * anything in the existing directory there.
 	 */
-	int namelen;
-	int i;
+	unsigned int namelen;
+	unsigned int i;
 	struct dir_struct d;
 	char *pathbuf;
 	int cnt = 0;
@@ -2308,7 +2308,7 @@ static int verify_clean_subdirectory(const struct cache_entry *ce,
 	     i < o->src_index->cache_nr;
 	     i++) {
 		struct cache_entry *ce2 = o->src_index->cache[i];
-		int len = ce_namelen(ce2);
+		unsigned int len = ce_namelen(ce2);
 		if (len < namelen ||
 		    strncmp(ce->name, ce2->name, namelen) ||
 		    ce2->name[namelen] != '/')
@@ -2328,7 +2328,7 @@ static int verify_clean_subdirectory(const struct cache_entry *ce,
 	}
 
 	/* Do not lose a locally present file that is not ignored. */
-	pathbuf = xstrfmt("%.*s/", namelen, ce->name);
+	pathbuf = xstrfmt("%.*s/", (int)namelen, ce->name);
 
 	memset(&d, 0, sizeof(d));
 	if (o->dir)
