@@ -1423,13 +1423,13 @@ int cmd_rebase(int argc, const char **argv, const char *prefix)
 		options.gpg_sign_opt = xstrfmt("-S%s", gpg_sign);
 
 	if (exec.nr) {
-		int i;
+		size_t j;
 
 		imply_merge(&options, "--exec");
 
 		strbuf_reset(&buf);
-		for (i = 0; i < exec.nr; i++)
-			strbuf_addf(&buf, "exec %s\n", exec.items[i].string);
+		for (j = 0; j < exec.nr; j++)
+			strbuf_addf(&buf, "exec %s\n", exec.items[j].string);
 		options.cmd = xstrdup(buf.buf);
 	}
 
@@ -1462,15 +1462,15 @@ int cmd_rebase(int argc, const char **argv, const char *prefix)
 	}
 
 	if (strategy_options.nr) {
-		int i;
+		size_t j;
 
 		if (!options.strategy)
 			options.strategy = "ort";
 
 		strbuf_reset(&buf);
-		for (i = 0; i < strategy_options.nr; i++)
+		for (j = 0; j < strategy_options.nr; j++)
 			strbuf_addf(&buf, " --%s",
-				    strategy_options.items[i].string);
+				    strategy_options.items[j].string);
 		options.strategy_opts = xstrdup(buf.buf);
 	}
 

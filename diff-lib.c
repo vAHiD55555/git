@@ -556,7 +556,7 @@ static int diff_cache(struct rev_info *revs,
 
 void diff_get_merge_base(const struct rev_info *revs, struct object_id *mb)
 {
-	int i;
+	unsigned int i;
 	struct commit *mb_child[2] = {0};
 	struct commit_list *merge_bases;
 

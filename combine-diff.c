@@ -40,7 +40,7 @@ static struct combine_diff_path *intersect_paths(
 
 	if (!n) {
 		for (i = 0; i < q->nr; i++) {
-			int len;
+			size_t len;
 			const char *path;
 			if (diff_unmodified_pair(q->queue[i]))
 				continue;
@@ -251,7 +251,7 @@ static struct lline *coalesce_lines(struct lline *base, int *lenbase,
 	/* At this point, baseend and newend point to the end of each lists */
 	i--;
 	j--;
-	while (i != 0 || j != 0) {
+	while (i > 0 || j > 0) {
 		if (directions[i][j] == MATCH) {
 			baseend->parent_map |= 1<<parent;
 			baseend = baseend->prev;

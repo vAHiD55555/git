@@ -55,7 +55,7 @@ static int parse_capability(struct bundle_header *header, const char *capability
 
 static int parse_bundle_signature(struct bundle_header *header, const char *line)
 {
-	int i;
+	size_t i;
 
 	for (i = 0; i < ARRAY_SIZE(bundle_sigs); i++) {
 		if (!strcmp(line, bundle_sigs[i].signature)) {
@@ -162,7 +162,7 @@ int is_bundle(const char *path, int quiet)
 
 static int list_refs(struct string_list *r, int argc, const char **argv)
 {
-	int i;
+	size_t i;
 
 	for (i = 0; i < r->nr; i++) {
 		struct object_id *oid;
@@ -199,7 +199,9 @@ int verify_bundle(struct repository *r,
 	struct rev_info revs = REV_INFO_INIT;
 	const char *argv[] = {NULL, "--all", NULL};
 	struct commit *commit;
-	int i, ret = 0, req_nr;
+	size_t i;
+	int ret = 0;
+	unsigned int req_nr;
 	const char *message = _("Repository lacks these prerequisite commits:");
 
 	if (!r || !r->objects || !r->objects->odb)
@@ -333,7 +335,7 @@ out:
 static int write_pack_data(int bundle_fd, struct rev_info *revs, struct strvec *pack_options)
 {
 	struct child_process pack_objects = CHILD_PROCESS_INIT;
-	int i;
+	unsigned int i;
 
 	strvec_pushl(&pack_objects.args,
 		     "pack-objects",
@@ -387,7 +389,7 @@ static int write_pack_data(int bundle_fd, struct rev_info *revs, struct strvec *
  */
 static int write_bundle_refs(int bundle_fd, struct rev_info *revs)
 {
-	int i;
+	unsigned int i;
 	int ref_count = 0;
 
 	for (i = 0; i < revs->pending.nr; i++) {
@@ -512,7 +514,7 @@ int create_bundle(struct repository *r, const char *path,
 	struct rev_info revs, revs_copy;
 	int min_version = 2;
 	struct bundle_prerequisites_info bpi;
-	int i;
+	unsigned int i;
 
 	/* init revs to list objects for pack-objects later */
 	save_commit_buffer = 0;

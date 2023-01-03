@@ -494,7 +494,7 @@ static void read_bisect_paths(struct strvec *array)
 static char *join_oid_array_hex(struct oid_array *array, char delim)
 {
 	struct strbuf joined_hexs = STRBUF_INIT;
-	int i;
+	size_t i;
 
 	for (i = 0; i < array->nr; i++) {
 		strbuf_addstr(&joined_hexs, oid_to_hex(array->oid + i));

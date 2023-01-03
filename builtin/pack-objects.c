@@ -1509,7 +1509,7 @@ static int want_object_in_pack(const struct object_id *oid,
 	if (uri_protocols.nr) {
 		struct configured_exclusion *ex =
 			oidmap_get(&configured_exclusions, oid);
-		int i;
+		size_t i;
 		const char *p;
 
 		if (ex) {
@@ -1708,18 +1708,16 @@ static void pbase_tree_put(struct pbase_tree_cache *cache)
 	free(cache);
 }
 
-static int name_cmp_len(const char *name)
+static size_t name_cmp_len(const char *name)
 {
-	int i;
+	size_t i;
 	for (i = 0; name[i] && name[i] != '\n' && name[i] != '/'; i++)
 		;
 	return i;
 }
 
-static void add_pbase_object(struct tree_desc *tree,
-			     const char *name,
-			     int cmplen,
-			     const char *fullname)
+static void add_pbase_object(struct tree_desc *tree, const char *name,
+			     size_t cmplen, const char *fullname)
 {
 	struct name_entry entry;
 	int cmp;
@@ -1743,7 +1741,7 @@ static void add_pbase_object(struct tree_desc *tree,
 			struct tree_desc sub;
 			struct pbase_tree_cache *tree;
 			const char *down = name+cmplen+1;
-			int downlen = name_cmp_len(down);
+			size_t downlen = name_cmp_len(down);
 
 			tree = pbase_tree_get(&entry.oid);
 			if (!tree)
@@ -4085,7 +4083,7 @@ static void add_extra_kept_packs(const struct string_list *names)
 
 	for (p = get_all_packs(the_repository); p; p = p->next) {
 		const char *name = basename(p->pack_name);
-		int i;
+		size_t i;
 
 		if (!p->pack_local)
 			continue;
