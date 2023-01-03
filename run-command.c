@@ -1030,6 +1030,18 @@ static void *run_thread(void *data)
 	return (void *)ret;
 }
 
+int in_async(void)
+{
+	if (!main_thread_set)
+		return 0; /* no asyncs started yet */
+	return !pthread_equal(main_thread, pthread_self());
+}
+
+static inline void NORETURN async_exit(int code)
+{
+	pthread_exit((void *)(intptr_t)code);
+}
+
 static NORETURN void die_async(const char *err, va_list params)
 {
 	report_fn die_message_fn = get_die_message_routine();
@@ -1042,7 +1054,7 @@ static NORETURN void die_async(const char *err, va_list params)
 			close(async->proc_in);
 		if (async->proc_out >= 0)
 			close(async->proc_out);
-		pthread_exit((void *)128);
+		async_exit(128);
 	}
 
 	exit(128);
@@ -1053,18 +1065,6 @@ static int async_die_is_recursing(void)
 	void *ret = pthread_getspecific(async_die_counter);
 	pthread_setspecific(async_die_counter, &async_die_counter); /* set to any non-NULL valid pointer */
 	return ret != NULL;
-}
-
-int in_async(void)
-{
-	if (!main_thread_set)
-		return 0; /* no asyncs started yet */
-	return !pthread_equal(main_thread, pthread_self());
-}
-
-static void NORETURN async_exit(int code)
-{
-	pthread_exit((void *)(intptr_t)code);
 }
 
 #else
@@ -1112,7 +1112,7 @@ int in_async(void)
 	return process_is_async;
 }
 
-static void NORETURN async_exit(int code)
+static inline void NORETURN async_exit(int code)
 {
 	exit(code);
 }
