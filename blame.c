@@ -2193,10 +2193,10 @@ struct blame_list {
  * and prepare a list of entry and the best split.
  */
 static struct blame_list *setup_blame_list(struct blame_entry *unblamed,
-					   int *num_ents_p)
+					   size_t *num_ents_p)
 {
 	struct blame_entry *e;
-	int num_ents, i;
+	size_t num_ents, i;
 	struct blame_list *blame_list = NULL;
 
 	for (e = unblamed, num_ents = 0; e; e = e->next)
@@ -2224,9 +2224,9 @@ static void find_copy_in_parent(struct blame_scoreboard *sb,
 				int opt)
 {
 	struct diff_options diff_opts;
-	int i, j;
+	size_t i, j;
 	struct blame_list *blame_list;
-	int num_ents;
+	size_t num_ents;
 	struct blame_entry *unblamed = target->suspects;
 	struct blame_entry *leftover = NULL;
 
@@ -2645,7 +2645,7 @@ static int prepare_lines(struct blame_scoreboard *sb)
 static struct commit *find_single_final(struct rev_info *revs,
 					const char **name_p)
 {
-	int i;
+	unsigned int i;
 	struct commit *found = NULL;
 	const char *name = NULL;
 
@@ -2708,7 +2708,7 @@ static struct commit *dwim_reverse_initial(struct rev_info *revs,
 static struct commit *find_single_initial(struct rev_info *revs,
 					  const char **name_p)
 {
-	int i;
+	unsigned int i;
 	struct commit *found = NULL;
 	const char *name = NULL;
 
