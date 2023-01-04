@@ -43,6 +43,9 @@ struct strvec {
  */
 void strvec_init(struct strvec *);
 
+/* Push a string onto the end of the array without copying. */
+void strvec_push_nodup(struct strvec *array, const char *value);
+
 /* Push a copy of a string onto the end of the array. */
 const char *strvec_push(struct strvec *, const char *);
 
