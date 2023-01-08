@@ -189,9 +189,12 @@ static struct strategy *get_strategy(const char *name)
 			int j, found = 0;
 			struct cmdname *ent = main_cmds.names[i];
 			for (j = 0; j < ARRAY_SIZE(all_strategy); j++)
-				if (!strncmp(ent->name, all_strategy[j].name, ent->len)
-						&& !all_strategy[j].name[ent->len])
+				if (!strncmp(ent->name, all_strategy[j].name,
+					     ent->len) &&
+				    !all_strategy[j].name[ent->len]) {
 					found = 1;
+					break;
+				}
 			if (!found)
 				add_cmdname(&not_strategies, ent->name, ent->len);
 		}
