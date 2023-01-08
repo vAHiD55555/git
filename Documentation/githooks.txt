@@ -31,6 +31,17 @@ Hooks can get their arguments via the environment, command-line
 arguments, and stdin. See the documentation for each hook below for
 details.
 
+If your hook needs to invoke Git commands in a foreign repository or in a
+different working tree of the same repository, then it should clear local Git
+environment variables, such as `GIT_DIR`, `GIT_WORK_TREE`, etc., which could
+interfere with Git operations in the foreign repository since those variables
+will be referencing the local repository and working tree. For example:
+
+------------
+local_desc=$(git describe)
+foreign_desc=$(unset $(git rev-parse --local-env-vars); git -C ../foreign-repo describe)
+------------
+
 `git init` may copy hooks to the new repository, depending on its
 configuration. See the "TEMPLATE DIRECTORY" section in
 linkgit:git-init[1] for details. When the rest of this document refers
