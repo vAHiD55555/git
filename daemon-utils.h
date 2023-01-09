@@ -28,11 +28,11 @@ struct child {
 };
 
 void add_child(struct child_process *cld, struct sockaddr *addr, socklen_t addrlen,
-	       struct child *firstborn, unsigned int *live_children);
+	       struct child *first, unsigned int *live_children);
 
-void kill_some_child(struct child *firstborn);
+void kill_some_child(struct child *first);
 
-void check_dead_children(struct child *firstborn, unsigned int *live_children,
+void check_dead_children(struct child *first, unsigned int *live_children,
 			 log_fn loginfo);
 
 #endif
