@@ -2,6 +2,7 @@
 #define DAEMON_UTILS_H
 
 #include "git-compat-util.h"
+#include "run-command.h"
 #include "string-list.h"
 
 typedef void (*log_fn)(const char *msg, ...);
@@ -19,5 +20,19 @@ void set_keep_alive(int sockfd, log_fn logerror);
 void socksetup(struct string_list *listen_addr, int listen_port,
 	       struct socketlist *socklist, int reuseaddr,
 	       log_fn logerror);
+
+struct child {
+	struct child *next;
+	struct child_process cld;
+	struct sockaddr_storage address;
+};
+
+void add_child(struct child_process *cld, struct sockaddr *addr, socklen_t addrlen,
+	       struct child *firstborn, unsigned int *live_children);
+
+void kill_some_child(struct child *firstborn);
+
+void check_dead_children(struct child *firstborn, unsigned int *live_children,
+			 log_fn loginfo);
 
 #endif
