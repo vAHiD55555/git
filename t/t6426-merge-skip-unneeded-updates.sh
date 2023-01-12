@@ -380,40 +380,28 @@ test_expect_success '2c: Modify b & add c VS rename b->c' '
 
 		# Make sure c WAS updated
 		test-tool chmtime --get c >new-mtime &&
-		test $(cat old-mtime) -lt $(cat new-mtime)
+		test $(cat old-mtime) -lt $(cat new-mtime) &&
 
-		# FIXME: rename/add conflicts are horribly broken right now;
-		# when I get back to my patch series fixing it and
-		# rename/rename(2to1) conflicts to bring them in line with
-		# how add/add conflicts behave, then checks like the below
-		# could be added.  But that patch series is waiting until
-		# the rename-directory-detection series lands, which this
-		# is part of.  And in the mean time, I do not want to further
-		# enforce broken behavior.  So for now, the main test is the
-		# one above that err is an empty file.
+		git ls-files -s >index_files &&
+		test_line_count = 2 index_files &&
 
-		#git ls-files -s >index_files &&
-		#test_line_count = 2 index_files &&
+		git rev-parse >actual :2:c :3:c &&
+		git rev-parse >expect A:c  A:b  &&
+		test_cmp expect actual &&
 
-		#git rev-parse >actual :2:c :3:c &&
-		#git rev-parse >expect A:b  A:c  &&
-		#test_cmp expect actual &&
+		git cat-file -p A:b >>merge-me &&
+		git cat-file -p A:c >>merged &&
+		>empty &&
+		test_must_fail git merge-file \
+			-L "HEAD" \
+			-L "" \
+			-L "B^0" \
+			merged empty merge-me &&
+		sed -e "s/^\([<=>]\)/\1\1\1/" merged >merged-internal &&
 
-		#git cat-file -p A:b >>merged &&
-		#git cat-file -p A:c >>merge-me &&
-		#>empty &&
-		#test_must_fail git merge-file \
-		#	-L "Temporary merge branch 1" \
-		#	-L "" \
-		#	-L "Temporary merge branch 2" \
-		#	merged empty merge-me &&
-		#sed -e "s/^\([<=>]\)/\1\1\1/" merged >merged-internal &&
+		test_cmp merged c &&
 
-		#git hash-object c               >actual &&
-		#git hash-object merged-internal >expect &&
-		#test_cmp expect actual &&
-
-		#test_path_is_missing b
+		test_path_is_missing b
 	)
 '
 
