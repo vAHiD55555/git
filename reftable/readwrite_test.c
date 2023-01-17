@@ -483,7 +483,7 @@ static void test_table_read_write_seek(int index, int hash_id)
 	}
 
 	strbuf_addstr(&pastLast, names[N - 1]);
-	strbuf_addstr(&pastLast, "/");
+	strbuf_addch(&pastLast, '/');
 
 	err = reftable_reader_seek_ref(&rd, &it, pastLast.buf);
 	if (err == 0) {

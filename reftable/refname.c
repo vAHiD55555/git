@@ -179,7 +179,7 @@ int modification_validate(struct modification *mod)
 			goto done;
 		strbuf_reset(&slashed);
 		strbuf_addstr(&slashed, mod->add[i]);
-		strbuf_addstr(&slashed, "/");
+		strbuf_addch(&slashed, '/');
 
 		err = modification_has_ref_with_prefix(mod, slashed.buf);
 		if (err == 0) {

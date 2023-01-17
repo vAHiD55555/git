@@ -443,7 +443,7 @@ static int register_ref(const char *refname, const struct object_id *oid,
 {
 	struct strbuf good_prefix = STRBUF_INIT;
 	strbuf_addstr(&good_prefix, term_good);
-	strbuf_addstr(&good_prefix, "-");
+	strbuf_addch(&good_prefix, '-');
 
 	if (!strcmp(refname, term_bad)) {
 		current_bad_oid = xmalloc(sizeof(*current_bad_oid));

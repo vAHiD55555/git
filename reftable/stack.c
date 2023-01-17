@@ -35,7 +35,7 @@ static void stack_filename(struct strbuf *dest, struct reftable_stack *st,
 {
 	strbuf_reset(dest);
 	strbuf_addstr(dest, st->reftable_dir);
-	strbuf_addstr(dest, "/");
+	strbuf_addch(dest, '/');
 	strbuf_addstr(dest, name);
 }
 
@@ -547,11 +547,11 @@ int reftable_addition_commit(struct reftable_addition *add)
 
 	for (i = 0; i < add->stack->merged->stack_len; i++) {
 		strbuf_addstr(&table_list, add->stack->readers[i]->name);
-		strbuf_addstr(&table_list, "\n");
+		strbuf_addch(&table_list, '\n');
 	}
 	for (i = 0; i < add->new_tables_len; i++) {
 		strbuf_addstr(&table_list, add->new_tables[i]);
-		strbuf_addstr(&table_list, "\n");
+		strbuf_addch(&table_list, '\n');
 	}
 
 	err = write(add->lock_file_fd, table_list.buf, table_list.len);
@@ -1013,15 +1013,15 @@ static int stack_compact_range(struct reftable_stack *st, int first, int last,
 
 	for (i = 0; i < first; i++) {
 		strbuf_addstr(&ref_list_contents, st->readers[i]->name);
-		strbuf_addstr(&ref_list_contents, "\n");
+		strbuf_addch(&ref_list_contents, '\n');
 	}
 	if (!is_empty_table) {
 		strbuf_addbuf(&ref_list_contents, &new_table_name);
-		strbuf_addstr(&ref_list_contents, "\n");
+		strbuf_addch(&ref_list_contents, '\n');
 	}
 	for (i = last + 1; i < st->merged->stack_len; i++) {
 		strbuf_addstr(&ref_list_contents, st->readers[i]->name);
-		strbuf_addstr(&ref_list_contents, "\n");
+		strbuf_addch(&ref_list_contents, '\n');
 	}
 
 	err = write(lock_file_fd, ref_list_contents.buf, ref_list_contents.len);

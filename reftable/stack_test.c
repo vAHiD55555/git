@@ -181,7 +181,7 @@ static void test_reftable_stack_add_one(void)
 
 	strbuf_reset(&scratch);
 	strbuf_addstr(&scratch, dir);
-	strbuf_addstr(&scratch, "/");
+	strbuf_addch(&scratch, '/');
 	/* do not try at home; not an external API for reftable. */
 	strbuf_addstr(&scratch, st->readers[0]->name);
 	err = stat(scratch.buf, &stat_result);

@@ -351,7 +351,7 @@ int reftable_writer_add_log(struct reftable_writer *w,
 			err = REFTABLE_API_ERROR;
 			goto done;
 		}
-		strbuf_addstr(&cleaned_message, "\n");
+		strbuf_addch(&cleaned_message, '\n');
 		log->value.update.message = cleaned_message.buf;
 	}
 

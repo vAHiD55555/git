@@ -2233,7 +2233,7 @@ static int do_pick_commit(struct repository *r,
 		} else {
 			strbuf_addstr(&msgbuf, "Revert \"");
 			strbuf_addstr(&msgbuf, msg.subject);
-			strbuf_addstr(&msgbuf, "\"");
+			strbuf_addch(&msgbuf, '\"');
 		}
 		strbuf_addstr(&msgbuf, "\n\nThis reverts commit ");
 		refer_to_commit(opts, &msgbuf, commit);
