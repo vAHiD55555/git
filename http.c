@@ -76,6 +76,10 @@ static const char *http_proxy_ssl_ca_info;
 static struct credential proxy_cert_auth = CREDENTIAL_INIT;
 static int proxy_ssl_cert_password_required;
 
+#ifdef GIT_CURL_HAVE_CURLOPT_PROTOCOLS_STR
+static char protocol_list[20];
+#endif
+
 static struct {
 	const char *name;
 	long curlauth_param;
@@ -157,21 +161,19 @@ size_t fread_buffer(char *ptr, size_t eltsize, size_t nmemb, void *buffer_)
 	return size / eltsize;
 }
 
-curlioerr ioctl_buffer(CURL *handle, int cmd, void *clientp)
+int seek_buffer(void *userp, curl_off_t offset, int origin)
 {
-	struct buffer *buffer = clientp;
+	struct buffer *buffer = userp;
 
-	switch (cmd) {
-	case CURLIOCMD_NOP:
-		return CURLIOE_OK;
-
-	case CURLIOCMD_RESTARTREAD:
-		buffer->posn = 0;
-		return CURLIOE_OK;
-
-	default:
-		return CURLIOE_UNKNOWNCMD;
+	if (origin != SEEK_SET)
+		BUG("seek_buffer only handles SEEK_SET");
+	if (offset < 0 || offset >= buffer->buf.len) {
+		error("curl seek would be outside of buffer");
+		return CURL_SEEKFUNC_FAIL;
 	}
+
+	buffer->posn = offset;
+	return CURL_SEEKFUNC_OK;
 }
 
 size_t fwrite_buffer(char *ptr, size_t eltsize, size_t nmemb, void *buffer_)
@@ -765,7 +767,52 @@ void setup_curl_trace(CURL *handle)
 	curl_easy_setopt(handle, CURLOPT_DEBUGFUNCTION, curl_trace);
 	curl_easy_setopt(handle, CURLOPT_DEBUGDATA, NULL);
 }
+#ifdef GIT_CURL_HAVE_CURLOPT_PROTOCOLS_STR
+static void get_curl_allowed_protocols(int from_user)
+{
+	unsigned int i = 0;
 
+	if (is_transport_allowed("http", from_user)) {
+		protocol_list[i++] = 'h';
+		protocol_list[i++] = 't';
+		protocol_list[i++] = 't';
+		protocol_list[i++] = 'p';
+	}
+
+	if (is_transport_allowed("https", from_user)) {
+		if (i != 0) {
+			protocol_list[i++] = ',';
+		}
+
+		protocol_list[i++] = 'h';
+		protocol_list[i++] = 't';
+		protocol_list[i++] = 't';
+		protocol_list[i++] = 'p';
+		protocol_list[i++] = 's';
+	}
+	if (is_transport_allowed("ftp", from_user)) {
+		if (i != 0) {
+			protocol_list[i++] = ',';
+		}
+
+		protocol_list[i++] = 'f';
+		protocol_list[i++] = 't';
+		protocol_list[i++] = 'p';
+	}
+	if (is_transport_allowed("ftps", from_user)) {
+		if (i != 0) {
+			protocol_list[i++] = ',';
+		}
+
+		protocol_list[i++] = 'f';
+		protocol_list[i++] = 't';
+		protocol_list[i++] = 'p';
+		protocol_list[i++] = 's';
+	}
+
+	protocol_list[i] = '\0';
+}
+#else
 static long get_curl_allowed_protocols(int from_user)
 {
 	long allowed_protocols = 0;
@@ -781,6 +828,7 @@ static long get_curl_allowed_protocols(int from_user)
 
 	return allowed_protocols;
 }
+#endif
 
 #ifdef GIT_CURL_HAVE_CURL_HTTP_VERSION_2
 static int get_curl_http_version_opt(const char *version_string, long *opt)
@@ -923,10 +971,18 @@ static CURL *get_curl_handle(void)
 
 	curl_easy_setopt(result, CURLOPT_MAXREDIRS, 20);
 	curl_easy_setopt(result, CURLOPT_POSTREDIR, CURL_REDIR_POST_ALL);
+#ifdef GIT_CURL_HAVE_CURLOPT_PROTOCOLS_STR
+	get_curl_allowed_protocols(0);
+	curl_easy_setopt(result, CURLOPT_REDIR_PROTOCOLS_STR, redir_protocol);
+	get_curl_allowed_protocols(-1);
+	curl_easy_setopt(result, CURLOPT_PROTOCOLS_STR, protocol);
+#else
 	curl_easy_setopt(result, CURLOPT_REDIR_PROTOCOLS,
 			 get_curl_allowed_protocols(0));
 	curl_easy_setopt(result, CURLOPT_PROTOCOLS,
 			 get_curl_allowed_protocols(-1));
+#endif
+
 	if (getenv("GIT_CURL_VERBOSE"))
 		http_trace_curl_no_data();
 	setup_curl_trace(result);
