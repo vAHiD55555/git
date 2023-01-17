@@ -903,6 +903,19 @@ test_expect_success 'push --delete refuses empty string' '
 	test_must_fail git push testrepo --delete ""
 '
 
+test_expect_success 'push --delete onelevel refspecs' '
+	mk_test testrepo heads/main &&
+	(
+		cd testrepo &&
+		git update-ref refs/onelevel refs/heads/main
+	) &&
+	git push testrepo --delete refs/onelevel &&
+	(
+		cd testrepo &&
+		test_must_fail git rev-parse --verify refs/onelevel
+	)
+'
+
 test_expect_success 'warn on push to HEAD of non-bare repository' '
 	mk_test testrepo heads/main &&
 	(
