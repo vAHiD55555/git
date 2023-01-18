@@ -3081,15 +3081,38 @@ int wmain(int argc, const wchar_t **wargv)
 	return exit_status;
 }
 
+/*
+ * for RtlGetVersion in uname
+ */
+
+typedef NTSTATUS(WINAPI *RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
+union winprocaddr {
+	FARPROC procaddr;
+	RtlGetVersionPtr procGetVersion;
+};
+
 int uname(struct utsname *buf)
 {
-	unsigned v = (unsigned)GetVersion();
+	union winprocaddr RtlGetVersionInternal;
+	OSVERSIONINFOA version;
+
+	RtlGetVersionInternal.procaddr =
+		GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "RtlGetVersion");
+	if (!RtlGetVersionInternal.procaddr) {
+		/* if this is reached, something is seriously, seriously wrong
+		 */
+		perror("Could not call RtlGetVersion in ntdll.dll");
+		abort();
+	}
+
+	version.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+	RtlGetVersionInternal.procGetVersion((PRTL_OSVERSIONINFOW)&version);
+
 	memset(buf, 0, sizeof(*buf));
 	xsnprintf(buf->sysname, sizeof(buf->sysname), "Windows");
-	xsnprintf(buf->release, sizeof(buf->release),
-		 "%u.%u", v & 0xff, (v >> 8) & 0xff);
-	/* assuming NT variants only.. */
-	xsnprintf(buf->version, sizeof(buf->version),
-		  "%u", (v >> 16) & 0x7fff);
+	xsnprintf(buf->release, sizeof(buf->release), "%lu.%lu",
+		  version.dwMajorVersion, version.dwMinorVersion);
+	xsnprintf(buf->version, sizeof(buf->version), "%lu",
+		  version.dwBuildNumber);
 	return 0;
 }
