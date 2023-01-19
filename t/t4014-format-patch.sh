@@ -2366,4 +2366,11 @@ test_expect_success 'interdiff: solo-patch' '
 	test_cmp expect actual
 '
 
+test_expect_success 'cover-letter gets To: header' '
+	rm -fr patches &&
+	git config --unset-all format.to &&
+	git format-patch -o patches --cover-letter --to "R E Cipient <rcipient@example.com>" main..side >list &&
+	grep "^To: R E Cipient <rcipient@example.com>\$" patches/0000-cover-letter.patch
+'
+
 test_done
