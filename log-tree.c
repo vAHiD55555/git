@@ -20,6 +20,7 @@
 #include "help.h"
 #include "range-diff.h"
 #include "strmap.h"
+#include "run-command.h"
 
 static struct decoration name_decoration = { "object names" };
 static int decoration_loaded;
@@ -652,11 +653,175 @@ static void next_commentary_block(struct rev_info *opt, struct strbuf *sb)
 	opt->shown_dashes = 1;
 }
 
+/*
+ * Aims to mirror git-send-email.perl's function of the same name, returning a
+ * malloc()ed string that the caller must free().
+ */
+static char *sanitize_address(const struct rev_info *opt, const char *entry)
+{
+	int escaped = 0;
+	const char *inp;
+	char *tmp, *outp;
+	struct strbuf addr = STRBUF_INIT;
+	struct pretty_print_context ctx = {0};
+
+	/* Skip over any leading whitespace */
+	while (isspace(*entry))
+		entry++;
+
+	outp = tmp = xmalloc(strlen(entry) + 1);
+
+	/* Remove non-escaped quotes */
+	for (inp = entry; *inp; inp++) {
+		if (escaped) {
+			escaped = 0;
+		} else {
+			switch (*inp) {
+			case '\\':
+				escaped = 1;
+				/* fallthrough */
+			case '"':
+				continue;
+			}
+		}
+		*outp++ = *inp;
+	}
+	*outp = '\0';
+
+	ctx.fmt = opt->commit_format;
+	ctx.mailmap = opt->mailmap;
+	ctx.encode_email_headers = opt->encode_email_headers;
+	ctx.output_encoding = get_log_output_encoding();
+	ctx.name_and_address_only = 1;
+
+	pp_user_info(&ctx, NULL, &addr, tmp, get_log_output_encoding());
+
+	free(tmp);
+
+	return strbuf_detach(&addr, NULL);
+}
+
+/*
+ * Given 'text' as the output of a --to-cmd or --cc-cmd command, add each
+ * entry to 'list'.
+ */
+static void ingest_recipients_to_list(const char *text, const struct rev_info *opt,
+				      struct string_list *list)
+{
+	struct string_list_item *item;
+	struct string_list lines = STRING_LIST_INIT_DUP;
+
+	string_list_split(&lines, text, '\n', -1);
+
+	for_each_string_list_item(item, &lines) {
+		char *addr = sanitize_address(opt, item->string);
+		if (*addr)
+			string_list_append_nodup(list, addr);
+		else
+			free(addr);
+	}
+
+	string_list_clear(&lines, 0);
+}
+
+/*
+ * Generate a temporary patch file for the given commit, returning its path as
+ * a malloc()ed string the caller must free (and should unlink when finished
+ * with it).
+ */
+static char *generate_temp_patch(struct commit *commit)
+{
+	char path[PATH_MAX];
+	char *diff_output_arg;
+	struct strbuf diff_output_arg_buf = STRBUF_INIT;
+	struct child_process diffproc = CHILD_PROCESS_INIT;
+
+	xsnprintf(path, sizeof(path), ".git-temp-diff.XXXXXX");
+	close(xmkstemp(path));
+
+	strbuf_addf(&diff_output_arg_buf, "--output=%s", path);
+	diff_output_arg = strbuf_detach(&diff_output_arg_buf, NULL);
+
+	diffproc.git_cmd = 1;
+	strvec_push(&diffproc.args, "format-patch");
+	strvec_push(&diffproc.args, "-1");
+	strvec_push(&diffproc.args, diff_output_arg);
+	strvec_push(&diffproc.args, oid_to_hex(&commit->object.oid));
+
+	if (run_command(&diffproc))
+		die(_("Error generating temporary diff"));
+
+	free(diff_output_arg);
+
+	return xstrdup(path);
+}
+
+/*
+ * Execute a --to-cmd or --cc-cmd command on a temporary patch file, adding
+ * each recipient produced to 'list'.
+ */
+static void run_recipients_command(const char *cmd, const char *tmpdiff,
+				   const struct rev_info *opt,
+				   struct string_list *list)
+{
+	char *full_cmd;
+	char *cmd_output;
+	struct strbuf cmd_output_buf = STRBUF_INIT;
+	struct strbuf cmd_buf = STRBUF_INIT;
+	struct child_process cmdproc = CHILD_PROCESS_INIT;
+
+	strbuf_addf(&cmd_buf, "%s %s", cmd, tmpdiff);
+	full_cmd = strbuf_detach(&cmd_buf, NULL);
+
+	cmdproc.use_shell = 1;
+	strvec_push(&cmdproc.args, full_cmd);
+	if (capture_command(&cmdproc, &cmd_output_buf, 1024))
+		die(_("Error generating recipients list: command failed"));
+
+	cmd_output = strbuf_detach(&cmd_output_buf, NULL);
+	ingest_recipients_to_list(cmd_output, opt, list);
+
+	free(cmd_output);
+	free(full_cmd);
+}
+
+/*
+ * Generate a To or Cc header into 'buf', where 'header' is "To" or "Cc",
+ * 'fixed' is the list of fixed recipients (e.g. those specified by --to or
+ * --cc, optional), 'cmd' is the (optional) --to-cmd or --cc-cmd argument to
+ * generate recipients, and 'tmpdiff' is the path of a temp file containing a
+ * patch file to run 'cmd' on (mandatory if 'cmd' is non-NULL).
+ */
+static void headerize_recipients(const char *header, const char *tmpdiff,
+				 const struct rev_info *opt,
+				 const struct string_list *fixed,
+				 const char *cmd, struct strbuf *buf)
+{
+	struct string_list_item *item;
+	struct string_list recipients = STRING_LIST_INIT_DUP;
+
+	if (fixed) {
+		for_each_string_list_item(item, fixed)
+			string_list_append(&recipients, item->string);
+	}
+
+	if (cmd)
+		run_recipients_command(cmd, tmpdiff, opt, &recipients);
+
+	string_list_sort(&recipients);
+	string_list_remove_duplicates(&recipients, 0);
+
+	recipients_to_header_buf(header, buf, &recipients);
+
+	string_list_clear(&recipients, 0);
+}
+
 void show_log(struct rev_info *opt)
 {
 	struct strbuf msgbuf = STRBUF_INIT;
 	struct strbuf hdrbuf = STRBUF_INIT;
 	struct log_info *log = opt->loginfo;
+	char *tmpdiff = NULL;
 	struct commit *commit = log->commit, *parent = log->parent;
 	int abbrev_commit = opt->abbrev_commit ? opt->abbrev : the_hash_algo->hexsz;
 	const char *extra_headers = opt->extra_headers;
@@ -714,6 +879,18 @@ void show_log(struct rev_info *opt)
 	 * print the graph, up to this commit's line
 	 */
 	graph_show_commit(opt->graph);
+
+	/* Generate dynamic To/Cc lists as needed */
+	if (opt->to_cmd || opt->cc_cmd)
+		tmpdiff = generate_temp_patch(commit);
+
+	headerize_recipients("To", tmpdiff, opt, opt->to_recipients, opt->to_cmd, &hdrbuf);
+	headerize_recipients("Cc", tmpdiff, opt, opt->cc_recipients, opt->cc_cmd, &hdrbuf);
+
+	if (tmpdiff) {
+		unlink_or_warn(tmpdiff);
+		free(tmpdiff);
+	}
 
 	/*
 	 * Print header line of header..
@@ -779,8 +956,6 @@ void show_log(struct rev_info *opt)
 				     get_log_output_encoding(), raw);
 		ctx.notes_message = strbuf_detach(&notebuf, NULL);
 	}
-
-	format_recipients(opt, &hdrbuf);
 
 	if (extra_headers)
 		strbuf_addstr(&hdrbuf, extra_headers);

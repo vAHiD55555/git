@@ -1872,6 +1872,8 @@ int cmd_format_patch(int argc, const char **argv, const char *prefix)
 	struct strbuf rdiff2 = STRBUF_INIT;
 	struct strbuf rdiff_title = STRBUF_INIT;
 	int creation_factor = -1;
+	char *to_cmd_arg = NULL;
+	char *cc_cmd_arg = NULL;
 
 	const struct option builtin_format_patch_options[] = {
 		OPT_CALLBACK_F('n', "numbered", &numbered, NULL,
@@ -1924,6 +1926,10 @@ int cmd_format_patch(int argc, const char **argv, const char *prefix)
 			    N_("add email header"), header_callback),
 		OPT_CALLBACK(0, "to", NULL, N_("email"), N_("add To: header"), to_callback),
 		OPT_CALLBACK(0, "cc", NULL, N_("email"), N_("add Cc: header"), cc_callback),
+		OPT_STRING(0, "to-cmd", &to_cmd_arg, N_("command"),
+			   N_("command to generate To: addresses for a patch")),
+		OPT_STRING(0, "cc-cmd", &cc_cmd_arg, N_("command"),
+			   N_("command to generate Cc: addresses for a patch")),
 		OPT_CALLBACK_F(0, "from", &from, N_("ident"),
 			    N_("set From address to <ident> (or committer ident if absent)"),
 			    PARSE_OPT_OPTARG, from_callback),
@@ -2026,6 +2032,10 @@ int cmd_format_patch(int argc, const char **argv, const char *prefix)
 
 	rev.to_recipients = &extra_to;
 	rev.cc_recipients = &extra_cc;
+
+	rev.to_cmd = to_cmd_arg;
+	rev.cc_cmd = cc_cmd_arg;
+
 	rev.extra_headers = to_free = strbuf_detach(&buf, NULL);
 
 	if (from) {

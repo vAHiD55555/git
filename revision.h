@@ -285,6 +285,8 @@ struct rev_info {
 	int		add_signoff;
 	struct string_list *to_recipients;
 	struct string_list *cc_recipients;
+	const char	*to_cmd;
+	const char	*cc_cmd;
 	const char	*extra_headers;
 	const char	*log_reencode;
 	const char	*subject_prefix;

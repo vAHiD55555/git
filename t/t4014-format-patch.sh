@@ -228,6 +228,25 @@ test_expect_failure 'configuration To: header (rfc2047)' '
 	grep "^To: =?UTF-8?q?R=20=C3=84=20Cipient?= <rcipient@example.com>\$" hdrs9
 '
 
+test_expect_success 'dynamic To: header (ascii)' '
+	git config --unset-all format.to &&
+	git format-patch --to-cmd="echo \"R E Cipient <rcipient@example.com>\" #" --stdout main..side >patch10 &&
+	sed -e "/^\$/q" patch10 >hdrs10 &&
+	grep "^To: R E Cipient <rcipient@example.com>\$" hdrs10
+'
+
+test_expect_success 'dynamic To: header (rfc822)' '
+	git format-patch --to-cmd="echo \"R. E. Cipient <rcipient@example.com>\" #" --stdout main..side >patch10 &&
+	sed -e "/^\$/q" patch10 >hdrs10 &&
+	grep "^To: \"R. E. Cipient\" <rcipient@example.com>\$" hdrs10
+'
+
+test_expect_success 'dynamic To: header (rfc2047)' '
+	git format-patch --to-cmd="echo \"R Ä Cipient <rcipient@example.com>\" #" --stdout main..side >patch10 &&
+	sed -e "/^\$/q" patch10 >hdrs10 &&
+	grep "^To: =?UTF-8?q?R=20=C3=84=20Cipient?= <rcipient@example.com>\$" hdrs10
+'
+
 # check_patch <patch>: Verify that <patch> looks like a half-sane
 # patch email to avoid a false positive with !grep
 check_patch () {
