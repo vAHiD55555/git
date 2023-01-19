@@ -509,8 +509,11 @@ void pp_user_info(struct pretty_print_context *pp,
 		return;
 
 	line_end = strchrnul(line, '\n');
-	if (split_ident_line(&ident, line, line_end - line))
+	if (split_ident_line(&ident, line, line_end - line)) {
+		if (pp->name_and_address_only)
+			strbuf_addstr(sb, line);
 		return;
+	}
 
 	mailbuf = ident.mail_begin;
 	maillen = ident.mail_end - ident.mail_begin;
@@ -538,7 +541,8 @@ void pp_user_info(struct pretty_print_context *pp,
 			namelen = pp->from_ident->name_end - namebuf;
 		}
 
-		strbuf_addstr(sb, "From: ");
+		if (!pp->name_and_address_only)
+			strbuf_addstr(sb, "From: ");
 		if (pp->encode_email_headers &&
 		    needs_rfc2047_encoding(namebuf, namelen)) {
 			add_rfc2047(sb, namebuf, namelen,
@@ -558,7 +562,9 @@ void pp_user_info(struct pretty_print_context *pp,
 		if (max_length <
 		    last_line_length(sb) + strlen(" <") + maillen + strlen(">"))
 			strbuf_addch(sb, '\n');
-		strbuf_addf(sb, " <%.*s>\n", (int)maillen, mailbuf);
+		strbuf_addf(sb, " <%.*s>", (int)maillen, mailbuf);
+		if (!pp->name_and_address_only)
+			strbuf_addch(sb, '\n');
 	} else {
 		struct strbuf id = STRBUF_INIT;
 		enum grep_header_field field = GREP_HEADER_FIELD_MAX;
@@ -581,6 +587,9 @@ void pp_user_info(struct pretty_print_context *pp,
 		strbuf_addch(sb, '\n');
 		strbuf_release(&id);
 	}
+
+	if (pp->name_and_address_only)
+		return;
 
 	switch (pp->fmt) {
 	case CMIT_FMT_MEDIUM:

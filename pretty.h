@@ -39,6 +39,7 @@ struct pretty_print_context {
 	int preserve_subject;
 	struct date_mode date_mode;
 	unsigned date_mode_explicit:1;
+	unsigned name_and_address_only:1;
 	int print_email_subject;
 	int expand_tabs_in_log;
 	int need_8bit_cte;
