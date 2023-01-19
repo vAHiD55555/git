@@ -25,6 +25,8 @@ void format_decorations_extended(struct strbuf *sb, const struct commit *commit,
 #define format_decorations(strbuf, commit, color) \
 			     format_decorations_extended((strbuf), (commit), (color), " (", ", ", ")")
 void show_decorations(struct rev_info *opt, struct commit *commit);
+void recipients_to_header_buf(const char *hdr, struct strbuf *buf,
+			      const struct string_list *recipients);
 void log_write_email_headers(struct rev_info *opt, struct commit *commit,
 			     const char **extra_headers_p,
 			     int *need_8bit_cte_p,

@@ -426,6 +426,21 @@ void fmt_output_email_subject(struct strbuf *sb, struct rev_info *opt)
 	}
 }
 
+void recipients_to_header_buf(const char *hdr, struct strbuf *buf,
+			      const struct string_list *recipients)
+{
+	for (int i = 0; i < recipients->nr; i++) {
+		if (!i)
+			strbuf_addf(buf, "%s: ", hdr);
+		else
+			strbuf_addstr(buf, "    ");
+		strbuf_addstr(buf, recipients->items[i].string);
+		if (i + 1 < recipients->nr)
+			strbuf_addch(buf, ',');
+		strbuf_addch(buf, '\n');
+	}
+}
+
 void log_write_email_headers(struct rev_info *opt, struct commit *commit,
 			     const char **extra_headers_p,
 			     int *need_8bit_cte_p,
