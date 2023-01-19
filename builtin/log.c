@@ -1321,6 +1321,7 @@ static void make_cover_letter(struct rev_info *rev, int use_separate_file,
 	pp.rev = rev;
 	pp.print_email_subject = 1;
 	pp_user_info(&pp, NULL, &sb, committer, encoding);
+	format_recipients(rev, &sb);
 	prepare_cover_text(&pp, branch_name, &sb, encoding, need_8bit_cte);
 	fprintf(rev->diffopt.file, "%s\n", sb.buf);
 
@@ -2023,9 +2024,8 @@ int cmd_format_patch(int argc, const char **argv, const char *prefix)
 		strbuf_addch(&buf, '\n');
 	}
 
-	recipients_to_header_buf("To", &buf, &extra_to);
-	recipients_to_header_buf("Cc", &buf, &extra_cc);
-
+	rev.to_recipients = &extra_to;
+	rev.cc_recipients = &extra_cc;
 	rev.extra_headers = to_free = strbuf_detach(&buf, NULL);
 
 	if (from) {

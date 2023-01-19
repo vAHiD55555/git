@@ -283,6 +283,8 @@ struct rev_info {
 	struct ident_split from_ident;
 	struct string_list *ref_message_ids;
 	int		add_signoff;
+	struct string_list *to_recipients;
+	struct string_list *cc_recipients;
 	const char	*extra_headers;
 	const char	*log_reencode;
 	const char	*subject_prefix;
