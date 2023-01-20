@@ -1239,6 +1239,17 @@ int cmd_rebase(int argc, const char **argv, const char *prefix)
 			options.fork_point = 0;
 	}
 	/*
+	 * reapply_cherry_picks is slightly weird.  It starts out with a
+	 * value of -1.  It will be assigned a value of keep_base below and
+	 * then handled specially.  The apply backend is hardcoded to
+	 * behave like reapply_cherry_picks==1, so if it has that value, we
+	 * can just ignore the flag with the apply backend.  Thus, we only
+	 * really need to throw an error and require the merge backend if
+	 * reapply_cherry_picks==0.
+	 */
+	if (options.reapply_cherry_picks == 0)
+		imply_merge(&options, "--no-reapply-cherry-picks");
+	/*
 	 * --keep-base defaults to --reapply-cherry-picks to avoid losing
 	 * commits when using this option.
 	 */
@@ -1420,13 +1431,6 @@ int cmd_rebase(int argc, const char **argv, const char *prefix)
 	if (options.empty != EMPTY_UNSPECIFIED)
 		imply_merge(&options, "--empty");
 
-	/*
-	 * --keep-base implements --reapply-cherry-picks by altering upstream so
-	 * it works with both backends.
-	 */
-	if (options.reapply_cherry_picks && !keep_base)
-		imply_merge(&options, "--reapply-cherry-picks");
-
 	if (gpg_sign)
 		options.gpg_sign_opt = xstrfmt("-S%s", gpg_sign);
 
@@ -1524,6 +1528,9 @@ int cmd_rebase(int argc, const char **argv, const char *prefix)
 
 	if (options.update_refs)
 		imply_merge(&options, "--update-refs");
+
+	if (options.autosquash)
+		imply_merge(&options, "--autosquash");
 
 	if (options.type == REBASE_UNSPECIFIED) {
 		if (!strcmp(options.default_backend, "merge"))
