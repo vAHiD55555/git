@@ -113,9 +113,7 @@ static int is_better_name(struct rev_name *name,
 	 * based on the older tag, even if it is farther away.
 	 */
 	if (from_tag && name->from_tag)
-		return (name->taggerdate > taggerdate ||
-			(name->taggerdate == taggerdate &&
-			 name_distance > new_distance));
+		return name_distance > new_distance;
 
 	/*
 	 * We know that at least one of them is a non-tag at this point.
