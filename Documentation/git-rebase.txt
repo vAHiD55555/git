@@ -416,14 +416,6 @@ include::rerere-options.txt[]
 	Allows the pre-rebase hook to run, which is the default.  This option can
 	be used to override `--no-verify`.  See also linkgit:githooks[5].
 
--C<n>::
-	Ensure at least `<n>` lines of surrounding context match before
-	and after each change.  When fewer lines of surrounding
-	context exist they all must match.  By default no context is
-	ever ignored.  Implies `--apply`.
-+
-See also INCOMPATIBLE OPTIONS below.
-
 --no-ff::
 --force-rebase::
 -f::
@@ -631,7 +623,6 @@ The following options:
 
  * --apply
  * --whitespace
- * -C
 
 are incompatible with the following options:
 

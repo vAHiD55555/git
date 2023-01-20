@@ -63,6 +63,5 @@ test_rebase_am_only () {
 }
 
 test_rebase_am_only --whitespace=fix
-test_rebase_am_only -C4
 
 test_done

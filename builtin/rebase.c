@@ -1067,8 +1067,6 @@ int cmd_rebase(int argc, const char **argv, const char *prefix)
 			 N_("ignore author date and use current date")),
 		OPT_HIDDEN_BOOL(0, "ignore-date", &options.ignore_date,
 				N_("synonym of --reset-author-date")),
-		OPT_PASSTHRU_ARGV('C', NULL, &options.git_am_opts, N_("n"),
-				  N_("passed to 'git apply'"), 0),
 		OPT_BOOL(0, "ignore-whitespace", &ignore_whitespace,
 			 N_("ignore changes in whitespace")),
 		OPT_PASSTHRU_ARGV(0, "whitespace", &options.git_am_opts,
@@ -1390,12 +1388,7 @@ int cmd_rebase(int argc, const char **argv, const char *prefix)
 		if (!strcmp(option, "--whitespace=fix") ||
 		    !strcmp(option, "--whitespace=strip"))
 			allow_preemptive_ff = 0;
-		else if (skip_prefix(option, "-C", &p)) {
-			while (*p)
-				if (!isdigit(*(p++)))
-					die(_("switch `C' expects a "
-					      "numerical value"));
-		} else if (skip_prefix(option, "--whitespace=", &p)) {
+		else if (skip_prefix(option, "--whitespace=", &p)) {
 			if (*p && strcmp(p, "warn") && strcmp(p, "nowarn") &&
 			    strcmp(p, "error") && strcmp(p, "error-all"))
 				die("Invalid whitespace option: '%s'", p);
