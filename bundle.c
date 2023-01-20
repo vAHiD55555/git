@@ -223,7 +223,8 @@ int verify_bundle(struct repository *r,
 			error("%s", message);
 		error("%s %s", oid_to_hex(oid), name);
 	}
-	if (revs.pending.nr != p->nr)
+	if (revs.pending.nr != p->nr ||
+	    (flags & VERIFY_BUNDLE_SKIP_REACHABLE))
 		goto cleanup;
 	req_nr = revs.pending.nr;
 	setup_revisions(2, argv, &revs, NULL);

@@ -322,9 +322,15 @@ static int unbundle_from_file(struct repository *r, const char *file)
 	 * Skip the reachability walk here, since we will be adding
 	 * a reachable ref pointing to the new tips, which will reach
 	 * the prerequisite commits.
+	 *
+	 * Since multiple iterations of unbundle_from_file() can create
+	 * new commits in the object store that are not reachable from
+	 * the current cached state of the ref store, skip the reachability
+	 * walk and move forward as long as the objects are present in the
+	 * object store.
 	 */
 	if ((result = unbundle(r, &header, bundle_fd, NULL,
-			       VERIFY_BUNDLE_QUIET)))
+			       VERIFY_BUNDLE_QUIET | VERIFY_BUNDLE_SKIP_REACHABLE)))
 		return 1;
 
 	/*
