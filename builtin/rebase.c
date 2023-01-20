@@ -920,6 +920,9 @@ static int parse_opt_am(const struct option *opt, const char *arg, int unset)
 	BUG_ON_OPT_NEG(unset);
 	BUG_ON_OPT_ARG(arg);
 
+	if (opts->type != REBASE_UNSPECIFIED && opts->type != REBASE_APPLY)
+	    die(_("apply options and merge options cannot be used together"));
+
 	opts->type = REBASE_APPLY;
 
 	return 0;
@@ -933,8 +936,10 @@ static int parse_opt_merge(const struct option *opt, const char *arg, int unset)
 	BUG_ON_OPT_NEG(unset);
 	BUG_ON_OPT_ARG(arg);
 
-	if (!is_merge(opts))
-		opts->type = REBASE_MERGE;
+	if (opts->type != REBASE_UNSPECIFIED && opts->type != REBASE_MERGE)
+	    die(_("apply options and merge options cannot be used together"));
+
+	opts->type = REBASE_MERGE;
 
 	return 0;
 }
@@ -947,6 +952,9 @@ static int parse_opt_interactive(const struct option *opt, const char *arg,
 
 	BUG_ON_OPT_NEG(unset);
 	BUG_ON_OPT_ARG(arg);
+
+	if (opts->type != REBASE_UNSPECIFIED && opts->type != REBASE_MERGE)
+	    die(_("apply options and merge options cannot be used together"));
 
 	opts->type = REBASE_MERGE;
 	opts->flags |= REBASE_INTERACTIVE_EXPLICIT;
