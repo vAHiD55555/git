@@ -736,7 +736,6 @@ String::
 	by the configuration variables in the "diff.foo" section of the
 	Git config file.
 
-
 Defining an external diff driver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -758,6 +757,46 @@ with the above configuration, i.e. `j-c-diff`, with 7
 parameters, just like `GIT_EXTERNAL_DIFF` program is called.
 See linkgit:git[1] for details.
 
+Setting the internal diff algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The diff algorithm can be set through the `diff.algorithm` config key, but
+sometimes it may be helpful to set the diff algorithm by path. For example, one
+might wish to set a diff algorithm automatically for all `.json` files such that
+the user would not need to pass in a separate command line `--diff-algorithm` flag each
+time.
+
+First, in `.gitattributes`, you would assign the `diff` attribute for paths.
+
+*Git attributes*
+------------------------
+*.json diff=<name>
+------------------------
+
+Then, you would define a "diff.<name>.algorithm" configuration to specify the
+diff algorithm, choosing from `meyers`, `patience`, `minimal`, and `histogram`.
+
+*Git config*
+
+----------------------------------------------------------------
+[diff "<name>"]
+  algorithm = histogram
+----------------------------------------------------------------
+
+This diff algorithm applies to git-diff(1), including the `--stat` output.
+
+NOTE: If the `command` key also exists, then Git will treat this as an external
+diff and attempt to use the value set for `command` as an external program. For
+instance, the following config, combined with the above `.gitattributes` file,
+will result in `command` favored over `algorithm`.
+
+*Git config*
+
+----------------------------------------------------------------
+[diff "<name>"]
+  command = j-c-diff
+  algorithm = histogram
+----------------------------------------------------------------
 
 Defining a custom hunk-header
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
