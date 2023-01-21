@@ -17,6 +17,8 @@ static const char *get_mode(const char *str, unsigned int *modep)
 	while ((c = *str++) != ' ') {
 		if (c < '0' || c > '7')
 			return NULL;
+		if ((mode << 3) >> 3 != mode)
+			return NULL;
 		mode = (mode << 3) + (c - '0');
 	}
 	*modep = mode;
