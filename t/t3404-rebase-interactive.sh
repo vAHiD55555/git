@@ -2120,7 +2120,30 @@ test_expect_success '--update-refs: check failed ref update' '
 	tail -n 6 err >err.last &&
 	sed -e "s/Rebasing.*Successfully/Successfully/g" -e "s/^\t//g" \
 		<err.last >err.trimmed &&
-	test_cmp expect err.trimmed
+	test_cmp expect err.trimmed &&
+	git rebase --abort
+'
+
+test_expect_success 'bad labels and refs rejected when parsing todo list' '
+	cat >todo <<-\EOF &&
+	exec >execed
+	label #
+	label :invalid
+	update-ref :bad
+	update-ref topic
+	EOF
+	rm -f execed &&
+	(
+		set_replace_editor todo &&
+		test_must_fail git rebase -i HEAD 2>err
+	) &&
+	grep "'\''#'\'' is not a valid label" err &&
+	grep "'\'':invalid'\'' is not a valid label" err &&
+	grep "'\'':bad'\'' is not a valid refname" err &&
+	grep "update-ref requires a fully qualified refname e.g. refs/heads/topic" \
+		err &&
+	test_path_is_missing execed &&
+	git rebase --abort
 '
 
 # This must be the last test in this file

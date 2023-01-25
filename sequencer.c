@@ -2477,6 +2477,26 @@ static int is_command(enum todo_command command, const char **bol)
 		 (*bol = p));
 }
 
+static int check_label_or_ref_arg(enum todo_command command, const char *arg)
+{
+	int allow_onelevel =
+		command == TODO_LABEL ? REFNAME_ALLOW_ONELEVEL : 0;
+
+	if ((command == TODO_LABEL && !strcmp(arg, "#")) ||
+	    check_refname_format(arg, allow_onelevel)) {
+		if (command == TODO_LABEL)
+			error(_("'%s' is not a valid label"), arg);
+		else if (check_refname_format(arg, REFNAME_ALLOW_ONELEVEL))
+			error(_("'%s' is not a valid refname"), arg);
+		else
+			error(_("update-ref requires a fully qualified refname e.g. refs/heads/%s"),
+			      arg);
+		return -1;
+	}
+
+	return 0;
+}
+
 static int parse_insn_line(struct repository *r, struct todo_item *item,
 			   const char *buf, const char *bol, char *eol)
 {
@@ -2523,8 +2543,23 @@ static int parse_insn_line(struct repository *r, struct todo_item *item,
 		return error(_("missing arguments for %s"),
 			     command_to_string(item->command));
 
-	if (item->command == TODO_EXEC || item->command == TODO_LABEL ||
+	if (item->command == TODO_LABEL ||
 	    item->command == TODO_RESET || item->command == TODO_UPDATE_REF) {
+		int ret = 0;
+
+		item->commit = NULL;
+		item->arg_offset = bol - buf;
+		item->arg_len = (int)(eol - bol);
+		if (item->command != TODO_RESET) {
+			saved = *eol;
+			*eol = '\0';
+			ret = check_label_or_ref_arg(item->command, bol);
+			*eol = saved;
+		}
+		return ret;
+	}
+
+	if (item->command == TODO_EXEC) {
 		item->commit = NULL;
 		item->arg_offset = bol - buf;
 		item->arg_len = (int)(eol - bol);
