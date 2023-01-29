@@ -1,4 +1,4 @@
-#include "git-compat-util.h"
+#include "cache.h"
 #include "bloom.h"
 #include "test-tool.h"
 #include "commit.h"
