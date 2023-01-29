@@ -4,6 +4,7 @@
 #include "pkt-line.h"
 #include "strvec.h"
 #include "hash.h"
+#include "hex.h"
 #include "object.h"
 #include "object-store.h"
 #include "string-list.h"
