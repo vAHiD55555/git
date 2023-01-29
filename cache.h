@@ -15,9 +15,11 @@
 #include "hash.h"
 #include "hex.h"
 #include "path.h"
+#include "pathspec.h"
 #include "object.h"
 #include "oid-array.h"
 #include "repository.h"
+#include "statinfo.h"
 #include "mem-pool.h"
 
 typedef struct git_zstream {
@@ -119,26 +121,6 @@ struct cache_header {
 
 #define INDEX_FORMAT_LB 2
 #define INDEX_FORMAT_UB 4
-
-/*
- * The "cache_time" is just the low 32 bits of the
- * time. It doesn't matter if it overflows - we only
- * check it for equality in the 32 bits we save.
- */
-struct cache_time {
-	uint32_t sec;
-	uint32_t nsec;
-};
-
-struct stat_data {
-	struct cache_time sd_ctime;
-	struct cache_time sd_mtime;
-	unsigned int sd_dev;
-	unsigned int sd_ino;
-	unsigned int sd_uid;
-	unsigned int sd_gid;
-	unsigned int sd_size;
-};
 
 struct cache_entry {
 	struct hashmap_entry ent;
@@ -293,6 +275,15 @@ static inline unsigned int canon_mode(unsigned int mode)
 	if (S_ISDIR(mode))
 		return S_IFDIR;
 	return S_IFGITLINK;
+}
+
+static inline int ce_path_match(struct index_state *istate,
+				const struct cache_entry *ce,
+				const struct pathspec *pathspec,
+				char *seen)
+{
+	return match_pathspec(istate, pathspec, ce->name, ce_namelen(ce), 0, seen,
+			      S_ISDIR(ce->ce_mode) || S_ISGITLINK(ce->ce_mode));
 }
 
 #define cache_entry_size(len) (offsetof(struct cache_entry,name) + (len) + 1)
