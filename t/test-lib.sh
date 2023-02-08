@@ -1773,7 +1773,10 @@ test_lazy_prereq PIPE '
 
 test_lazy_prereq SYMLINKS '
 	# test whether the filesystem supports symbolic links
-	ln -s x y && test -h y
+	ln -s x y && test -h y &&
+	test-tool readlink y >y &&
+	test "$(cat y)" = x &&
+	test "$(cat x)" = x
 '
 
 test_lazy_prereq SYMLINKS_WINDOWS '
