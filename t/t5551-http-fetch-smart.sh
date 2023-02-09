@@ -350,7 +350,8 @@ test_expect_success CMDLINE_LIMIT \
 	)
 '
 
-test_expect_success 'large fetch-pack requests can be sent using chunked encoding' '
+# https://github.com/icing/mod_h2/issues/243
+test_expect_success !HTTP2 'large fetch-pack requests can be sent using chunked encoding' '
 	GIT_TRACE_CURL=true git -c http.postbuffer=65536 \
 		clone --bare "$HTTPD_URL/smart/repo.git" split.git 2>err &&
 	{
