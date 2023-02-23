@@ -31,6 +31,7 @@
 #include "list.h"
 #include "packfile.h"
 #include "object-store.h"
+#include "replace-object.h"
 #include "dir.h"
 #include "midx.h"
 #include "trace2.h"
