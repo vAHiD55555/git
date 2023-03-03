@@ -59,6 +59,10 @@ static enum parse_opt_result get_arg(struct parse_opt_ctx_t *p,
 	return 0;
 }
 
+/*
+ * NEEDSWORK: fix memory ownership rules around here and then use
+ * prefix_filename_except_for_dash() helper.
+ */
 static void fix_filename(const char *prefix, const char **file)
 {
 	if (!file || !*file || !prefix || is_absolute_path(*file)
