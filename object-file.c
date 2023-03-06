@@ -944,6 +944,12 @@ void prepare_alt_odb(struct repository *r)
 	r->objects->loaded_alternates = 1;
 }
 
+void reprepare_alt_odb(struct repository *r)
+{
+	r->objects->loaded_alternates = 0;
+	prepare_alt_odb(r);
+}
+
 /* Returns 1 if we have successfully freshened the file, 0 otherwise. */
 static int freshen_file(const char *fn)
 {
