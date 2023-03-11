@@ -1,0 +1,13 @@
+restore.defaultLocation::
+	Valid values: "worktree", "staged" or "both". Controls the default
+	behavior of `git restore` without `--worktree` or `--staged`. If
+	"worktree", `git restore` without `--worktree` or `--staged` is
+	equivalent to `git restore --worktree`. If "staged", `git restore`
+	without `--worktree` or `--staged` is equivalent to `git restore
+	--staged`. If "both", `git restore` without `--worktree` or `--staged`
+	is equivalent to `git restore --worktree --staged`. Adding an option
+	overrides the default, such that if the option is set to "staged",
+	specifying `--worktree` will only affect the worktree, not both. This
+	option can be used to prevent accidentally losing work by running `git
+	restore .` when `git restore --staged .` was intended.
+	See linkgit:git-restore[1]

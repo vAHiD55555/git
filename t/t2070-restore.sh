@@ -137,4 +137,128 @@ test_expect_success 'restore --staged invalidates cache tree for deletions' '
 	test_must_fail git rev-parse HEAD:new1
 '
 
+test_expect_success 'restore with restore.defaultLocation unset works as if --worktree given' '
+	test_when_finished git reset --hard HEAD^ &&
+	test_commit root-unset-restore.defaultLocation &&
+	test_commit unset-restore.defaultLocation one one &&
+	> one &&
+
+	git restore one &&
+	test -z $(git status --porcelain --untracked-files=no) &&
+
+	> one &&
+	git add one &&
+	git restore one &&
+	git status --porcelain --untracked-files=no | grep "^M " &&
+
+	> one &&
+	git add one &&
+	git restore --worktree one &&
+	git status --porcelain --untracked-files=no | grep "^M " &&
+
+	git restore --staged one &&
+	git status --porcelain --untracked-files=no | grep "^ M" &&
+
+	> one &&
+	git add one &&
+	git restore --worktree --staged one &&
+	test -z $(git status --porcelain --untracked-files=no)
+'
+
+test_expect_success 'restore with restore.defaultLocation set to worktree works as if --worktree given' '
+	test_when_finished git reset --hard HEAD^ &&
+	test_when_finished git config --unset restore.defaultLocation &&
+	test_commit root-worktree-restore.defaultLocation &&
+	test_commit worktree-restore.defaultLocation one one &&
+	git config restore.defaultLocation worktree &&
+	> one &&
+
+	git restore one &&
+	test -z $(git status --porcelain --untracked-files=no) &&
+
+	> one &&
+	git add one &&
+	git restore one &&
+	git status --porcelain --untracked-files=no | grep "^M " &&
+
+	> one &&
+	git add one &&
+	git restore --worktree one &&
+	git status --porcelain --untracked-files=no | grep "^M " &&
+
+	git restore --staged one &&
+	git status --porcelain --untracked-files=no | grep "^ M" &&
+
+	> one &&
+	git add one &&
+	git restore --worktree --staged one &&
+	test -z $(git status --porcelain --untracked-files=no)
+'
+
+test_expect_success 'restore with restore.defaultLocation set to staged works as if --staged given' '
+	test_when_finished git reset --hard HEAD^ &&
+	test_when_finished git config --unset restore.defaultLocation &&
+	test_commit root-staged-restore.defaultLocation &&
+	test_commit staged-restore.defaultLocation one one &&
+	git config restore.defaultLocation staged &&
+	> one &&
+
+	git restore one &&
+	git status --porcelain --untracked-files=no | grep "^ M" &&
+
+	git restore --staged one &&
+	git status --porcelain --untracked-files=no | grep "^ M" &&
+
+	git add one &&
+	git restore one &&
+	git status --porcelain --untracked-files=no | grep "^ M" &&
+
+	git add one &&
+	git restore --staged one &&
+	git status --porcelain --untracked-files=no | grep "^ M" &&
+
+	git restore --worktree one &&
+	test -z $(git status --porcelain --untracked-files=no) &&
+
+	> one &&
+	git add one &&
+	git restore --worktree --staged one &&
+	test -z $(git status --porcelain --untracked-files=no)
+'
+
+test_expect_success 'restore with restore.defaultLocation set to both works as if --worktree --staged given' '
+	test_when_finished git reset --hard HEAD^ &&
+	test_when_finished git config --unset restore.defaultLocation &&
+	test_commit root-both-restore.defaultLocation &&
+	test_commit both-restore.defaultLocation one one &&
+	git config restore.defaultLocation both &&
+	> one &&
+
+	git restore one &&
+	test -z $(git status --porcelain --untracked-files=no) &&
+
+	> one &&
+	git add one &&
+	git restore --staged one &&
+	git status --porcelain --untracked-files=no | grep "^ M"  &&
+
+	git add one &&
+	git restore one &&
+	test -z $(git status --porcelain --untracked-files=no) &&
+
+	> one &&
+	git add one &&
+	git restore --staged one &&
+	git status --porcelain --untracked-files=no | grep "^ M" &&
+
+	git restore --worktree one &&
+	test -z $(git status --porcelain --untracked-files=no) &&
+
+	> one &&
+	git add one &&
+	git restore --worktree --staged one &&
+	test -z $(git status --porcelain --untracked-files=no)
+'
+
+
 test_done
