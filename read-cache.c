@@ -2868,6 +2868,12 @@ static int record_ieot(void)
 	return !git_config_get_index_threads(&val) && val != 1;
 }
 
+enum strip_extensions {
+	WRITE_ALL_EXTENSIONS = 0,
+	STRIP_ALL_EXTENSIONS = 1,
+	STRIP_LINK_EXTENSION_ONLY = 2
+};
+
 /*
  * On success, `tempfile` is closed. If it is the temporary file
  * of a `struct lock_file`, we will therefore effectively perform
@@ -2876,7 +2882,7 @@ static int record_ieot(void)
  * rely on it.
  */
 static int do_write_index(struct index_state *istate, struct tempfile *tempfile,
-			  int strip_extensions, unsigned flags)
+			  enum strip_extensions strip_extensions, unsigned flags)
 {
 	uint64_t start = getnanotime();
 	struct hashfile *f;
@@ -3045,7 +3051,7 @@ static int do_write_index(struct index_state *istate, struct tempfile *tempfile,
 			return -1;
 	}
 
-	if (!strip_extensions && istate->split_index &&
+	if (strip_extensions == WRITE_ALL_EXTENSIONS && istate->split_index &&
 	    !is_null_oid(&istate->split_index->base_oid)) {
 		struct strbuf sb = STRBUF_INIT;
 
@@ -3060,7 +3066,7 @@ static int do_write_index(struct index_state *istate, struct tempfile *tempfile,
 		if (err)
 			return -1;
 	}
-	if (!strip_extensions && !drop_cache_tree && istate->cache_tree) {
+	if (strip_extensions != STRIP_ALL_EXTENSIONS && !drop_cache_tree && istate->cache_tree) {
 		struct strbuf sb = STRBUF_INIT;
 
 		cache_tree_write(&sb, istate->cache_tree);
@@ -3070,7 +3076,7 @@ static int do_write_index(struct index_state *istate, struct tempfile *tempfile,
 		if (err)
 			return -1;
 	}
-	if (!strip_extensions && istate->resolve_undo) {
+	if (strip_extensions != STRIP_ALL_EXTENSIONS && istate->resolve_undo) {
 		struct strbuf sb = STRBUF_INIT;
 
 		resolve_undo_write(&sb, istate->resolve_undo);
@@ -3081,7 +3087,7 @@ static int do_write_index(struct index_state *istate, struct tempfile *tempfile,
 		if (err)
 			return -1;
 	}
-	if (!strip_extensions && istate->untracked) {
+	if (strip_extensions != STRIP_ALL_EXTENSIONS && istate->untracked) {
 		struct strbuf sb = STRBUF_INIT;
 
 		write_untracked_extension(&sb, istate->untracked);
@@ -3092,7 +3098,7 @@ static int do_write_index(struct index_state *istate, struct tempfile *tempfile,
 		if (err)
 			return -1;
 	}
-	if (!strip_extensions && istate->fsmonitor_last_update) {
+	if (strip_extensions != STRIP_ALL_EXTENSIONS && istate->fsmonitor_last_update) {
 		struct strbuf sb = STRBUF_INIT;
 
 		write_fsmonitor_extension(&sb, istate);
@@ -3166,8 +3172,14 @@ static int commit_locked_index(struct lock_file *lk)
 		return commit_lock_file(lk);
 }
 
+/*
+ * Write the Git index into a `.lock` file
+ *
+ * If `strip_link_extension` is non-zero, avoid writing any "link" extension
+ * (used by the split-index feature).
+ */
 static int do_write_locked_index(struct index_state *istate, struct lock_file *lock,
-				 unsigned flags)
+				 unsigned flags, int strip_link_extension)
 {
 	int ret;
 	int was_full = istate->sparse_index == INDEX_EXPANDED;
@@ -3185,7 +3197,7 @@ static int do_write_locked_index(struct index_state *istate, struct lock_file *l
 	 */
 	trace2_region_enter_printf("index", "do_write_index", the_repository,
 				   "%s", get_lock_file_path(lock));
-	ret = do_write_index(istate, lock->tempfile, 0, flags);
+	ret = do_write_index(istate, lock->tempfile, strip_link_extension ? STRIP_LINK_EXTENSION_ONLY : 0, flags);
 	trace2_region_leave_printf("index", "do_write_index", the_repository,
 				   "%s", get_lock_file_path(lock));
 
@@ -3214,7 +3226,7 @@ static int write_split_index(struct index_state *istate,
 {
 	int ret;
 	prepare_to_write_split_index(istate);
-	ret = do_write_locked_index(istate, lock, flags);
+	ret = do_write_locked_index(istate, lock, flags, 0);
 	finish_writing_split_index(istate);
 	return ret;
 }
@@ -3366,9 +3378,7 @@ int write_locked_index(struct index_state *istate, struct lock_file *lock,
 	if ((!si && !test_split_index_env) ||
 	    alternate_index_output ||
 	    (istate->cache_changed & ~EXTMASK)) {
-		if (si)
-			oidclr(&si->base_oid);
-		ret = do_write_locked_index(istate, lock, flags);
+		ret = do_write_locked_index(istate, lock, flags, 1);
 		goto out;
 	}
 
@@ -3394,8 +3404,7 @@ int write_locked_index(struct index_state *istate, struct lock_file *lock,
 		/* Same initial permissions as the main .git/index file */
 		temp = mks_tempfile_sm(git_path("sharedindex_XXXXXX"), 0, 0666);
 		if (!temp) {
-			oidclr(&si->base_oid);
-			ret = do_write_locked_index(istate, lock, flags);
+			ret = do_write_locked_index(istate, lock, flags, 1);
 			goto out;
 		}
 		ret = write_shared_index(istate, &temp, flags);
