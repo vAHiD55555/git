@@ -96,6 +96,30 @@ OPTIONS
 	separator (so `bar` matches `refs/heads/bar` but not
 	`refs/heads/foobar`).
 
+OUTPUT
+------
+
+The output is in the format:
+
+------------
+<OID> TAB <reference name> LF
+------------
+
+For example,
+
+----
+$ git ls-remote
+950264636c68591989456e3ba0a5442f93152c1a	refs/heads/main
+73876f4861cd3d187a4682290ab75c9dccadbc56	refs/heads/maint
+d9ab777d41f92a8c1684c91cfb02053d7dd1046b	refs/heads/next
+74a0ffe000da036ce4ca843d991a7c6b8c246a08	refs/heads/seen
+860bc4360c4fcba0fe2df942984d87f8467af3df	refs/heads/todo
+d4ca2e3147b409459955613c152220f4db848ee1	refs/tags/v2.40.0
+8810a79228a149a9773bf9c75f381fca27a6a80e	refs/tags/v2.40.0-rc0
+f899c182d0bffb6e915da7c8db9be202b144c098	refs/tags/v2.40.0-rc1
+6bed3304b2b2f1cf440ca3050b57a7cf3a3fe687	refs/tags/v2.40.0-rc2
+----
+
 EXAMPLES
 --------
 
