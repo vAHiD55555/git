@@ -216,10 +216,12 @@ static int delete_branches(int argc, const char **argv, int force, int kinds,
 	struct string_list refs_to_delete = STRING_LIST_INIT_DUP;
 	struct string_list_item *item;
 	int branch_name_pos;
+	char* FMT_REMOTES = "refs/remotes/%s";
+	char* FMT_BRANCHES = "refs/heads/%s";
 
 	switch (kinds) {
 	case FILTER_REFS_REMOTES:
-		fmt = "refs/remotes/%s";
+		fmt = FMT_REMOTES;
 		/* For subsequent UI messages */
 		remote_branch = 1;
 		allowed_interpret = INTERPRET_BRANCH_REMOTE;
@@ -227,7 +229,7 @@ static int delete_branches(int argc, const char **argv, int force, int kinds,
 		force = 1;
 		break;
 	case FILTER_REFS_BRANCHES:
-		fmt = "refs/heads/%s";
+		fmt = FMT_BRANCHES;
 		allowed_interpret = INTERPRET_BRANCH_LOCAL;
 		break;
 	default:
@@ -263,9 +265,25 @@ static int delete_branches(int argc, const char **argv, int force, int kinds,
 					| RESOLVE_REF_ALLOW_BAD_NAME,
 					&oid, &flags);
 		if (!target) {
-			error(remote_branch
-			      ? _("remote-tracking branch '%s' not found.")
-			      : _("branch '%s' not found."), bname.buf);
+			char* MISSING_REMOTE_REF_ERROR_MSG = "remote-tracking branch '%s' not found.";
+			char* MISSING_BRANCH_ERROR_MSG = "branch '%s' not found.";
+			char* MISSING_BRANCH_HINT_MSG = "branch '%s' not found.\n"
+											"Did you forget --remote?";
+
+			if (remote_branch) {
+				error(_(MISSING_REMOTE_REF_ERROR_MSG), bname.buf);
+			} else {
+				char* virtual_name = mkpathdup(FMT_REMOTES, bname.buf);
+				char* virtual_target = resolve_refdup(virtual_name,
+							RESOLVE_REF_READING
+							| RESOLVE_REF_NO_RECURSE
+							| RESOLVE_REF_ALLOW_BAD_NAME,
+							&oid, &flags);
+				if (virtual_target)
+					error(_(MISSING_BRANCH_HINT_MSG), bname.buf);
+				else
+					error(_(MISSING_BRANCH_ERROR_MSG), bname.buf);
+			}
 			ret = 1;
 			continue;
 		}
