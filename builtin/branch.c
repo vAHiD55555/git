@@ -279,6 +279,7 @@ static int delete_branches(int argc, const char **argv, int force, int kinds,
 							| RESOLVE_REF_NO_RECURSE
 							| RESOLVE_REF_ALLOW_BAD_NAME,
 							&oid, &flags);
+				FREE_AND_NULL(virtual_name);
 				if (virtual_target)
 					error(_(MISSING_BRANCH_HINT_MSG), bname.buf);
 				else
