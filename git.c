@@ -5,6 +5,7 @@
 #include "run-command.h"
 #include "alias.h"
 #include "replace-object.h"
+#include "attr.h"
 #include "shallow.h"
 
 #define RUN_SETUP		(1<<0)
@@ -308,6 +309,9 @@ static int handle_options(const char ***argv, int *argc, int *envchanged)
 			} else {
 				exit(list_cmds(cmd));
 			}
+		} else if (skip_prefix(cmd, "--attr-source=", &cmd)) {
+			set_git_attr_source(cmd);
+			setenv(GIT_ATTR_SOURCE, (*argv)[1], 1);
 		} else {
 			fprintf(stderr, _("unknown option: %s\n"), cmd);
 			usage(git_usage_string);
