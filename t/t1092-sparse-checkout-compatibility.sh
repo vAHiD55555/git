@@ -1514,6 +1514,24 @@ test_expect_success 'sparse-index is not expanded: stash' '
 	ensure_not_expanded stash pop
 '
 
+test_expect_success 'sparse-index is not expanded: describe' '
+	init_repos &&
+	# Add tag to be read by describe
+	git -C sparse-index tag -a v1.0 -m "Version 1" &&
+	ensure_not_expanded describe --dirty &&
+	cp sparse-index-out sparse-index-dirty &&
+	ensure_not_expanded describe &&
+	cp sparse-index-out sparse-index-normal &&
+	# Check describe has same output on clean tree
+	test_cmp sparse-index-dirty sparse-index-normal &&
+	echo "test" >>sparse-index/g &&
+	ensure_not_expanded describe --dirty &&
+	echo "v1.0-dirty" > actual &&
+	# Check describe on dirty work tree
+	test_cmp sparse-index-out actual &&
+	ensure_not_expanded describe
+'
+
 test_expect_success 'sparse index is not expanded: diff' '
 	init_repos &&
 
