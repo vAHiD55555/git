@@ -29,18 +29,6 @@
 #define DTYPE(de)	DT_UNKNOWN
 #endif
 
-/* unknown mode (impossible combination S_IFIFO|S_IFCHR) */
-#define S_IFINVALID     0030000
-
-/*
- * A "directory link" is a link to another git directory.
- *
- * The value 0160000 is not normally a valid mode, and
- * also just happens to be S_IFDIR + S_IFLNK
- */
-#define S_IFGITLINK	0160000
-#define S_ISGITLINK(m)	(((m) & S_IFMT) == S_IFGITLINK)
-
 /*
  * Some mode bits are also used internally for computations.
  *
@@ -155,8 +143,6 @@ struct cache_entry {
 #if CE_EXTENDED_FLAGS & 0x803FFFFF
 #error "CE_EXTENDED_FLAGS out of range"
 #endif
-
-#define S_ISSPARSEDIR(m) ((m) == S_IFDIR)
 
 /* Forward structure decls */
 struct pathspec;
@@ -414,13 +400,6 @@ void prefetch_cache_entries(const struct index_state *istate,
 #ifdef USE_THE_INDEX_VARIABLE
 extern struct index_state the_index;
 #endif
-
-static inline enum object_type object_type(unsigned int mode)
-{
-	return S_ISDIR(mode) ? OBJ_TREE :
-		S_ISGITLINK(mode) ? OBJ_COMMIT :
-		OBJ_BLOB;
-}
 
 #define INIT_DB_QUIET 0x0001
 #define INIT_DB_EXIST_OK 0x0002
