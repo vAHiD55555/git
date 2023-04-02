@@ -1,6 +1,7 @@
 #include "cache.h"
 #include "dir.h"
 #include "resolve-undo.h"
+#include "repository.h"
 #include "string-list.h"
 
 /* The only error case is to run out of memory in string-list */

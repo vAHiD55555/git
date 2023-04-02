@@ -1,6 +1,7 @@
 #include "test-tool.h"
 #include "config.h"
 #include "object-name.h"
+#include "repository.h"
 #include "setup.h"
 #include "submodule-config.h"
 #include "submodule.h"

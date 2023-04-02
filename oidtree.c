@@ -6,6 +6,7 @@
 #include "oidtree.h"
 #include "alloc.h"
 #include "hash.h"
+#include "repository.h"
 
 struct oidtree_iter_data {
 	oidtree_iter fn;

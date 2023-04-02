@@ -14,6 +14,7 @@
 #include "../lockfile.h"
 #include "../object.h"
 #include "../object-file.h"
+#include "../repository.h"
 #include "../dir.h"
 #include "../chdir-notify.h"
 #include "../setup.h"

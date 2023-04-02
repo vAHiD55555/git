@@ -2,6 +2,7 @@
 #define OID_ARRAY_H
 
 #include "hash.h"
+#include "repository.h"
 
 /**
  * The API provides storage and manipulation of sets of object identifiers.

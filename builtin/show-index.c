@@ -4,6 +4,7 @@
 #include "hex.h"
 #include "pack.h"
 #include "parse-options.h"
+#include "repository.h"
 
 static const char *const show_index_usage[] = {
 	"git show-index [--object-format=<hash-algorithm>]",

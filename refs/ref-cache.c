@@ -4,6 +4,7 @@
 #include "refs-internal.h"
 #include "ref-cache.h"
 #include "../iterator.h"
+#include "../repository.h"
 
 void add_entry_to_dir(struct ref_dir *dir, struct ref_entry *entry)
 {

@@ -5,6 +5,7 @@
 #include "strvec.h"
 #include "refs.h"
 #include "refspec.h"
+#include "repository.h"
 
 static struct refspec_item s_tag_refspec = {
 	.force = 0,

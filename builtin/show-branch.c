@@ -10,6 +10,7 @@
 #include "strvec.h"
 #include "object-name.h"
 #include "parse-options.h"
+#include "repository.h"
 #include "dir.h"
 #include "commit-slab.h"
 #include "date.h"

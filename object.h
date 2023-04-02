@@ -4,6 +4,7 @@
 #include "hash.h"
 
 struct buffer_slab;
+struct repository;
 
 struct parsed_object_pool {
 	struct object **obj_hash;

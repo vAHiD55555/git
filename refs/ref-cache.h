@@ -5,6 +5,7 @@
 
 struct ref_dir;
 struct ref_store;
+struct repository;
 
 /*
  * If this ref_cache is filled lazily, this function is used to load

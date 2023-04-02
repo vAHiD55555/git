@@ -2,6 +2,7 @@
 #include "alloc.h"
 #include "gettext.h"
 #include "mem-pool.h"
+#include "repository.h"
 #include "split-index.h"
 #include "strbuf.h"
 #include "ewah/ewok.h"

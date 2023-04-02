@@ -7,6 +7,7 @@
 #include "parallel-checkout.h"
 #include "pkt-line.h"
 #include "progress.h"
+#include "repository.h"
 #include "run-command.h"
 #include "sigchain.h"
 #include "streaming.h"
