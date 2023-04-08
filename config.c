@@ -643,7 +643,7 @@ static int config_parse_pair(const char *key, const char *value,
 
 
 /* for values read from `git_config_from_parameters()` */
-static void kvi_from_param(struct key_value_info *out)
+void kvi_from_param(struct key_value_info *out)
 {
 	out->filename = NULL;
 	out->linenr = -1;
@@ -3962,20 +3962,6 @@ static int reader_config_name(struct config_reader *reader, const char **out)
 	else
 		return 1;
 	return 0;
-}
-
-enum config_scope current_config_scope(void)
-{
-	if (the_reader.config_kvi)
-		return the_reader.config_kvi->scope;
-	else
-		/*
-		 * FIXME This should be a BUG, but tr2_list_env_vars_fl is
-		 * calling this outside of a config callback. This will be
-		 * easier to fix when we plumb kvi through the config callbacks,
-		 * so leave this untouched for now.
-		 */
-		return CONFIG_SCOPE_UNKNOWN;
 }
 
 int lookup_config(const char **mapping, int nr_mapping, const char *var)
