@@ -111,6 +111,13 @@ struct config_options {
 	} error_action;
 };
 
+struct key_value_info {
+	const char *filename;
+	int linenr;
+	enum config_origin_type origin_type;
+	enum config_scope scope;
+};
+
 /**
  * A config callback function takes three parameters:
  *
@@ -129,7 +136,7 @@ struct config_options {
  * A config callback should return 0 for success, or -1 if the variable
  * could not be parsed properly.
  */
-typedef int (*config_fn_t)(const char *, const char *, void *);
+typedef int (*config_fn_t)(const char *, const char *, struct key_value_info *, void *);
 
 int git_default_config(const char *, const char *, void *);
 
@@ -666,13 +673,6 @@ int git_config_get_expiry(const char *key, const char **output);
 
 /* parse either "this many days" integer, or "5.days.ago" approxidate */
 int git_config_get_expiry_in_days(const char *key, timestamp_t *, timestamp_t now);
-
-struct key_value_info {
-	const char *filename;
-	int linenr;
-	enum config_origin_type origin_type;
-	enum config_scope scope;
-};
 
 /**
  * First prints the error message specified by the caller in `err` and then
