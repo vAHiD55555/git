@@ -19,6 +19,7 @@
 #include "../worktree.h"
 #include "../wrapper.h"
 #include "../write-or-die.h"
+#include "../revision.h"
 
 /*
  * This backend uses the following flags in `ref_update::flags` for
@@ -1173,7 +1174,8 @@ static void prune_refs(struct files_ref_store *refs, struct ref_to_prune **refs_
  */
 static int should_pack_ref(const char *refname,
 			   const struct object_id *oid, unsigned int ref_flags,
-			   unsigned int pack_flags)
+			   unsigned int pack_flags,
+			   struct pack_refs_opts *opts)
 {
 	/* Do not pack per-worktree refs: */
 	if (parse_worktree_ref(refname, NULL, NULL, NULL) !=
@@ -1192,10 +1194,15 @@ static int should_pack_ref(const char *refname,
 	if (!ref_resolves_to_object(refname, the_repository, oid, ref_flags))
 		return 0;
 
+	if (opts->exclusions && ref_excluded(opts->exclusions, refname))
+		return 0;
+
 	return 1;
 }
 
-static int files_pack_refs(struct ref_store *ref_store, unsigned int flags)
+static int files_pack_refs(struct ref_store *ref_store,
+			   unsigned int flags,
+			   struct pack_refs_opts *pack_opts)
 {
 	struct files_ref_store *refs =
 		files_downcast(ref_store, REF_STORE_WRITE | REF_STORE_ODB,
@@ -1221,7 +1228,7 @@ static int files_pack_refs(struct ref_store *ref_store, unsigned int flags)
 		 * pruned, also add it to refs_to_prune.
 		 */
 		if (!should_pack_ref(iter->refname, iter->oid, iter->flags,
-				     flags))
+				     flags, pack_opts))
 			continue;
 
 		/*
