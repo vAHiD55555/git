@@ -10,6 +10,7 @@
 #include "environment.h"
 #include "gettext.h"
 #include "hex.h"
+#include "repository.h"
 #include "tree.h"
 #include "cache-tree.h"
 #include "parse-options.h"
