@@ -1183,13 +1183,6 @@ static int should_pack_ref(const char *refname,
 	    REF_WORKTREE_SHARED)
 		return 0;
 
-	if (opts->visibility && ref_excluded(opts->visibility, refname))
-		return 0;
-
-	/* Do not pack non-tags unless PACK_REFS_ALL is set: */
-	if (!(opts->flags & PACK_REFS_ALL) && !starts_with(refname, "refs/tags/"))
-		return 0;
-
 	/* Do not pack symbolic refs: */
 	if (ref_flags & REF_ISSYMREF)
 		return 0;
@@ -1198,7 +1191,13 @@ static int should_pack_ref(const char *refname,
 	if (!ref_resolves_to_object(refname, the_repository, oid, ref_flags))
 		return 0;
 
-	return 1;
+	if (opts->visibility && ref_excluded(opts->visibility, refname))
+		return 0;
+
+	if (opts->visibility && ref_included(opts->visibility, refname))
+		return 1;
+
+	return 0;
 }
 
 static int files_pack_refs(struct ref_store *ref_store,
