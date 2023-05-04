@@ -99,7 +99,7 @@ some output processing may assume ref names in UTF-8.
 '[<branchname>]@\{upstream\}', e.g. 'master@\{upstream\}', '@\{u\}'::
   A branch B may be set up to build on top of a branch X (configured with
   `branch.<name>.merge`) at a remote R (configured with
-  `branch.<name>.remote`). B@{u} refers to the remote-tracking branch for
+  `branch.<name>.remote`). B@\{u} refers to the remote-tracking branch for
   the branch X taken from remote R, typically found at `refs/remotes/R/X`.
 
 '[<branchname>]@\{push\}', e.g. 'master@\{push\}', '@\{push\}'::
