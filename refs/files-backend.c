@@ -1183,7 +1183,7 @@ static int should_pack_ref(const char *refname,
 	    REF_WORKTREE_SHARED)
 		return 0;
 
-	if (opts->exclusions && ref_excluded(opts->exclusions, refname))
+	if (opts->visibility && ref_excluded(opts->visibility, refname))
 		return 0;
 
 	/* Do not pack non-tags unless PACK_REFS_ALL is set: */
