@@ -718,6 +718,11 @@ static int show_tree_object(const struct object_id *oid UNUSED,
 	return 0;
 }
 
+static int show_default_output_format(void)
+{
+	return DIFF_FORMAT_PATCH;
+}
+
 static void show_setup_revisions_tweak(struct rev_info *rev,
 				       struct setup_revision_opt *opt)
 {
@@ -726,7 +731,7 @@ static void show_setup_revisions_tweak(struct rev_info *rev,
 	else
 		diff_merges_default_to_dense_combined(rev);
 	if (!rev->diffopt.output_format)
-		rev->diffopt.output_format = DIFF_FORMAT_PATCH;
+		rev->diffopt.output_format = show_default_output_format();
 }
 
 int cmd_show(int argc, const char **argv, const char *prefix)
