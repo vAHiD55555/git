@@ -26,7 +26,6 @@
 #include "setup.h"
 #include "submodule-config.h"
 #include "trace2.h"
-#include "wrapper.h"
 
 /*
  * Tells read_directory_recursive how a file or directory should be treated.

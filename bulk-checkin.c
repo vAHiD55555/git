@@ -17,7 +17,6 @@
 #include "packfile.h"
 #include "object-file.h"
 #include "object-store.h"
-#include "wrapper.h"
 
 static int odb_transaction_nesting;
 

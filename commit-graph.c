@@ -24,7 +24,6 @@
 #include "json-writer.h"
 #include "trace2.h"
 #include "chunk-format.h"
-#include "wrapper.h"
 
 void git_test_write_commit_graph_or_die(void)
 {

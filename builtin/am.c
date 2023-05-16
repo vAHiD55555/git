@@ -43,7 +43,6 @@
 #include "pager.h"
 #include "repository.h"
 #include "pretty.h"
-#include "wrapper.h"
 
 /**
  * Returns the length of the first line of msg.

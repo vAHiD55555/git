@@ -10,7 +10,6 @@
 #include "oidmap.h"
 #include "pack-objects.h"
 #include "pack-revindex.h"
-#include "wrapper.h"
 
 void reset_pack_idx_option(struct pack_idx_option *opts)
 {

@@ -10,7 +10,6 @@
 #include "strvec.h"
 #include "run-command.h"
 #include "sigchain.h"
-#include "wrapper.h"
 
 #ifndef DEFAULT_EDITOR
 #define DEFAULT_EDITOR "vi"

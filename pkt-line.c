@@ -4,7 +4,6 @@
 #include "hex.h"
 #include "run-command.h"
 #include "trace.h"
-#include "wrapper.h"
 #include "write-or-die.h"
 
 char packet_buffer[LARGE_PACKET_MAX];

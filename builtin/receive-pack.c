@@ -38,7 +38,6 @@
 #include "worktree.h"
 #include "shallow.h"
 #include "parse-options.h"
-#include "wrapper.h"
 
 static const char * const receive_pack_usage[] = {
 	N_("git receive-pack <git-dir>"),

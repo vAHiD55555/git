@@ -12,7 +12,6 @@
 #include "quote.h"
 #include "setup.h"
 #include "worktree.h"
-#include "wrapper.h"
 
 static const char *const builtin_config_usage[] = {
 	N_("git config [<options>]"),

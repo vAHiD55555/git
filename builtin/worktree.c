@@ -19,7 +19,6 @@
 #include "submodule.h"
 #include "utf8.h"
 #include "worktree.h"
-#include "wrapper.h"
 #include "quote.h"
 
 #define BUILTIN_WORKTREE_ADD_USAGE \

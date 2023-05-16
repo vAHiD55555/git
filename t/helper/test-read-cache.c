@@ -3,7 +3,6 @@
 #include "cache.h"
 #include "config.h"
 #include "setup.h"
-#include "wrapper.h"
 
 int cmd__read_cache(int argc, const char **argv)
 {

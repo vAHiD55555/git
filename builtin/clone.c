@@ -42,7 +42,6 @@
 #include "hook.h"
 #include "bundle.h"
 #include "bundle-uri.h"
-#include "wrapper.h"
 
 /*
  * Overall FIXMEs:

@@ -1,5 +1,4 @@
 #include "cache.h"
-#include "wrapper.h"
 
 int copy_fd(int ifd, int ofd)
 {

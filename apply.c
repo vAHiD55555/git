@@ -30,7 +30,6 @@
 #include "apply.h"
 #include "entry.h"
 #include "setup.h"
-#include "wrapper.h"
 
 struct gitdiff_data {
 	struct strbuf *root;

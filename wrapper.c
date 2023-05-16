@@ -6,7 +6,6 @@
 #include "config.h"
 #include "gettext.h"
 #include "trace2.h"
-#include "wrapper.h"
 
 static intmax_t count_fsync_writeout_only;
 static intmax_t count_fsync_hardware_flush;
