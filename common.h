@@ -3,6 +3,7 @@
 
 #include "git-compat-util.h"
 #include "wrapper.h"
+#include "usage.h"
 
 /*
  * ARRAY_SIZE - get the number of elements in a visible array
