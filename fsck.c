@@ -1,5 +1,4 @@
 #include "git-compat-util.h"
-#include "alloc.h"
 #include "hex.h"
 #include "object-store.h"
 #include "repository.h"

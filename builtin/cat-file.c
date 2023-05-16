@@ -5,7 +5,6 @@
  */
 #define USE_THE_INDEX_VARIABLE
 #include "cache.h"
-#include "alloc.h"
 #include "config.h"
 #include "convert.h"
 #include "builtin.h"

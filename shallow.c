@@ -1,5 +1,4 @@
 #include "cache.h"
-#include "alloc.h"
 #include "hex.h"
 #include "repository.h"
 #include "tempfile.h"

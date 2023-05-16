@@ -1,7 +1,6 @@
 #include "cache.h"
 #include "abspath.h"
 #include "advice.h"
-#include "alloc.h"
 #include "config.h"
 #include "environment.h"
 #include "gettext.h"

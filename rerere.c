@@ -1,6 +1,5 @@
 #include "cache.h"
 #include "abspath.h"
-#include "alloc.h"
 #include "config.h"
 #include "gettext.h"
 #include "hex.h"

@@ -9,7 +9,6 @@
 
 #include "cache.h"
 #include "abspath.h"
-#include "alloc.h"
 #include "config.h"
 #include "object-store.h"
 #include "blob.h"
