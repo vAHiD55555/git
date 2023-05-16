@@ -1068,6 +1068,7 @@ static void NORETURN async_exit(int code)
 }
 
 #else
+#include <alloc.h>
 
 static struct {
 	void (**handlers)(void);
