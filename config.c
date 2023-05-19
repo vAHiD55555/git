@@ -2301,19 +2301,18 @@ static void configset_iter(struct config_reader *reader, struct config_set *set,
 	struct string_list *values;
 	struct config_set_element *entry;
 	struct configset_list *list = &set->list;
+	struct key_value_info *kvi;
 
 	for (i = 0; i < list->nr; i++) {
 		entry = list->items[i].e;
 		value_index = list->items[i].value_index;
 		values = &entry->value_list;
+		kvi = values->items[value_index].util;
 
 		config_reader_set_kvi(reader, values->items[value_index].util);
 
-		if (fn(entry->key, values->items[value_index].string, NULL, data) < 0)
-			git_die_config_linenr(entry->key,
-					      reader->config_kvi->filename,
-					      reader->config_kvi->linenr);
-
+		if (fn(entry->key, values->items[value_index].string, kvi, data) < 0)
+			git_die_config_linenr(entry->key, kvi->filename, kvi->linenr);
 		config_reader_set_kvi(reader, NULL);
 	}
 }
@@ -3951,13 +3950,8 @@ static int reader_origin_type(struct config_reader *reader,
 	return 0;
 }
 
-const char *current_config_origin_type(void)
+const char *config_origin_type_name(enum config_origin_type type)
 {
-	enum config_origin_type type = CONFIG_ORIGIN_UNKNOWN;
-
-	if (reader_origin_type(&the_reader, &type))
-		BUG("current_config_origin_type called outside config callback");
-
 	switch (type) {
 	case CONFIG_ORIGIN_BLOB:
 		return "blob";
@@ -3972,6 +3966,16 @@ const char *current_config_origin_type(void)
 	default:
 		BUG("unknown config origin type");
 	}
+}
+
+const char *current_config_origin_type(void)
+{
+	enum config_origin_type type = CONFIG_ORIGIN_UNKNOWN;
+
+	if (reader_origin_type(&the_reader, &type))
+		BUG("current_config_origin_type called outside config callback");
+
+	return config_origin_type_name(type);
 }
 
 const char *config_scope_name(enum config_scope scope)
@@ -4019,14 +4023,6 @@ enum config_scope current_config_scope(void)
 		return the_reader.config_kvi->scope;
 	else
 		return the_reader.parsing_scope;
-}
-
-int current_config_line(void)
-{
-	if (the_reader.config_kvi)
-		return the_reader.config_kvi->linenr;
-	else
-		return the_reader.source->linenr;
 }
 
 int lookup_config(const char **mapping, int nr_mapping, const char *var)
