@@ -39,6 +39,14 @@ struct repo_settings {
 	int pack_read_reverse_index;
 	int pack_use_bitmap_boundary_traversal;
 
+	/*
+	 * Do replace refs need to be checked this run?  This variable is
+	 * initialized to true unless --no-replace-object is used or
+	 * $GIT_NO_REPLACE_OBJECTS is set, but is set to false by some
+	 * commands that do not want replace references to be active.
+	 */
+	int read_replace_refs;
+
 	struct fsmonitor_settings *fsmonitor; /* lazily loaded */
 
 	int index_version;
