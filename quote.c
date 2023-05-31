@@ -4,8 +4,7 @@
 #include "quote.h"
 #include "strbuf.h"
 #include "strvec.h"
-
-int quote_path_fully = 1;
+#include "global-config.h"
 
 static inline int need_bs_quote(char c)
 {
@@ -212,7 +211,7 @@ int sq_dequote_to_strvec(char *arg, struct strvec *array)
 }
 
 /* 1 means: quote as octal
- * 0 means: quote as octal if (quote_path_fully)
+ * 0 means: quote as octal if core.quotePath is true
  * -1 means: never quote
  * c: quote as "\\c"
  */
@@ -233,6 +232,7 @@ static signed char const cq_lookup[256] = {
 
 static inline int cq_must_quote(char c)
 {
+	int quote_path_fully = get_int_config_global(INT_CONFIG_QUOTE_PATH_FULLY);
 	return cq_lookup[(unsigned char)c] + quote_path_fully > 0;
 }
 
