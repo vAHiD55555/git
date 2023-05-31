@@ -308,7 +308,8 @@ static int write_entry(struct cache_entry *ce, char *path, struct conv_attrs *ca
 		 * We can't make a real symlink; write out a regular file entry
 		 * with the symlink destination as its contents.
 		 */
-		if (!has_symlinks || to_tempfile)
+		if (!get_int_config_global(INT_CONFIG_HAS_SYMLINKS) ||
+		    to_tempfile)
 			goto write_file_entry;
 
 		ret = symlink(new_blob, path);

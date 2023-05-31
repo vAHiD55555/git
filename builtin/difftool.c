@@ -292,7 +292,7 @@ static char *get_symlink(const struct object_id *oid, const char *path)
 	if (is_null_oid(oid)) {
 		/* The symlink is unknown to Git so read from the filesystem */
 		struct strbuf link = STRBUF_INIT;
-		if (has_symlinks) {
+		if (get_int_config_global(INT_CONFIG_HAS_SYMLINKS)) {
 			if (strbuf_readlink(&link, path, strlen(path)))
 				die(_("could not read symlink %s"), path);
 		} else if (strbuf_read_file(&link, path, 128))
@@ -723,7 +723,7 @@ int cmd_difftool(int argc, const char **argv, const char *prefix)
 	struct child_process child = CHILD_PROCESS_INIT;
 
 	git_config(difftool_config, NULL);
-	symlinks = has_symlinks;
+	symlinks = get_int_config_global(INT_CONFIG_HAS_SYMLINKS);
 
 	argc = parse_options(argc, argv, prefix, builtin_difftool_options,
 			     builtin_difftool_usage, PARSE_OPT_KEEP_UNKNOWN_OPT |

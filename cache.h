@@ -161,10 +161,10 @@ static inline unsigned create_ce_flags(unsigned stage)
 static inline unsigned int ce_mode_from_stat(const struct cache_entry *ce,
 					     unsigned int mode)
 {
-	extern int has_symlinks;
 	int trust_executable_bit;
 
-	if (!has_symlinks && S_ISREG(mode) &&
+	if (!get_int_config_global(INT_CONFIG_HAS_SYMLINKS) &&
+	    S_ISREG(mode) &&
 	    ce && S_ISLNK(ce->ce_mode))
 		return ce->ce_mode;
 

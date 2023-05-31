@@ -112,7 +112,6 @@ void set_git_work_tree(const char *tree);
 
 /* Environment bits from configuration mechanism */
 extern int check_stat;
-extern int has_symlinks;
 extern int minimum_abbrev, default_abbrev;
 extern int ignore_case;
 extern int assume_unchanged;

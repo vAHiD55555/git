@@ -344,7 +344,8 @@ static int ce_match_stat_basic(const struct cache_entry *ce, struct stat *st)
 		break;
 	case S_IFLNK:
 		if (!S_ISLNK(st->st_mode) &&
-		    (has_symlinks || !S_ISREG(st->st_mode)))
+		    (get_int_config_global(INT_CONFIG_HAS_SYMLINKS) ||
+		     !S_ISREG(st->st_mode)))
 			changed |= TYPE_CHANGED;
 		break;
 	case S_IFGITLINK:
@@ -809,7 +810,7 @@ int add_to_index(struct index_state *istate, const char *path, struct stat *st, 
 
 
 	if (get_int_config_global(INT_CONFIG_TRUST_EXECUTABLE_BIT) &&
-	    has_symlinks) {
+	    get_int_config_global(INT_CONFIG_HAS_SYMLINKS)) {
 		ce->ce_mode = create_ce_mode(st_mode);
 	} else {
 		/* If there is an existing entry, pick the mode bits and type

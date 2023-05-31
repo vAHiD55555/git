@@ -983,7 +983,8 @@ static int update_file_flags(struct merge_options *opt,
 			goto free_buf;
 		}
 		if (S_ISREG(contents->mode) ||
-		    (!has_symlinks && S_ISLNK(contents->mode))) {
+		    (!get_int_config_global(INT_CONFIG_HAS_SYMLINKS) &&
+		     S_ISLNK(contents->mode))) {
 			int fd;
 			int mode = (contents->mode & 0100 ? 0777 : 0666);
 
