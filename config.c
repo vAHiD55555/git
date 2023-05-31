@@ -1561,10 +1561,6 @@ int git_config_color(char *dest, const char *var, const char *value)
 
 static int git_default_core_config(const char *var, const char *value, void *cb)
 {
-	if (!strcmp(var, "core.trustctime")) {
-		trust_ctime = git_config_bool(var, value);
-		return 0;
-	}
 	if (!strcmp(var, "core.checkstat")) {
 		if (!strcasecmp(value, "default"))
 			check_stat = 1;

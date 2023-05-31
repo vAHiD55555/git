@@ -5,6 +5,7 @@
 static int global_ints[] = {
 	[INT_CONFIG_NONE] = 0, /* unused*/
 	[INT_CONFIG_TRUST_EXECUTABLE_BIT] = 1,
+	[INT_CONFIG_TRUST_CTIME] = 1,
 };
 
 /* Bitmask for the enum. */
@@ -13,6 +14,7 @@ static uint64_t global_ints_initialized;
 static const char *global_int_names[] = {
 	[INT_CONFIG_NONE] = NULL, /* unused*/
 	[INT_CONFIG_TRUST_EXECUTABLE_BIT] = "core.filemode",
+	[INT_CONFIG_TRUST_CTIME] = "core.trustctime",
 };
 
 static int config_available;

@@ -30,7 +30,6 @@
 #include "wrapper.h"
 #include "write-or-die.h"
 
-int trust_ctime = 1;
 int check_stat = 1;
 int has_symlinks = 1;
 int minimum_abbrev = 4, default_abbrev = -1;
