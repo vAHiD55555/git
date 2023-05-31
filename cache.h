@@ -9,6 +9,7 @@
 #include "pathspec.h"
 #include "object.h"
 #include "statinfo.h"
+#include "global-config.h"
 
 #if defined(DT_UNKNOWN) && !defined(NO_D_TYPE_IN_DIRENT)
 #define DTYPE(de)	((de)->d_type)
@@ -160,10 +161,14 @@ static inline unsigned create_ce_flags(unsigned stage)
 static inline unsigned int ce_mode_from_stat(const struct cache_entry *ce,
 					     unsigned int mode)
 {
-	extern int trust_executable_bit, has_symlinks;
+	extern int has_symlinks;
+	int trust_executable_bit;
+
 	if (!has_symlinks && S_ISREG(mode) &&
 	    ce && S_ISLNK(ce->ce_mode))
 		return ce->ce_mode;
+
+	trust_executable_bit = get_int_config_global(INT_CONFIG_TRUST_EXECUTABLE_BIT);
 	if (!trust_executable_bit && S_ISREG(mode)) {
 		if (ce && S_ISREG(ce->ce_mode))
 			return ce->ce_mode;

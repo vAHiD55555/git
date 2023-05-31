@@ -30,7 +30,6 @@
 #include "wrapper.h"
 #include "write-or-die.h"
 
-int trust_executable_bit = 1;
 int trust_ctime = 1;
 int check_stat = 1;
 int has_symlinks = 1;

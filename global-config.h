@@ -3,6 +3,7 @@
 
 enum int_config_key {
 	INT_CONFIG_NONE = 0,
+	INT_CONFIG_TRUST_EXECUTABLE_BIT,
 };
 
 /**
