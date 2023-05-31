@@ -12,6 +12,7 @@
 #include "shallow.h"
 #include "trace.h"
 #include "trace2.h"
+#include "global-config.h"
 
 #define RUN_SETUP		(1<<0)
 #define RUN_SETUP_GENTLY	(1<<1)
@@ -442,6 +443,9 @@ static int run_builtin(struct cmd_struct *p, int argc, const char **argv)
 
 	if (!help && p->option & NEED_WORK_TREE)
 		setup_work_tree();
+
+	/* At this point, we can allow loading config. */
+	declare_config_available();
 
 	trace_argv_printf(argv, "trace: built-in: git");
 	trace2_cmd_name(p->cmd);

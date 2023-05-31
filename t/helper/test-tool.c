@@ -3,6 +3,7 @@
 #include "test-tool-utils.h"
 #include "trace2.h"
 #include "parse-options.h"
+#include "global-config.h"
 
 static const char * const test_tool_usage[] = {
 	"test-tool [-C <directory>] <command [<arguments>...]]",
@@ -126,6 +127,8 @@ int cmd_main(int argc, const char **argv)
 
 	if (working_directory && chdir(working_directory) < 0)
 		die("Could not cd to '%s'", working_directory);
+
+	declare_config_available();
 
 	for (i = 0; i < ARRAY_SIZE(cmds); i++) {
 		if (!strcmp(cmds[i].name, argv[1])) {
