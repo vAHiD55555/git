@@ -359,7 +359,7 @@ dir_check:
 			goto act_on_entry;
 		}
 		if (lstat(dst, &st) == 0 &&
-		    (!ignore_case || strcasecmp(src, dst))) {
+		    (!get_int_config_global(INT_CONFIG_IGNORE_CASE) || strcasecmp(src, dst))) {
 			bad = _("destination exists");
 			if (force) {
 				/*

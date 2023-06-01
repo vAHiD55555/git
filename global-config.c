@@ -8,6 +8,7 @@ static int global_ints[] = {
 	[INT_CONFIG_TRUST_CTIME] = 1,
 	[INT_CONFIG_QUOTE_PATH_FULLY] = 1,
 	[INT_CONFIG_HAS_SYMLINKS] = 1,
+	[INT_CONFIG_IGNORE_CASE] = 0,
 };
 
 /* Bitmask for the enum. */
@@ -19,6 +20,7 @@ static const char *global_int_names[] = {
 	[INT_CONFIG_TRUST_CTIME] = "core.trustctime",
 	[INT_CONFIG_QUOTE_PATH_FULLY] = "core.quotepath",
 	[INT_CONFIG_HAS_SYMLINKS] = "core.symlinks",
+	[INT_CONFIG_IGNORE_CASE] = "core.ignorecase",
 };
 
 static int config_available;

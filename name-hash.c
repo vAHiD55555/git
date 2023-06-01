@@ -119,7 +119,7 @@ static void hash_index_entry(struct index_state *istate, struct cache_entry *ce)
 		hashmap_add(&istate->name_hash, &ce->ent);
 	}
 
-	if (ignore_case)
+	if (get_int_config_global(INT_CONFIG_IGNORE_CASE))
 		add_dir_entry(istate, ce);
 }
 
@@ -200,7 +200,7 @@ static int lookup_lazy_params(struct index_state *istate)
 	 * code to build the "istate->name_hash".  We don't
 	 * need the complexity here.
 	 */
-	if (!ignore_case)
+	if (!get_int_config_global(INT_CONFIG_IGNORE_CASE))
 		return 0;
 
 	nr_cpus = online_cpus();
@@ -642,7 +642,7 @@ void remove_name_hash(struct index_state *istate, struct cache_entry *ce)
 	ce->ce_flags &= ~CE_HASHED;
 	hashmap_remove(&istate->name_hash, &ce->ent, ce);
 
-	if (ignore_case)
+	if (get_int_config_global(INT_CONFIG_IGNORE_CASE))
 		remove_dir_entry(istate, ce);
 }
 

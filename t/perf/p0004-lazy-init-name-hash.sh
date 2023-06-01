@@ -6,6 +6,12 @@ test_description='Tests multi-threaded lazy_init_name_hash'
 test_perf_large_repo
 test_checkout_worktree
 
+test_expect_success 'initialize core.ignorecase' '
+	# This is needed since the name-hash structure is ignored when
+	# core.ignorecase is false.
+	git config core.ignorecase true
+'
+
 test_expect_success 'verify both methods build the same hashmaps' '
 	test-tool lazy-init-name-hash --dump --single >out.single &&
 	if test-tool lazy-init-name-hash --dump --multi >out.multi

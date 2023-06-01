@@ -32,7 +32,6 @@
 
 int check_stat = 1;
 int minimum_abbrev = 4, default_abbrev = -1;
-int ignore_case;
 int assume_unchanged;
 int prefer_symlink_refs;
 int is_bare_repository_cfg = -1; /* unspecified */

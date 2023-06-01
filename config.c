@@ -1568,11 +1568,6 @@ static int git_default_core_config(const char *var, const char *value, void *cb)
 			check_stat = 0;
 	}
 
-	if (!strcmp(var, "core.ignorecase")) {
-		ignore_case = git_config_bool(var, value);
-		return 0;
-	}
-
 	if (!strcmp(var, "core.attributesfile"))
 		return git_config_pathname(&git_attributes_file, var, value);
 

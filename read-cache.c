@@ -828,12 +828,12 @@ int add_to_index(struct index_state *istate, const char *path, struct stat *st, 
 	 * case of the file being added to the repository matches (is folded into) the existing
 	 * entry's directory case.
 	 */
-	if (ignore_case) {
+	if (get_int_config_global(INT_CONFIG_IGNORE_CASE)) {
 		adjust_dirname_case(istate, ce->name);
 	}
 	if (!(flags & ADD_CACHE_RENORMALIZE)) {
 		alias = index_file_exists(istate, ce->name,
-					  ce_namelen(ce), ignore_case);
+					  ce_namelen(ce), get_int_config_global(INT_CONFIG_IGNORE_CASE));
 		if (alias &&
 		    !ce_stage(alias) &&
 		    !ie_match_stat(istate, alias, st, ce_option)) {
@@ -854,7 +854,7 @@ int add_to_index(struct index_state *istate, const char *path, struct stat *st, 
 	} else
 		set_object_name_for_intent_to_add_entry(ce);
 
-	if (ignore_case && alias && different_name(ce, alias))
+	if (get_int_config_global(INT_CONFIG_IGNORE_CASE) && alias && different_name(ce, alias))
 		ce = create_alias_ce(istate, ce, alias);
 	ce->ce_flags |= CE_ADDED;
 
@@ -1024,7 +1024,7 @@ static int verify_dotfile(const char *rest, unsigned mode)
 	switch (*rest) {
 	/*
 	 * ".git" followed by NUL or slash is bad. Note that we match
-	 * case-insensitively here, even if ignore_case is not set.
+	 * case-insensitively here, regardless of core.ignoreCase.
 	 * This outlaws ".GIT" everywhere out of an abundance of caution,
 	 * since there's really no good reason to allow it.
 	 *

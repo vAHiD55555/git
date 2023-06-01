@@ -212,11 +212,6 @@ int cmd__lazy_init_name_hash(int argc, const char **argv)
 
 	argc = parse_options(argc, argv, prefix, options, usage, 0);
 
-	/*
-	 * istate->dir_hash is only created when ignore_case is set.
-	 */
-	ignore_case = 1;
-
 	if (dump) {
 		if (perf || analyze > 0)
 			die("cannot combine dump, perf, or analyze");
