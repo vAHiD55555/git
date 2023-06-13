@@ -44,6 +44,8 @@ helper_test_clean() {
 	reject $1 https example.com user1
 	reject $1 https example.com user2
 	reject $1 https example.com user4
+	reject $1 https example.com user5
+	reject $1 https example.com user8
 	reject $1 http path.tld user
 	reject $1 https timeout.tld user
 	reject $1 https sso.tld
@@ -167,6 +169,49 @@ helper_test() {
 		EOF
 	'
 
+	test_expect_success "helper ($HELPER) overwrites on store" '
+		check approve $HELPER <<-\EOF &&
+		protocol=https
+		host=example.com
+		username=user8
+		password=pass1
+		EOF
+		check approve $HELPER <<-\EOF &&
+		protocol=https
+		host=example.com
+		username=user8
+		password=pass2
+		EOF
+		check fill $HELPER <<-\EOF &&
+		protocol=https
+		host=example.com
+		username=user8
+		--
+		protocol=https
+		host=example.com
+		username=user8
+		password=pass2
+		EOF
+		check reject $HELPER <<-\EOF &&
+		protocol=https
+		host=example.com
+		username=user8
+		password=pass2
+		EOF
+		check fill $HELPER <<-\EOF
+		protocol=https
+		host=example.com
+		username=user8
+		--
+		protocol=https
+		host=example.com
+		username=user8
+		password=askpass-password
+		--
+		askpass: Password for '\''https://user8@example.com'\'':
+		EOF
+	'
+
 	test_expect_success "helper ($HELPER) can forget host" '
 		check reject $HELPER <<-\EOF &&
 		protocol=https
@@ -218,6 +263,31 @@ helper_test() {
 		host=example.com
 		username=user2
 		password=pass2
+		EOF
+	'
+
+	test_expect_success "helper ($HELPER) does not erase a password distinct from input" '
+		check approve $HELPER <<-\EOF &&
+		protocol=https
+		host=example.com
+		username=user5
+		password=pass1
+		EOF
+		check reject $HELPER <<-\EOF &&
+		protocol=https
+		host=example.com
+		username=user5
+		password=pass2
+		EOF
+		check fill $HELPER <<-\EOF
+		protocol=https
+		host=example.com
+		username=user5
+		--
+		protocol=https
+		host=example.com
+		username=user5
+		password=pass1
 		EOF
 	'
 
