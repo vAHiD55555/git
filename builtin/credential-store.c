@@ -35,7 +35,6 @@ static int parse_credential_file(const char *fn,
 			found_credential = 1;
 			if (match_cb) {
 				match_cb(&entry);
-				break;
 			}
 		}
 		else if (other_cb)
