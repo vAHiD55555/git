@@ -17,17 +17,47 @@ static char const * const for_each_ref_usage[] = {
 	NULL
 };
 
-int cmd_for_each_ref(int argc, const char **argv, const char *prefix)
+static void filter_and_output_refs(struct repository *r,
+				   struct ref_array *array,
+				   struct ref_filter *filter,
+				   struct ref_format *format,
+				   struct ref_sorting *sorting,
+				   int maxcount,
+				   int omit_empty)
 {
 	int i;
+	struct strbuf err = STRBUF_INIT;
+	struct strbuf output = STRBUF_INIT;
+
+	filter_refs(array, filter, FILTER_REFS_ALL);
+	filter_ahead_behind(r, format, array);
+
+	ref_array_sort(sorting, array);
+
+	if (!maxcount || array->nr < maxcount)
+		maxcount = array->nr;
+	for (i = 0; i < maxcount; i++) {
+		strbuf_reset(&err);
+		strbuf_reset(&output);
+		if (format_ref_array_item(array->items[i], format, &output, &err))
+			die("%s", err.buf);
+		fwrite(output.buf, 1, output.len, stdout);
+		if (output.len || !omit_empty)
+			putchar('\n');
+	}
+
+	strbuf_release(&err);
+	strbuf_release(&output);
+}
+
+int cmd_for_each_ref(int argc, const char **argv, const char *prefix)
+{
 	struct ref_sorting *sorting;
 	struct string_list sorting_options = STRING_LIST_INIT_DUP;
-	int maxcount = 0, icase = 0, omit_empty = 0;
+	int maxcount = 0, icase = 0, omit_empty = 0, count_matches = 0;
 	struct ref_array array;
 	struct ref_filter filter;
 	struct ref_format format = REF_FORMAT_INIT;
-	struct strbuf output = STRBUF_INIT;
-	struct strbuf err = STRBUF_INIT;
 	int from_stdin = 0;
 	struct strvec vec = STRVEC_INIT;
 
@@ -101,25 +131,9 @@ int cmd_for_each_ref(int argc, const char **argv, const char *prefix)
 	}
 
 	filter.match_as_path = 1;
-	filter_refs(&array, &filter, FILTER_REFS_ALL);
-	filter_ahead_behind(the_repository, &format, &array);
+	filter_and_output_refs(the_repository, &array, &filter, &format,
+			       sorting, maxcount, omit_empty);
 
-	ref_array_sort(sorting, &array);
-
-	if (!maxcount || array.nr < maxcount)
-		maxcount = array.nr;
-	for (i = 0; i < maxcount; i++) {
-		strbuf_reset(&err);
-		strbuf_reset(&output);
-		if (format_ref_array_item(array.items[i], &format, &output, &err))
-			die("%s", err.buf);
-		fwrite(output.buf, 1, output.len, stdout);
-		if (output.len || !omit_empty)
-			putchar('\n');
-	}
-
-	strbuf_release(&err);
-	strbuf_release(&output);
 	ref_array_clear(&array);
 	free_commit_list(filter.with_commit);
 	free_commit_list(filter.no_commit);
