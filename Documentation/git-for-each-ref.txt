@@ -42,6 +42,11 @@ OPTIONS
 	`<pattern>`.  This option makes it stop after showing
 	that many refs.
 
+--count-matches::
+	Instead of listing references according to the given format, output
+	the number of references that match each pattern. Incompatible with
+	`--format`, `--sort`, and `--count`.
+
 --sort=<key>::
 	A field name to sort on.  Prefix `-` to sort in
 	descending order of the value.  When unspecified,

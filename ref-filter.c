@@ -2560,6 +2560,53 @@ int filter_refs(struct ref_array *array, struct ref_filter *filter, unsigned int
 	return ret;
 }
 
+struct filter_and_counts {
+	struct ref_filter *filter;
+	uint32_t *counts;
+};
+
+static int ref_filter_counter(const char *refname,
+			      const struct object_id *oid,
+			      int flag, void *cb_data)
+{
+	struct filter_and_counts *fc = cb_data;
+	const char **pattern = fc->filter->name_patterns;
+	size_t namelen = strlen(refname);
+	unsigned flags = fc->filter->ignore_case ? WM_CASEFOLD : 0;
+
+	for (int i = 0; *pattern; i++, pattern++) {
+		const char *p = *pattern;
+		int plen = strlen(p);
+
+		if ((plen <= namelen) &&
+		    !strncmp(refname, p, plen) &&
+		    (refname[plen] == '\0' ||
+		     refname[plen] == '/' ||
+		     p[plen-1] == '/'))
+			fc->counts[i]++;
+		else if (!wildmatch(p, refname, flags))
+			fc->counts[i]++;
+	}
+	return 0;
+}
+
+uint32_t *count_ref_patterns(struct ref_filter *filter)
+{
+	int size = 0;
+	struct filter_and_counts fc = {
+		.filter = filter,
+	};
+
+	while (filter->name_patterns[size])
+		size++;
+
+	CALLOC_ARRAY(fc.counts, size);
+
+	for_each_fullref_in_pattern(filter, ref_filter_counter, &fc);
+
+	return fc.counts;
+}
+
 static int compare_detached_head(struct ref_array_item *a, struct ref_array_item *b)
 {
 	if (!(a->kind ^ b->kind))

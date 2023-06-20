@@ -486,6 +486,34 @@ for i in "--perl --shell" "-s --python" "--python --tcl" "--tcl --perl"; do
 	"
 done
 
+test_expect_success '--count-matches incompatible with some options' '
+	for opt in "--format=x" "--sort=refname" "--count=10"
+	do
+		test_must_fail git for-each-ref --count-matches $opt refs/heads/ 2>err &&
+		grep "count-matches incompatible" err || return 1
+	done
+'
+
+test_expect_success '--count-matches tallies the number matching each refspec' '
+	git init multi-refs &&
+	test_commit -C multi-refs A &&
+	git -C multi-refs branch A &&
+	git -C multi-refs branch pre/A &&
+	test_commit -C multi-refs --no-tag B &&
+	git -C multi-refs branch B &&
+	git -C multi-refs for-each-ref --count-matches \
+		refs/heads/ refs/heads/pre/ refs/tags/ "*A*" >actual &&
+
+	cat >expect <<-EOF &&
+	refs/heads/ 4
+	refs/heads/pre/ 1
+	refs/tags/ 1
+	*A* 3
+	EOF
+
+	test_cmp expect actual
+'
+
 test_expect_success 'setup for upstream:track[short]' '
 	test_commit two
 '

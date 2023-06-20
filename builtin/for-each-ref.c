@@ -50,6 +50,17 @@ static void filter_and_output_refs(struct repository *r,
 	strbuf_release(&output);
 }
 
+static void count_and_output_patterns(struct ref_filter *filter)
+{
+	uint32_t *counts = count_ref_patterns(filter);
+
+	for (int i = 0; filter->name_patterns && filter->name_patterns[i]; i++)
+		fprintf(stdout, "%s %"PRIu32"\n",
+			filter->name_patterns[i], counts[i]);
+
+	free(counts);
+}
+
 int cmd_for_each_ref(int argc, const char **argv, const char *prefix)
 {
 	struct ref_sorting *sorting;
@@ -60,6 +71,7 @@ int cmd_for_each_ref(int argc, const char **argv, const char *prefix)
 	struct ref_format format = REF_FORMAT_INIT;
 	int from_stdin = 0;
 	struct strvec vec = STRVEC_INIT;
+	const char *initial_format = "%(objectname) %(objecttype)\t%(refname)";
 
 	struct option opts[] = {
 		OPT_BIT('s', "shell", &format.quote_style,
@@ -72,6 +84,8 @@ int cmd_for_each_ref(int argc, const char **argv, const char *prefix)
 			N_("quote placeholders suitably for Tcl"), QUOTE_TCL),
 		OPT_BOOL(0, "omit-empty",  &omit_empty,
 			N_("do not output a newline after empty formatted refs")),
+		OPT_BOOL(0, "count-matches", &count_matches,
+			N_("output number of references matching each pattern instead of any other output")),
 
 		OPT_GROUP(""),
 		OPT_INTEGER( 0 , "count", &maxcount, N_("show only <n> matched refs")),
@@ -93,7 +107,7 @@ int cmd_for_each_ref(int argc, const char **argv, const char *prefix)
 	memset(&array, 0, sizeof(array));
 	memset(&filter, 0, sizeof(filter));
 
-	format.format = "%(objectname) %(objecttype)\t%(refname)";
+	format.format = initial_format;
 
 	git_config(git_default_config, NULL);
 
@@ -102,6 +116,9 @@ int cmd_for_each_ref(int argc, const char **argv, const char *prefix)
 		error("invalid --count argument: `%d'", maxcount);
 		usage_with_options(for_each_ref_usage, opts);
 	}
+	if (count_matches &&
+	    (maxcount || format.format != initial_format || sorting_options.nr))
+		die("--count-matches incompatible with --count, --format, or --sort");
 	if (HAS_MULTI_BITS(format.quote_style)) {
 		error("more than one quoting style?");
 		usage_with_options(for_each_ref_usage, opts);
@@ -131,8 +148,11 @@ int cmd_for_each_ref(int argc, const char **argv, const char *prefix)
 	}
 
 	filter.match_as_path = 1;
-	filter_and_output_refs(the_repository, &array, &filter, &format,
-			       sorting, maxcount, omit_empty);
+	if (count_matches)
+		count_and_output_patterns(&filter);
+	else
+		filter_and_output_refs(the_repository, &array, &filter, &format,
+				       sorting, maxcount, omit_empty);
 
 	ref_array_clear(&array);
 	free_commit_list(filter.with_commit);

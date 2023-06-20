@@ -142,6 +142,13 @@ char *get_head_description(void);
 void setup_ref_filter_porcelain_msg(void);
 
 /*
+ * Iterate over all references, counting how many match each filter
+ * pattern. Returns an array of the counts with the ith count matching the
+ * ith filter->name_pattern entry.
+ */
+uint32_t *count_ref_patterns(struct ref_filter *filter);
+
+/*
  * Print a single ref, outside of any ref-filter. Note that the
  * name must be a fully qualified refname.
  */
