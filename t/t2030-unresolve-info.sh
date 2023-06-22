@@ -62,6 +62,13 @@ test_expect_success setup '
 	test_commit fourth fi/le fourth &&
 	git checkout add-add &&
 	test_commit fifth add-differently &&
+	git checkout --detach initial &&
+	git rm binary &&
+	test_commit sixth del-binary &&
+	git reset --hard HEAD^ &&
+	printf "a\0c" >binary &&
+	git add binary &&
+	test_commit seventh mod-binary &&
 	git checkout main
 '
 
@@ -124,6 +131,32 @@ test_expect_success 'unmerge with plumbing' '
 	git update-index --unresolve fi/le &&
 	git ls-files -u >actual &&
 	test_line_count = 3 actual
+'
+
+test_expect_success 'del-mod conflict' '
+	git reset --hard &&
+	# they delete, we modify, resolve to ours
+	git checkout --detach seventh &&
+	test_must_fail git merge sixth &&
+	git add binary &&
+	check_resolve_undo mods binary initial:binary seventh:binary ""
+'
+
+test_expect_success 'del-mod conflict' '
+	git reset --hard &&
+	# we delete, they modify, resolve to deletion
+	git checkout --detach sixth &&
+	test_must_fail git merge seventh &&
+	git rm binary &&
+	check_resolve_undo removed binary initial:binary "" seventh:binary
+'
+
+test_expect_success 'resolve 3-way conflict to deletion' '
+	git reset --hard &&
+	git checkout --detach second &&
+	test_must_fail git merge third &&
+	git rm fi/le &&
+	check_resolve_undo recorded fi/le initial:fi/le second:fi/le third:fi/le
 '
 
 test_expect_success 'rerere and rerere forget' '
