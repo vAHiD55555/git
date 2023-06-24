@@ -9906,7 +9906,9 @@ proc resethead {reset_target_id} {
         [mc "Reset branch %s to %s?" $mainhead [commit_name $reset_target_id 1]]
     pack $w.m -side top -fill x -padx 20 -pady 20
     ${NS}::labelframe $w.f -text [mc "Reset type:"]
-    set resettype mixed
+    # Reset hard is dangerous but also the most common reset type, and not
+    # having it pre-selected in the dialog is annoying to users.
+    set resettype hard
     ${NS}::radiobutton $w.f.soft -value soft -variable resettype \
         -text [mc "Soft: Leave working tree and index untouched"]
     grid $w.f.soft -sticky w
