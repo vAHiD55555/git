@@ -2691,6 +2691,7 @@ proc makewindow {} {
     bind $ctext <Button-1> {focus %W}
     bind $ctext <<Selection>> rehighlight_search_results
     bind . <$M1B-t> {resethead [selected_line_id]}
+    bind . <$M1B-o> {checkout [selected_line_head] [selected_line_id]}
     for {set i 1} {$i < 10} {incr i} {
         bind . <$M1B-Key-$i> [list go_to_parent $i]
     }
@@ -2707,7 +2708,7 @@ proc makewindow {} {
         {mc "Create tag" command mktag}
         {mc "Copy commit reference" command copyreference}
         {mc "Write commit to file" command writecommit}
-        {mc "Create new branch" command mkbranch}
+        {mc "Create new branch" command {mkbranch $rowmenuid}}
         {mc "Cherry-pick this commit" command cherrypick}
         {mc "Reset current branch to here" command {resethead $rowmenuid}}
         {mc "Mark this commit" command markhere}
@@ -2732,7 +2733,7 @@ proc makewindow {} {
 
     set headctxmenu .headctxmenu
     makemenu $headctxmenu {
-        {mc "Check out this branch" command cobranch}
+        {mc "Check out this branch" command {checkout $headmenuhead $headmenuid}}
         {mc "Rename this branch" command mvbranch}
         {mc "Remove this branch" command rmbranch}
         {mc "Copy branch name" command {clipboard clear; clipboard append $headmenuhead}}
@@ -3183,6 +3184,7 @@ proc keys {} {
 [mc "<%s-minus>	Decrease font size" $M1T]
 [mc "<F5>		Update"]
 [mc "<%s-T>		Reset current branch to selected commit" $M1T]
+[mc "<%s-O>		Check out selected commit" $M1T]
 " \
             -justify left -bg $bgcolor -border 2 -relief groove
     pack $w.m -side top -fill both -padx 2 -pady 2
@@ -9978,25 +9980,26 @@ proc headmenu {x y id head} {
     tk_popup $headctxmenu $x $y
 }
 
-proc cobranch {} {
-    global headmenuid headmenuhead headids
+proc checkout {newhead newheadid} {
+    global headids
     global showlocalchanges
 
     # check the tree is clean first??
-    set newhead $headmenuhead
+
+    # The ref is either the head, if it exists, or the ID
+    set newheadref [expr {$newhead ne "" ? $newhead : $newheadid}]
+
     set command [list | git checkout]
     if {[string match "remotes/*" $newhead]} {
         set remote $newhead
         set newhead [string range $newhead [expr [string last / $newhead] + 1] end]
-        # The following check is redundant - the menu option should
-        # be disabled to begin with...
         if {[info exists headids($newhead)]} {
             error_popup [mc "A local branch named %s exists already" $newhead]
             return
         }
         lappend command -b $newhead --track $remote
     } else {
-        lappend command $newhead
+        lappend command $newheadref
     }
     lappend command 2>@1
     nowbusy checkout [mc "Checking out"]
@@ -10011,11 +10014,11 @@ proc cobranch {} {
             dodiffindex
         }
     } else {
-        filerun $fd [list readcheckoutstat $fd $newhead $headmenuid]
+        filerun $fd [list readcheckoutstat $fd $newhead $newheadref $newheadid]
     }
 }
 
-proc readcheckoutstat {fd newhead newheadid} {
+proc readcheckoutstat {fd newhead newheadref newheadid} {
     global mainhead mainheadid headids idheads showlocalchanges progresscoords
     global viewmainheadid curview
 
@@ -10034,12 +10037,13 @@ proc readcheckoutstat {fd newhead newheadid} {
         return
     }
     set oldmainid $mainheadid
-    if {! [info exists headids($newhead)]} {
+
+    if {$newhead ne "" && ! [info exists headids($newhead)]} {
         set headids($newhead) $newheadid
         lappend idheads($newheadid) $newhead
         addedhead $newheadid $newhead
     }
-    set mainhead $newhead
+    set mainhead $newheadref
     set mainheadid $newheadid
     set viewmainheadid($curview) $newheadid
     redrawtags $oldmainid
