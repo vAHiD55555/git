@@ -2675,6 +2675,7 @@ proc makewindow {} {
     bind $ctext $ctxbut {pop_diff_menu %W %X %Y %x %y}
     bind $ctext <Button-1> {focus %W}
     bind $ctext <<Selection>> rehighlight_search_results
+    bind . <$M1B-t> {resethead [selected_line_id]}
     for {set i 1} {$i < 10} {incr i} {
         bind . <$M1B-Key-$i> [list go_to_parent $i]
     }
@@ -2693,7 +2694,7 @@ proc makewindow {} {
         {mc "Write commit to file" command writecommit}
         {mc "Create new branch" command mkbranch}
         {mc "Cherry-pick this commit" command cherrypick}
-        {mc "Reset current branch to here" command resethead}
+        {mc "Reset current branch to here" command {resethead $rowmenuid}}
         {mc "Mark this commit" command markhere}
         {mc "Return to mark" command gotomark}
         {mc "Find descendant of this and mark" command find_common_desc}
@@ -3166,6 +3167,7 @@ proc keys {} {
 [mc "<%s-KP->	Decrease font size" $M1T]
 [mc "<%s-minus>	Decrease font size" $M1T]
 [mc "<F5>		Update"]
+[mc "<%s-T>		Reset current branch to selected commit" $M1T]
 " \
             -justify left -bg $bgcolor -border 2 -relief groove
     pack $w.m -side top -fill both -padx 2 -pady 2
@@ -9859,8 +9861,13 @@ proc revert {} {
     notbusy revert
 }
 
-proc resethead {} {
-    global mainhead rowmenuid confirm_ok resettype NS
+proc resethead {reset_target_id} {
+    global headids mainhead confirm_ok resettype NS
+
+    if {! [info exists headids($mainhead)]} {
+        error_popup [mc "Cannot reset a detached head"]
+        return
+    }
 
     set confirm_ok 0
     set w ".confirmreset"
@@ -9868,7 +9875,7 @@ proc resethead {} {
     make_transient $w .
     wm title $w [mc "Confirm reset"]
     ${NS}::label $w.m -text \
-        [mc "Reset branch %s to %s?" $mainhead [string range $rowmenuid 0 7]]
+        [mc "Reset branch %s to %s?" $mainhead [string range $reset_target_id 0 7]]
     pack $w.m -side top -fill x -padx 20 -pady 20
     ${NS}::labelframe $w.f -text [mc "Reset type:"]
     set resettype mixed
@@ -9891,13 +9898,13 @@ proc resethead {} {
     tkwait window $w
     if {!$confirm_ok} return
     if {[catch {set fd [open \
-            [list | git reset --$resettype $rowmenuid 2>@1] r]} err]} {
+            [list | git reset --$resettype $reset_target_id 2>@1] r]} err]} {
         error_popup $err
     } else {
         dohidelocalchanges
         filerun $fd [list readresetstat $fd]
         nowbusy reset [mc "Resetting"]
-        selbyid $rowmenuid
+        selbyid $reset_target_id
     }
 }
 
