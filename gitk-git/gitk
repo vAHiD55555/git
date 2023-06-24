@@ -1333,6 +1333,24 @@ proc commitonrow {row} {
     return $id
 }
 
+# Get commits ID of the row that is selected in the GUI
+proc selected_line_id {} {
+    global selectedline
+    return [commitonrow $selectedline]
+}
+
+# Gets the first branch name of the row that is selected in the GUI, or the
+# empty string if there is no branches on that commit.
+proc selected_line_head {} {
+    global idheads
+    set id [selected_line_id]
+    if {[info exists idheads($id)]} {
+        return [lindex $idheads($id) 0]
+    } else {
+        return ""
+    }
+}
+
 proc closevarcs {v} {
     global varctok varccommits varcid parents children
     global cmitlisted commitidx vtokmod curview numcommits
