@@ -9922,7 +9922,7 @@ proc resethead {reset_target_id} {
     ${NS}::button $w.cancel -text [mc Cancel] -command "destroy $w"
     bind $w <Key-Escape> [list destroy $w]
     pack $w.cancel -side right -fill x -padx 20 -pady 20
-    bind $w <Visibility> "grab $w; focus $w"
+    bind $w <Visibility> "grab $w; focus $w.ok"
     tkwait window $w
     if {!$confirm_ok} return
     if {[catch {set fd [open \
