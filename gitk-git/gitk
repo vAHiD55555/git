@@ -1351,6 +1351,21 @@ proc selected_line_heads {} {
     }
 }
 
+# If any branch is associated with the argument ID then return that. Otherwise
+# return the ID itself. Useful for displaying the best name of a commit.
+proc commit_name {id should_shorten_id} {
+    global idheads idtags
+    if {[info exists idheads($id)]} {
+        return [lindex $idheads($id) 0]
+    } elseif {[info exists idtags($id)]} {
+        return [lindex $idtags($id) 0]
+    } elseif {$should_shorten_id} {
+        return [string range $id 0 7]
+    } else {
+        return $id
+    }
+}
+
 proc closevarcs {v} {
     global varctok varccommits varcid parents children
     global cmitlisted commitidx vtokmod curview numcommits
@@ -9875,7 +9890,7 @@ proc resethead {reset_target_id} {
     make_transient $w .
     wm title $w [mc "Confirm reset"]
     ${NS}::label $w.m -text \
-        [mc "Reset branch %s to %s?" $mainhead [string range $reset_target_id 0 7]]
+        [mc "Reset branch %s to %s?" $mainhead [commit_name $reset_target_id 1]]
     pack $w.m -side top -fill x -padx 20 -pady 20
     ${NS}::labelframe $w.f -text [mc "Reset type:"]
     set resettype mixed
