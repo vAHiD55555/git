@@ -573,6 +573,34 @@ static int checkout_paths(const struct checkout_opts *opts,
 			mark_ce_for_checkout_no_overlay(the_index.cache[pos],
 							ps_matched,
 							opts);
+	if (opts->merge && the_index.resolve_undo) {
+		/*
+		 * resurrecting a conflicted state that we resolved
+		 * to removal?
+		 */
+		struct string_list_item *item;
+		for_each_string_list_item(item, the_index.resolve_undo) {
+			const char *path = item->string;
+			size_t pathlen = strlen(path);
+			int pos = index_name_pos(&the_index, path, pathlen);
+			const struct cache_entry *ce;
+
+			/* does the name exists in the main ce array? */
+			if (0 <= pos)
+				continue; /* a resolved one exists */
+			pos = -1 - pos;
+			if (pos < the_index.cache_nr &&
+			    (ce = the_index.cache[pos]) &&
+			    ce_namelen(ce) == pathlen &&
+			    !memcmp(path, ce->name, pathlen))
+				continue; /* a conflited one exists */
+
+			/* we had conflicts but we resolved to removal */
+			match_pathspec(&the_index, &opts->pathspec,
+				       path, pathlen,
+				       0, ps_matched, 1);
+		}
+	}
 
 	if (report_path_error(ps_matched, &opts->pathspec)) {
 		free(ps_matched);
