@@ -9582,13 +9582,13 @@ proc wrcomcan {} {
     unset wrcomtop
 }
 
-proc mkbranch {} {
-    global NS rowmenuid
+proc mkbranch {id} {
+    global NS
 
     set top .branchdialog
 
     set val(name) ""
-    set val(id) $rowmenuid
+    set val(id) $id
     set val(command) [list mkbrgo $top]
 
     set ui(title) [mc "Create branch"]
