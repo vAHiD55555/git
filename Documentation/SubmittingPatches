@@ -10,8 +10,15 @@ available which covers many of these same guidelines.
 [[base-branch]]
 === Decide which branch to base your work on.
 
-In general, always base your work on the oldest branch that your
-change is relevant to.
+The following branches are the typical starting points for new work:
+
+* maint
+* master
+* next
+* seen
+
+These branches are explained in detail in linkgit:gitworkflows[7].
+Choose the appropriate branch depending on the following scenarios:
 
 * A bugfix should be based on `maint` in general. If the bug is not
   present in `maint`, base it on `master`. For a bug that's not yet
