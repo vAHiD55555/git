@@ -17,7 +17,12 @@ The following branches are the typical starting points for new work:
 * next
 * seen
 
-These branches are explained in detail in linkgit:gitworkflows[7].
+These branches are explained in detail in linkgit:gitworkflows[7]. There are
+also "topic" branches, which contain work from other contributors.  Topic
+branches are created by the Git maintainer (in their fork) to organize the
+current set of incoming contributions from the mailing list, and are enumerated
+in the regular "What's cooking in git.git" announcements.
+
 Choose the appropriate branch depending on the following scenarios:
 
 * A bugfix should be based on `maint` in general. If the bug is not
