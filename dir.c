@@ -335,12 +335,11 @@ static int do_read_blob(const struct object_id *oid, struct oid_stat *oid_stat,
  * [2] Only if DO_MATCH_LEADING_PATHSPEC is passed; otherwise, not a match.
  */
 static int match_pathspec_item(struct index_state *istate,
-			       const struct pathspec_item *item, int prefix,
+			       const struct pathspec_item *item,
 			       const char *name, int namelen, unsigned flags)
 {
-	/* name/namelen has prefix cut off by caller */
-	const char *match = item->match + prefix;
-	int matchlen = item->len - prefix;
+	const char *match = item->match;
+	int matchlen = item->len;
 
 	/*
 	 * The normal call pattern is:
@@ -360,19 +359,9 @@ static int match_pathspec_item(struct index_state *istate,
 	 * other words, we do not trust the caller on comparing the
 	 * prefix part when :(icase) is involved. We do exact
 	 * comparison ourselves.
-	 *
-	 * Normally the caller (common_prefix_len() in fact) does
-	 * _exact_ matching on name[-prefix+1..-1] and we do not need
-	 * to check that part. Be defensive and check it anyway, in
-	 * case common_prefix_len is changed, or a new caller is
-	 * introduced that does not use common_prefix_len.
-	 *
-	 * If the penalty turns out too high when prefix is really
-	 * long, maybe change it to
-	 * strncmp(match, name, item->prefix - prefix)
 	 */
 	if (item->prefix && (item->magic & PATHSPEC_ICASE) &&
-	    strncmp(item->match, name - prefix, item->prefix))
+	    strncmp(item->match, name, item->prefix))
 		return 0;
 
 	if (item->attr_match_nr &&
@@ -397,7 +386,7 @@ static int match_pathspec_item(struct index_state *istate,
 
 	if (item->nowildcard_len < item->len &&
 	    !git_fnmatch(item, match, name,
-			 item->nowildcard_len - prefix))
+			 item->nowildcard_len))
 		return MATCHED_FNMATCH;
 
 	/* Perform checks to see if "name" is a leading string of the pathspec */
@@ -412,8 +401,7 @@ static int match_pathspec_item(struct index_state *istate,
 
 		/* name doesn't match up to the first wild character */
 		if (item->nowildcard_len < item->len &&
-		    ps_strncmp(item, match, name,
-			       item->nowildcard_len - prefix))
+		    ps_strncmp(item, match, name, item->nowildcard_len))
 			return 0;
 
 		/*
@@ -486,9 +474,6 @@ static int do_match_pathspec(struct index_state *istate,
 			return 0;
 	}
 
-	name += prefix;
-	namelen -= prefix;
-
 	for (i = ps->nr - 1; i >= 0; i--) {
 		int how;
 
@@ -504,8 +489,8 @@ static int do_match_pathspec(struct index_state *istate,
 		 */
 		if (seen && ps->items[i].magic & PATHSPEC_EXCLUDE)
 			seen[i] = MATCHED_FNMATCH;
-		how = match_pathspec_item(istate, ps->items+i, prefix, name,
-					  namelen, flags);
+		how = match_pathspec_item(istate, ps->items+i,
+					  name, namelen, flags);
 		if (ps->recursive &&
 		    (ps->magic & PATHSPEC_MAXDEPTH) &&
 		    ps->max_depth != -1 &&
